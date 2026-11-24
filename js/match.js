@@ -8,7 +8,7 @@ import {
 import { ROLES, esc, logistic, clamp } from './util.js';
 import { TICK, MIR, BLUE_TOWERS, BASE, PIT } from './engine.js';
 import { badge, champIcon, roleTag, ovrTag, compTitle, compLogoId, face, leagueBadge, roleIcon, bgArt } from './ui.js';
-import { champImg, champArt, champTile, itemImg, mapImg } from './data.js';
+import { champImg, champArt, champTile, champSplash, itemImg, mapImg } from './data.js';
 import { loadThree, webglOk, createArena } from './arena3d.js';
 const roleIconSvg = (r) => roleIcon(r);
 
@@ -219,6 +219,13 @@ function mapSvg() {
     const [x, y] = side === 'B' ? pt : MIR(pt);
     return `<rect class="tw tw-${side}" data-tw="${side}-${lane}-${i}" x="${x - 1.4}" y="${y - 1.4}" width="2.8" height="2.8" transform="rotate(45 ${x} ${y})"/>`;
   })).join('');
+  // nhà lính: sau trụ thứ 3 mỗi đường, lùi về phía nhà chính
+  const ih = (side) => ['top', 'mid', 'bot'].map((lane) => {
+    const pt = BLUE_TOWERS[lane][2];
+    const p2 = [pt[0] + (BASE.B[0] - pt[0]) * 0.35, pt[1] + (BASE.B[1] - pt[1]) * 0.35];
+    const [x, y] = side === 'B' ? p2 : MIR(p2);
+    return `<circle class="ih ih-${side}" data-ih="${side}-inhib-${lane}" cx="${x}" cy="${y}" r="1.5"/>`;
+  }).join('');
   return `<svg class="rift" viewBox="0 0 100 100" aria-hidden="true">
     <defs><radialGradient id="rg" cx="50%" cy="50%" r="70%"><stop offset="0" stop-color="#1f3b34"/><stop offset="1" stop-color="#0d1b19"/></radialGradient></defs>
     <rect width="100" height="100" rx="3" fill="url(#rg)"/>
@@ -228,7 +235,7 @@ function mapSvg() {
     <circle class="pit" cx="${PIT.dragon[0]}" cy="${PIT.dragon[1]}" r="3.4"/><circle class="pit" cx="${PIT.baron[0]}" cy="${PIT.baron[1]}" r="3.6"/>
     
     <circle class="base base-B" cx="${BASE.B[0]}" cy="${BASE.B[1]}" r="6"/><circle class="base base-R" cx="${BASE.R[0]}" cy="${BASE.R[1]}" r="6"/>
-    ${tw('B')}${tw('R')}
+    ${tw('B')}${tw('R')}${ih('B')}${ih('R')}
   </svg>`;
 }
 
@@ -349,6 +356,17 @@ function liveGame(d, opts = {}) {
     } else if (e.type === 'herald' || e.type === 'grubs') {
       flash(PIT.baron, e.side);
       cast(e.type, e);
+    } else if (e.type === 'inhib') {
+      map.querySelector(`[data-ih="${e.id}"]`)?.classList.add('down');
+      flash(e.at, e.side, true);
+      banner(t('bn.inhib', { team: tShort(e.side) }), e.side);
+      cast('inhib', e);
+    } else if (e.type === 'inhibBack') {
+      map.querySelector(`[data-ih="${e.id}"]`)?.classList.remove('down');
+      cast('inhibBack', e);
+    } else if (e.type === 'towerBack') {
+      map.querySelector(`[data-tw="${e.id}"]`)?.classList.remove('down');
+      arena?.towerUp?.(e.id);
     } else if (e.type === 'tower' || e.type === 'firsttower') {
       live.towers[e.side]++;
       map.querySelector(`[data-tw="${e.id}"]`)?.classList.add('down');
@@ -483,34 +501,97 @@ function liveGame(d, opts = {}) {
   if (want3D) start3D().then(() => run()); else run();
 }
 
+// Màn tổng kết ván (kiểu bảng kết quả phát sóng): chỉ số trận, sát thương lên tướng, chênh lệch vàng
 function postGame(g) {
   if (g.recorded) return;
   g.recorded = true;
   recordGame(match, g, true);
-  const won = g.winnerId === me();
-  const row = (x) => {
-    const p = S.players[x.pid];
-    return `<tr class="${g.mvp === x.pid ? 'mvp' : ''}"><td>${champIcon(x.champ, 28)}</td><td class="row gap">${face(p, 'xs')}${roleTag(x.role)} <b>${p ? esc(p.ign) : '?'}</b>${g.mvp === x.pid ? ` <em class="tagx">${t('m.mvp')}</em>` : ''}</td>
-      <td>${x.k}/${x.d}/${x.a}</td><td>${x.cs}</td><td>${(x.gold / 1000).toFixed(1)}k</td><td>${(x.dmg / 1000).toFixed(1)}k</td></tr>`;
-  };
-  const table = (s) => `<table class="tbl sb"><thead><tr><th></th><th>${badge(s === 'B' ? g.blue : g.red, 'sm')} ${esc(S.teams[s === 'B' ? g.blue : g.red].short)} ${g.winner === s ? `<em class="tagx">${t('m.winner')}</em>` : ''}</th><th>KDA</th><th>CS</th><th>${t('p.gpm').split('/')[0]}</th><th>DMG</th></tr></thead>
-    <tbody>${g.players.filter((x) => x.side === s).map(row).join('')}</tbody></table>`;
   const over = match.done;
-  root().innerHTML = `<div class="md-inner">${header()}
-    <div class="result ${won ? 'win' : 'loss'}">${won ? t('m.victory') : t('m.defeat')}</div>
-    <div class="center muted">${t('m.duration')}: ${g.dur}:00 · ${t('m.kills')} ${g.kills.B}-${g.kills.R} · ${t('m.towers')} ${g.towers.B}-${g.towers.R} · ${t('m.dragons')} ${g.drakes.B.length}-${g.drakes.R.length}</div>
-    <div class="card scroll-x"><h3>${t('m.scoreboard')}</h3>${table('B')}${table('R')}</div>
-    <div class="md-actions">${over ? `<button class="btn primary big" data-fin>${t('m.finish')}</button>`
-      : `<button class="btn primary big" data-a="manual">${t('m.manualDraft')}</button><button class="btn big" data-a="auto">${t('m.autoDraft')}</button><button class="btn ghost big" data-a="quick">${t('m.quickSim')}</button>`}</div></div>`;
+  const side = (s) => (s === 'B' ? g.blue : g.red);
+  const sum = (s, k) => g.players.filter((x) => x.side === s).reduce((a, x) => a + x[k], 0);
+  const kfmt = (n) => (n / 1000).toFixed(1) + 'K';
+  const ob = g.obj || { B: {}, R: {} };
+  const winsOf = (tid) => (tid === match.a ? match.winsA : match.winsB);
+  const cnt = (n) => (n ? `<b class="pg-n">${n}</b>` : '<span class="pg-dash"></span>');
+  const drakes = (s) => (g.drakes[s].length ? `<span class="dk">${g.drakes[s].map((d) => `<i class="dr-${d}" title="${t('drake.' + d)}"></i>`).join('')}</span>` : '<span class="pg-dash"></span>');
+  const bans = (s) => `<span class="pg-bans">${(g.bans[s] || []).map((c) => champIcon(c, 30)).join('')}</span>`;
+  const statRow = (label, l, r, dimL, dimR) => `<div class="pg-row"><span class="${dimL ? 'dim' : ''}">${l}</span><b>${label}</b><span class="${dimR ? 'dim' : ''}">${r}</span></div>`;
+  const kda = (s) => `${sum(s, 'k')}/${sum(s, 'd')}/${sum(s, 'a')}`;
+  const gB = sum('B', 'gold'), gR = sum('R', 'gold');
+  // sát thương lên tướng: phần trước 14 phút nhạt, sau 14 phút đậm
+  const maxD = Math.max(...g.players.map((x) => x.dmg), 1);
+  const dmgCol = (s) => g.players.filter((x) => x.side === s).map((x) => {
+    const p = S.players[x.pid];
+    const w = (x.dmg / maxD) * 100, we = (x.dmgEarly / maxD) * 100;
+    return `<div class="pg-d ${s}">${champIcon(x.champ, 46)}<div class="pg-dm"><span>${p ? esc(p.ign) : '?'}${g.mvp === x.pid ? ` <em class="tagx">MVP</em>` : ''}</span><b>${kfmt(x.dmg)}</b>
+      <div class="pg-bar"><i class="late" style="width:${w}%"></i><i class="early" style="width:${we}%"></i></div></div></div>`;
+  }).join('');
+  // biểu đồ chênh lệch vàng (Xanh trên, Đỏ dưới)
+  const gd = g.gold;
+  const amp = Math.max(1000, ...gd.map((v) => Math.abs(v)));
+  const W = 600, H = 200, X = (m) => 30 + (m / Math.max(gd.length - 1, 1)) * (W - 40), Y = (v) => H / 2 - (v / amp) * (H / 2 - 14);
+  const line = gd.map((v, m) => `${X(m).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const area = `M${X(0)},${H / 2} L${line.replace(/ /g, ' L')} L${X(gd.length - 1)},${H / 2} Z`;
+  const ticks = [];
+  for (let m = 5; m < gd.length; m += 5) ticks.push(m);
+  const chart = `<svg class="pg-chart" viewBox="0 0 ${W} ${H + 18}" preserveAspectRatio="none">
+    <defs><clipPath id="pgUp"><rect x="0" y="0" width="${W}" height="${H / 2}"/></clipPath><clipPath id="pgDn"><rect x="0" y="${H / 2}" width="${W}" height="${H / 2}"/></clipPath></defs>
+    ${ticks.map((m) => `<line x1="${X(m)}" y1="6" x2="${X(m)}" y2="${H - 6}" class="gl"/><text x="${X(m)}" y="${H + 14}" class="tx">${m}</text>`).join('')}
+    <line x1="30" y1="${H / 2}" x2="${W - 10}" y2="${H / 2}" class="zero"/>
+    <path d="${area}" class="up" clip-path="url(#pgUp)"/><path d="${area}" class="dn" clip-path="url(#pgDn)"/>
+    <text x="2" y="16" class="tx l">+${kfmt(amp)}</text><text x="2" y="${H / 2 + 4}" class="tx l">0</text><text x="2" y="${H - 4}" class="tx l">-${kfmt(amp)}</text></svg>`;
+  const mvpC = g.players.find((x) => x.pid === g.mvp)?.champ || g.picks[g.winner].Mid;
+  const head = (s) => `<div class="pg-team ${s}">${badge(side(s), 'lg')}<b>${esc(S.teams[side(s)].short)}</b><span class="pg-sc">${winsOf(side(s))}</span><span class="pg-res">${g.winner === s ? t('pg.victory') : t('pg.defeat')}</span></div>`;
+  const mm = `${String(Math.floor(g.durS / 60)).padStart(2, '0')}:${String(g.durS % 60).padStart(2, '0')}`;
+  root().innerHTML = `<div class="pg"><div class="pg-bg" style="background-image:url('${champSplash(mvpC)}')"></div>
+    <div class="pg-head">${head('B')}<div class="pg-time"><small>${t('pg.time')}</small><b>${mm}</b></div>${head('R')}</div>
+    <div class="pg-grid">
+      <div class="pg-left">
+        <div class="pg-panel"><h3>${t('pg.stats')}</h3>
+          ${statRow('KDA', kda('B'), kda('R'), g.winner !== 'B', g.winner !== 'R')}
+          ${statRow(t('pg.gold'), kfmt(gB), kfmt(gR), gB < gR, gR < gB)}
+          ${statRow(t('pg.towers'), g.towers.B, g.towers.R)}
+          ${statRow(t('pg.inhibs'), cnt(ob.B.inhibs), cnt(ob.R.inhibs))}
+          ${statRow(t('pg.grubs'), cnt(ob.B.grubs), cnt(ob.R.grubs))}
+          ${statRow(t('pg.heralds'), cnt(ob.B.heralds), cnt(ob.R.heralds))}
+          ${statRow(t('pg.dragons'), drakes('B'), drakes('R'))}
+          ${statRow(t('pg.elders'), cnt(ob.B.elders), cnt(ob.R.elders))}
+          ${statRow(t('pg.barons'), cnt(ob.B.barons), cnt(ob.R.barons))}
+          ${statRow(t('pg.bans'), bans('B'), bans('R'))}
+        </div>
+        <div class="pg-actions">${over ? `<button class="pg-cont" data-fin>${t('pg.continue')}</button>`
+          : `<button class="pg-cont" data-a="manual">${t('m.manualDraft')}</button><div class="pg-sub"><button class="btn" data-a="auto">${t('m.autoDraft')}</button><button class="btn ghost" data-a="quick">${t('m.quickSim')}</button></div>`}
+          <button class="btn ghost sm" data-sb>${t('m.scoreboard')}</button></div>
+      </div>
+      <div class="pg-right">
+        <div class="pg-panel"><h3>${t('pg.damage')}</h3><div class="pg-dmg"><div>${dmgCol('B')}</div><div>${dmgCol('R')}</div></div>
+          <div class="pg-legend"><span><i class="late"></i>${t('pg.after14')}</span><span><i class="early"></i>${t('pg.until14')}</span></div></div>
+        <div class="pg-panel"><h3>${t('pg.goldDiff')}</h3>${chart}</div>
+      </div>
+    </div>
+    <div class="pg-sbwrap" hidden>${scoreboardHtml(g)}</div>
+  </div>`;
   const r = root();
   r.querySelector('[data-fin]')?.addEventListener('click', seriesEnd);
+  r.querySelector('[data-sb]').onclick = () => { const w = r.querySelector('.pg-sbwrap'); w.hidden = !w.hidden; if (!w.hidden) w.scrollIntoView({ behavior: 'smooth' }); };
   r.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => {
     const a = b.dataset.a;
     if (a === 'manual') draftScreen();
     else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || [])); }
     else skipSeries();
   });
-  // giả lập nhanh: tự sang ván tiếp sau vài giây
+}
+
+// bảng điểm chi tiết từng tuyển thủ
+function scoreboardHtml(g) {
+  const row = (x) => {
+    const p = S.players[x.pid];
+    return `<tr class="${g.mvp === x.pid ? 'mvp' : ''}"><td>${champIcon(x.champ, 28)}</td><td class="row gap">${face(p, 'xs')}${roleTag(x.role)} <b>${p ? esc(p.ign) : '?'}</b></td>
+      <td>${x.k}/${x.d}/${x.a}</td><td>${x.cs}</td><td>${(x.gold / 1000).toFixed(1)}k</td><td>${(x.dmg / 1000).toFixed(1)}k</td></tr>`;
+  };
+  const table = (s) => `<table class="tbl sb"><thead><tr><th></th><th>${badge(s === 'B' ? g.blue : g.red, 'sm')} ${esc(S.teams[s === 'B' ? g.blue : g.red].short)}</th><th>KDA</th><th>CS</th><th>${t('pg.gold')}</th><th>DMG</th></tr></thead>
+    <tbody>${g.players.filter((x) => x.side === s).map(row).join('')}</tbody></table>`;
+  return `<div class="pg-panel scroll-x"><h3>${t('m.scoreboard')}</h3>${table('B')}${table('R')}</div>`;
 }
 
 // giả lập ngay các ván còn lại của loạt, không xem

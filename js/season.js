@@ -5,6 +5,7 @@ import { simSeries } from './sim.js';
 import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
 
 import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr.js';
+import { closeEvent, resetEventStats } from './awards.js';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats.js';
 export { PHASES, standings, compOrder, runnerUp };
 // tiền thưởng (nghìn USD) theo hạng 1 / 2 / 3-4 / 5-8
@@ -84,6 +85,8 @@ function finishComp(c) {
     const p = S.players[pid];
     if (p) (p.titles = p.titles || []).push(title);
   }
+  const aw = closeEvent(c, order);
+  if (aw) addNews('news.awards', { title, mvp: aw.mvp.ign, mvpTeam: aw.mvp.team, fmvp: aw.fmvp ? aw.fmvp.ign : '—' }, aw.mvp.pid && S.players[aw.mvp.pid]?.teamId === S.userTeam);
 }
 
 function dailyTick() {
@@ -233,6 +236,7 @@ export function startNewSeason() {
   S.day++;
   S.phaseStart = {};
   gprNewSeason();
+  resetEventStats();
   addFinance('fin.sponsorDeal', 0, {});
   startPhase('kickoff');
 }

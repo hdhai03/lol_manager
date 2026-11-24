@@ -295,6 +295,7 @@ export function createArena(container, opts) {
     },
     flash(p, sd, big) { const w = W(p); const v = new THREE.Vector3(w.x, 2, w.z); burst(v, COL_LIGHT[sd], big ? 14 : 8); api.focus(p, 2500); },
     focus(p, ms = 3000) { const w = W(p); focus.set(w.x, 0, w.z); focusUntil = performance.now() + ms; },
+    towerUp(id) { const tw = towers[id]; if (tw && !tw.alive) { tw.alive = true; tw.fall = 0; tw.g.scale.y = 1; tw.g.rotation.z = 0; tw.top.visible = true; } },
     towerDown(id) { const tw = towers[id]; if (tw && tw.alive) { tw.alive = false; burst(tw.g.position.clone().setY(8), 0xffd39a, 10); } },
     objective(kind, sd) { const mo = kind === 'baron' ? baron : dragon; mo.alive = false; mo.respawn = kind === 'baron' ? 6 : 5; burst(mo.g.position.clone().setY(4), COL_LIGHT[sd], 16); },
     minuteTick(lead) { api.lead = lead; for (const mo of [dragon, baron]) if (!mo.alive && --mo.respawn <= 0) mo.alive = true; },

@@ -21,7 +21,7 @@ const TOWER_T = [0.36, 0.18, 0.03]; // vị trí trụ phe Xanh dọc đường 
 const CAMPS = { B: [[30, 55], [55, 78], [18, 38], [22, 62], [44, 70]], R: [] };
 CAMPS.R = CAMPS.B.map(MIR);
 const DRAKES = ['infernal', 'mountain', 'ocean', 'cloud', 'hextech', 'chemtech'];
-const DMG = 0.21; // hệ số sát thương mỗi hiệp giao tranh
+const DMG = 0.165; // hệ số sát thương mỗi hiệp giao tranh
 
 export function lanePoint(lane, tt) {
   if (lane === 'top') return tt < 0.5 ? [9, 70 - tt * 2 * 60] : [9 + (tt - 0.5) * 2 * 61, 10];
@@ -68,7 +68,7 @@ function mkUnit(side, role, p, champ, fit, tac) {
     scale: { Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 }[main] || 1,
     early: { Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 }[main] || 0,
     meta: 0.92 + (c.power || 50) / 600,
-    lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, streak: 0,
+    lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]], busy: 0, mv: -1,
   };
 }
@@ -85,10 +85,19 @@ export function runGame(input) {
     towers[`${sd}-${lane}-${i}`] = { id: `${sd}-${lane}-${i}`, side: sd, lane, i, hp: lane === 'nexus' ? 130 : [100, 135, 160][i], alive: true, pos: sd === 'B' ? pt : MIR(pt) };
   });
   const nexus = { B: 160, R: 160 };
+  // nhà lính (sau trụ thứ 3 mỗi đường): hồi sinh sau 5 phút; khi mất, đường đó có siêu lính
+  const inhib = {};
+  for (const sd of ['B', 'R']) for (const l of LANES) {
+    const pt = BLUE_TOWERS[l][2];
+    const p2 = [pt[0] + (BASE.B[0] - pt[0]) * 0.35, pt[1] + (BASE.B[1] - pt[1]) * 0.35];
+    inhib[`${sd}-${l}`] = { id: `${sd}-inhib-${l}`, side: sd, lane: l, hp: 80, alive: true, back: 0, pos: sd === 'B' ? p2 : MIR(p2) };
+  }
+  // thống kê mục tiêu từng đội (cho bảng tổng kết)
+  const tally = { B: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 }, R: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 } };
   const front = { top: 0.5, mid: 0.5, bot: 0.5 };
-  const obj = { dragon: 300, grubs: 360, herald: 840, baron: 1200, elder: Infinity };
+  const obj = { dragon: 300, grubs: 480, herald: 900, baron: 1200, elder: Infinity };
   const objSeen = { dragon: 0, grubs: 0, herald: 0, baron: 0, elder: 0 };
-  const buff = { B: { baron: 0, elder: 0, drakes: [], soul: false, herald: false }, R: { baron: 0, elder: 0, drakes: [], soul: false, herald: false } };
+  const buff = { B: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 }, R: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 } };
   const taken = { B: 0, R: 0 }; // trụ đã phá
   const regroup = { B: 0, R: 0 };
   const siege = { B: null, R: null }; // sau khi thua giao tranh: lùi về hồi phục
@@ -125,7 +134,9 @@ export function runGame(input) {
     u.xp += x;
     while (u.lvl < 18 && u.xp >= 180 * u.lvl + 50 * u.lvl * u.lvl) u.lvl++;
   };
-  const respawnTicks = (u) => Math.ceil((6 + u.lvl * 2.6 + Math.max(0, minute() - 15) * 0.9) / TICK);
+  const BRW = [10, 10, 12, 12, 14, 16, 20, 25, 28, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5];
+  const tif = () => { const m = minute(); return m < 15 ? 0 : m < 30 ? (m - 15) * 0.0085 : m < 45 ? 0.1275 + (m - 30) * 0.006 : Math.min(0.5, 0.2175 + (m - 45) * 0.029); };
+  const respawnTicks = (u) => Math.max(1, Math.round(BRW[u.lvl - 1] * (1 + tif()) / TICK));
 
   // ---------------- giao tranh ----------------
   // A, B: hai nhóm (khác phe). opts.rounds, opts.surprise (phe B bị bất ngờ), opts.at (vị trí)
@@ -194,7 +205,7 @@ export function runGame(input) {
       if (!hits.length) break;
       for (const [u, tgt, dmg] of hits) {
         if (tgt.fhp <= 0) continue;
-        tgt.fhp -= dmg; u.dealt += dmg; tgt.hitBy.add(u);
+        tgt.fhp -= dmg; u.dealt += dmg; if (sec < 840) u.dealtEarly += dmg; tgt.hitBy.add(u);
         if (tgt.fhp <= 0) {
           // né cú chí mạng nhờ outplay
           if (tgt.outplay && rand() < 0.25) { tgt.fhp = hpOf(tgt) * 0.05; note('outplay', tgt.side, { who: tgt.role }); continue; }
@@ -233,6 +244,8 @@ export function runGame(input) {
   }
 
   function die(v, killer, assists, at) {
+    // điểm hạ gục chia đều hơn: đồng đội góp sát thương đôi khi là người kết liễu
+    if (assists.length && rand() < 0.3) { const k2 = assists[Math.floor(rand() * assists.length)]; assists = [...assists.filter((x) => x !== k2), killer]; killer = k2; }
     const bounty = 300 + (v.streak >= 2 ? Math.min(700, 150 * (v.streak - 1)) : 0);
     v.dead = respawnTicks(v); v.hp = 0; v.deaths++; v.streak = 0; v.recall = 0; v.task = 'dead';
     killer.kills++; killer.streak++;
@@ -241,7 +254,7 @@ export function runGame(input) {
     kills[killer.side]++;
     const pos = jit(at, 3);
     v.mv = tick;
-    if (!firstBlood) { firstBlood = true; ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos }); }
+    if (!firstBlood) { firstBlood = true; giveGold(killer, 100); ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos }); }
     else ev('kill', killer.side, { killer: killer.role, victim: v.role, at: pos, assists: assists.map((a) => a.role) });
     v.pos = pos; v.diedAt = pos;
   }
@@ -250,6 +263,10 @@ export function runGame(input) {
   const teamGold = (sd) => team(sd).reduce((s, u) => s + u.gold, 0);
   const present = (sd, lane) => team(sd).filter((u) => !u.dead && !u.recall && u.task === 'lane' && u.lane === lane);
   const outerAlive = (sd, lane) => [0, 1, 2].find((i) => towers[`${sd}-${lane}-${i}`].alive);
+  // mục tiêu công trình tiếp theo trên đường: trụ → nhà lính → (trụ nhà chính / nhà chính)
+  const laneStruct = (sd, lane) => { const i = outerAlive(sd, lane); if (i !== undefined) return towers[`${sd}-${lane}-${i}`]; const ih = inhib[`${sd}-${lane}`]; return ih.alive ? ih : null; };
+  // hệ số phá công trình: Sâu Hư Không (mỗi con +5%, đủ 3 con có Đói Khát Hư Không)
+  const structMult = (sd) => 1 + tally[sd].grubs * 0.05 + (tally[sd].grubs >= 3 ? 0.1 : 0);
   const towerT = (sd, i) => (sd === 'B' ? TOWER_T[i] : 1 - TOWER_T[i]);
 
   // ---------------- đẩy đường & trụ ----------------
@@ -257,7 +274,7 @@ export function runGame(input) {
     const pB = present('B', lane), pR = present('R', lane);
     const PB = power(pB) + 0.8, PR = power(pR) + 0.8; // + lính
     // siêu lính khi nhà lính bị phá
-    const sup = (sd) => (towers[`${OPP[sd]}-${lane}-2`].alive ? 0 : 0.035);
+    const sup = (sd) => (inhib[`${OPP[sd]}-${lane}`].alive ? 0 : 0.035);
     front[lane] += 0.06 * (PB - PR) / (PB + PR) + sup('B') - sup('R');
     const ob = outerAlive('B', lane), or = outerAlive('R', lane);
     const lo = ob === undefined ? -0.08 : towerT('B', ob) - 0.02;
@@ -268,30 +285,57 @@ export function runGame(input) {
       if (!edge || !mine.length && theirs.length) continue;
       const contested = theirs.length ? 0.35 : 1; // có người thủ: chỉ cấu được trụ khi thắng đường
       const enemy = OPP[sd];
-      const i = outerAlive(enemy, lane);
-      const tw = i === undefined ? null : towers[`${enemy}-${lane}-${i}`];
-      const dmg = (towers[`${enemy}-${lane}-2`].alive ? 0.5 : 4) + mine.reduce((s, u) => s + stat(u) * (laning && i === 0 ? 1.55 : 1.3), 0) * (buff[sd].baron > sec ? 1.9 : 1) * (buff[sd].herald && mine.length ? 1.6 : 1);
-      if (tw) hitTower(tw, sd, dmg * contested, mine);
+      const tw = laneStruct(enemy, lane);
+      const i = tw && tw.i;
+      const dmg = ((inhib[`${enemy}-${lane}`].alive ? 0.5 : 4) + mine.reduce((s, u) => s + stat(u) * (laning && i === 0 ? 1.55 : 1.3), 0) * (buff[sd].baron > sec ? 1.9 : 1)) * structMult(sd);
+      if (tw) hitStruct(tw, sd, dmg * contested, mine);
       else if (!theirs.length) hitNexus(enemy, sd, dmg, mine);
     }
   }
+  // trụ hoặc nhà lính
+  function hitStruct(tw, sd, dmg, by) {
+    // Sứ Giả (Mắt Sứ Giả còn hiệu lực): húc một cú 3000 sát thương chuẩn vào công trình đầu tiên
+    if (buff[sd].herald > sec && by.length) {
+      buff[sd].herald = 0;
+      dmg += tw.id.includes('inhib') ? 40 : 55;
+      note('heraldCharge', sd, {});
+    }
+    if (tw.id.includes('inhib')) return hitInhib(tw, sd, dmg, by);
+    return hitTower(tw, sd, dmg, by);
+  }
   function hitTower(tw, sd, dmg, by) {
+    const before = tw.hp;
     tw.hp -= dmg;
-    if (by.length && tw.i === 0 && sec < 840) for (const u of by) giveGold(u, Math.round(dmg * 3)); // ốp trụ
-    if (buff[sd].herald && by.length) buff[sd].herald = false;
+    // ốp trụ ngoài: 5 lớp, mỗi lớp 120 vàng chia cho đội đang đánh (mùa 2026: không rơi theo thời gian)
+    if (tw.i === 0) {
+      const plates = (h) => Math.min(5, Math.floor((100 - Math.max(h, 0)) / 20));
+      const n = plates(tw.hp) - plates(before);
+      if (n > 0) { tally[sd].plates += n; if (by.length) for (const u of by) giveGold(u, Math.round(120 * n / by.length)); }
+    }
     if (tw.hp > 0) return;
     tw.alive = false;
     taken[sd]++;
-    for (const u of team(sd)) giveGold(u, by.includes(u) ? 250 : 50);
-    if (!firstTower) { firstTower = true; ev('firsttower', sd, { id: tw.id, at: tw.pos }); }
+    // vàng trụ toàn đội: ngoài 50, trong 25, nhà lính 25, nhà chính 50; trụ đầu tiên thưởng 300
+    const g = tw.lane === 'nexus' ? 50 : [50, 25, 25][tw.i];
+    for (const u of team(sd)) giveGold(u, g);
+    if (tw.lane === 'nexus') tw.back = sec + 180; // trụ nhà chính hồi lại sau 3 phút (40% máu)
+    if (!firstTower) { firstTower = true; if (by.length) for (const u of by) giveGold(u, Math.round(300 / by.length)); ev('firsttower', sd, { id: tw.id, at: tw.pos }); }
     else ev('tower', sd, { id: tw.id, n: taken[sd], at: tw.pos });
+  }
+  function hitInhib(ih, sd, dmg, by) {
+    ih.hp -= dmg;
+    if (ih.hp > 0) return;
+    ih.alive = false; ih.back = sec + 300;
+    tally[sd].inhibs++;
+    if (by.length) giveGold(by[0], 50);
+    ev('inhib', sd, { id: ih.id, lane: ih.lane, at: ih.pos });
   }
   function hitNexus(enemy, sd, dmg, by) {
     // trụ nhà chính chỉ đánh được khi đã mất ít nhất một nhà lính
-    const inhibDown = LANES.some((l) => !towers[`${enemy}-${l}-2`].alive);
+    const inhibDown = LANES.some((l) => !inhib[`${enemy}-${l}`].alive);
     if (!inhibDown) return;
     const nt = [0, 1].map((i) => towers[`${enemy}-nexus-${i}`]).find((x) => x.alive);
-    if (nt) { if (by.length) hitTower(nt, sd, dmg * 0.8, by); return; }
+    if (nt) { if (by.length) hitStruct(nt, sd, dmg * 0.8, by); return; }
     if (!by.length) return;
     nexus[enemy] -= dmg * 0.9;
     if (nexus[enemy] <= 0) winner = sd;
@@ -396,7 +440,8 @@ export function runGame(input) {
   }
 
   // ---------------- mục tiêu lớn ----------------
-  const objUp = (k) => sec >= obj[k] && (k !== 'grubs' || sec < 825) && (k !== 'herald' || sec < 1185);
+  const objUp = (k) => sec >= obj[k] && (k !== 'grubs' || sec < 885) && (k !== 'herald' || sec < 1185);
+  let grubFight = false;
   function contestObj(k) {
     const pos = k === 'dragon' || k === 'elder' ? PIT.dragon : PIT.baron;
     const nearRoles = k === 'dragon' || k === 'elder' ? ['Jungle', 'Bot', 'Support', 'Mid'] : k === 'baron' ? ROLES : ['Jungle', 'Top', 'Mid'];
@@ -419,6 +464,7 @@ export function runGame(input) {
     }
     if (!want.B && !want.R) return;
     let takerSide;
+    grubFight = want.B && want.R;
     if (want.B && want.R) {
       for (const u of [...grp('B'), ...grp('R')]) { u.pos = jit(toward(pos, u.side, 3), 3); u.mv = tick; }
       const res = fight(grp('B'), grp('R'), pos, { rounds: 7, at: pos, src: 'obj-' + k });
@@ -456,10 +502,18 @@ export function runGame(input) {
       ev('dragon', sd, { drake: type, n: b.drakes.length, at: pos });
       if (b.drakes.length >= 4) { b.soul = true; ev('soul', sd, { drake: type, at: pos }); obj.dragon = Infinity; obj.elder = sec + 360; }
       else obj.dragon = sec + 300;
-    } else if (k === 'elder') { b.elder = sec + 150; obj.elder = sec + 360; ev('elder', sd, { at: pos }); }
-    else if (k === 'baron') { b.baron = sec + 180; obj.baron = sec + 360; for (const u of alive(sd)) giveGold(u, 300); ev('baron', sd, { at: pos }); }
-    else if (k === 'grubs') { obj.grubs = Infinity; ev('grubs', sd, { at: pos }); for (const u of alive(sd)) giveGold(u, 40); }
-    else if (k === 'herald') { obj.herald = Infinity; b.herald = true; ev('herald', sd, { at: pos }); }
+      giveGold(U[sd + 'Jungle'], 75);
+    } else if (k === 'elder') { b.elder = sec + 150; obj.elder = sec + 360; tally[sd].elders++; for (const u of alive(sd)) giveGold(u, 150); ev('elder', sd, { at: pos }); }
+    else if (k === 'baron') { b.baron = sec + 180; obj.baron = sec + 360; tally[sd].barons++; for (const u of alive(sd)) giveGold(u, 150); giveGold(U[sd + 'Jungle'], 100); ev('baron', sd, { at: pos }); }
+    else if (k === 'grubs') {
+      // 3 con Sâu Hư Không (chỉ xuất hiện một lần); bị tranh chấp thì đội kia có thể ăn được 1 con
+      obj.grubs = Infinity;
+      const split = grubFight ? (rand() < 0.4 ? 1 : 0) : 0;
+      tally[sd].grubs += 3 - split; tally[OPP[sd]].grubs += split;
+      for (const u of alive(sd)) giveGold(u, Math.round(30 * (3 - split) / Math.max(1, alive(sd).length)) * 2);
+      ev('grubs', sd, { n: 3 - split, at: pos });
+    }
+    else if (k === 'herald') { obj.herald = Infinity; b.herald = sec + 240; tally[sd].heralds++; giveGold(U[sd + 'Jungle'], 100); ev('herald', sd, { at: pos }); }
     for (const u of alive(sd)) giveXp(u, k === 'baron' ? 400 : 150);
   }
 
@@ -494,7 +548,7 @@ export function runGame(input) {
       plans[sd] = { ...plan, ratio };
     }
     // mục tiêu lớn được ưu tiên khi đội đang lợi thế
-    for (const k of ['elder', 'baron', 'dragon', 'herald']) if (objUp(k)) contestObj(k);
+    for (const k of ['elder', 'baron', 'dragon', 'herald', 'grubs']) if (objUp(k)) contestObj(k);
     if (winner) return;
     // đẩy lẻ: buộc đối phương cử người thủ (awareness/judgment), nếu không thì mất trụ đường trên
     for (const sd of ['B', 'R']) {
@@ -510,9 +564,9 @@ export function runGame(input) {
         def.task = 'splitdef'; def.pos = jit(lanePoint('top', front.top), 2); def.mv = tick;
         if (rand() < 0.35 + (sp.at.aggression - 60) / 150) fight([sp], [def], sp.pos, { rounds: 4, at: sp.pos, src: 'split' });
       } else {
-        const i = outerAlive(os, 'top');
-        const dmg = stat(sp) * 4.6 * (buff[sd].baron > sec ? 1.6 : 1);
-        if (i !== undefined) hitTower(towers[`${os}-top-${i}`], sd, dmg, [sp]);
+        const st = laneStruct(os, 'top');
+        const dmg = stat(sp) * 4.6 * (buff[sd].baron > sec ? 1.6 : 1) * structMult(sd);
+        if (st) hitStruct(st, sd, dmg, [sp]);
         if (rand() < 0.3) note('split', sd, {});
       }
       if (!sp.dead) { sp.cs += 2.3; giveGold(sp, 48); giveXp(sp, 85); }
@@ -528,8 +582,9 @@ export function runGame(input) {
       if (!grp.length) { siege[sd] = null; continue; }
       for (const u of grp) u.task = 'group';
       const lane = on ? on.lane : pl.lane;
-      const i = outerAlive(os, lane);
-      const target = i === undefined ? towers[`${os}-nexus-0`].alive ? towers[`${os}-nexus-0`] : towers[`${os}-nexus-1`].alive ? towers[`${os}-nexus-1`] : null : towers[`${os}-${lane}-${i}`];
+      const ls = laneStruct(os, lane);
+      const i = ls ? 0 : undefined;
+      const target = ls || (towers[`${os}-nexus-0`].alive ? towers[`${os}-nexus-0`] : towers[`${os}-nexus-1`].alive ? towers[`${os}-nexus-1`] : null);
       const at = target ? target.pos : BASE[os];
       for (const u of grp) { u.pos = jit(toward(at, sd, 5), 3); u.mv = tick; }
       if (!on) {
@@ -541,7 +596,7 @@ export function runGame(input) {
           const dr = estimate(os, defenders, grp);
           const nexusThreat = i === undefined;
           const ag = (avg(defenders, (u) => u.at.aggression) - 62) / 180;
-          const deep = target && target.i >= 1;
+          const deep = target && (target.i >= 1 || !!target.id.match(/inhib|nexus/));
           fightIt = nexusThreat || dr > 0.92 - ag - (deep ? 0.1 : 0) || (dr > 0.7 && rand() < 0.12 + ag);
         }
         if (fightIt) {
@@ -555,12 +610,12 @@ export function runGame(input) {
       const atk = grp.filter((u) => !u.dead);
       if (!atk.length) { siege[sd] = null; continue; }
       // trụ bắn trả: trụ càng sâu càng đau, Baron giúp lính đỡ đòn
-      const shotDmg = (target ? (target.lane === 'nexus' ? 0.13 : [0.05, 0.09, 0.12][target.i]) : 0.14) * (buff[sd].baron > sec ? 0.45 : 1);
+      const shotDmg = (target ? (target.id.includes('inhib') ? 0 : target.lane === 'nexus' ? 0.13 : [0.05, 0.09, 0.12][target.i]) : 0.14) * (buff[sd].baron > sec ? 0.45 : 1);
       const tank = atk.sort((x, y) => y.hpB - x.hpB)[0];
       tank.hp -= shotDmg * 2.2; for (const u of atk) u.hp -= shotDmg * 0.5;
       for (const u of atk) if (u.hp <= 0.05) u.hp = 0.05;
-      const dmg = (1 + atk.reduce((s, u) => s + stat(u) * 1.15, 0)) * (buff[sd].baron > sec ? 1.9 : 1) * (buff[sd].elder > sec ? 1.3 : 1);
-      if (target) hitTower(target, sd, dmg, atk);
+      const dmg = (1 + atk.reduce((s, u) => s + stat(u) * 1.15, 0)) * (buff[sd].baron > sec ? 1.9 : 1) * (buff[sd].elder > sec ? 1.3 : 1) * structMult(sd);
+      if (target) hitStruct(target, sd, dmg, atk);
       else hitNexus(os, sd, dmg, atk);
       if (winner) return;
       // kết thúc đợt công: trụ đã sập, quân đã mỏi, hoặc đã kéo dài quá lâu
@@ -625,6 +680,12 @@ export function runGame(input) {
       macroTick();
     }
     for (const l of LANES) laneTick(l, laning);
+    // nhà lính hồi sinh sau 5 phút, trụ nhà chính sau 3 phút
+    for (const ih of Object.values(inhib)) if (!ih.alive && sec >= ih.back) { ih.alive = true; ih.hp = 80; ev('inhibBack', ih.side, { id: ih.id }); }
+    for (const sd of ['B', 'R']) for (const i of [0, 1]) {
+      const nt = towers[`${sd}-nexus-${i}`];
+      if (!nt.alive && nt.back && sec >= nt.back) { nt.alive = true; nt.hp = 52; nt.back = 0; ev('towerBack', sd, { id: nt.id }); }
+    }
     // sau 40 phút: không còn ai thủ được lâu, nhà chính yếu dần
     if (sec > 2400) for (const sd of ['B', 'R']) nexus[sd] -= 0.4;
     for (const k of Object.keys(objSeen)) if (sec === obj[k]) objSeen[k] = sec;
@@ -654,14 +715,15 @@ export function runGame(input) {
   }
   const players = [];
   for (const u of [...team('B'), ...team('R')]) {
-    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg: Math.round(u.dealt * 560 + dur * 60) });
+    const dmg = Math.round(u.dealt * 600 + dur * 60), early = Math.round(u.dealtEarly * 600 + Math.min(dur, 14) * 60);
+    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg) });
   }
   const score = (x) => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
   const mvp = players.filter((x) => x.side === winner && x.pid).sort((a, b) => score(b) - score(a))[0];
   events.sort((a, b) => a.t - b.t);
   return {
     winner, winnerId: winner === 'B' ? blue : red, blue, red, dur, durS: sec, gold, events, kills, towers: taken,
-    drakes: { B: buff.B.drakes, R: buff.R.drakes }, soul: buff.B.soul ? 'B' : buff.R.soul ? 'R' : null,
+    drakes: { B: buff.B.drakes, R: buff.R.drakes }, soul: buff.B.soul ? 'B' : buff.R.soul ? 'R' : null, obj: tally,
     players, mvp: mvp ? mvp.pid : null, picks, bans, frames,
   };
 }

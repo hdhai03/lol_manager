@@ -10,6 +10,7 @@ import {
 } from './season.js';
 import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from './util.js';
 import { gprTable, leagueStrength, ensureGpr } from './gpr.js';
+import { AWARD_KEYS } from './awards.js';
 import { PHASE_WINDOW } from './formats.js';
 import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from './attrs.js';
 import { openMatchDay } from './match.js';
@@ -322,7 +323,7 @@ export function startGameUI() {
 }
 
 // ---------------- Khung game ----------------
-const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'power', 'meta', 'world', 'finance'];
+const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance'];
 
 function newsText(n) {
   const p = {};
@@ -366,7 +367,8 @@ function renderGame() {
   r.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
   r.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
   const c = r.querySelector('#content');
-  ({ dashboard, roster, tactics, schedule, standingsTab, power, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
+  markTasks(view.tab);
+  ({ dashboard, roster, tactics, schedule, standingsTab, power, records, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
 }
 // ---------- Chiến thuật ----------
 function tactics(c) {
@@ -443,6 +445,49 @@ document.addEventListener('keydown', (e) => {
   const map = { enter: primaryAction().act, f: primaryAction().act === 'advance' ? 'simnext' : null, s: 'save', q: 'prevtab', e: 'nexttab', escape: 'menu' };
   if (map[k]) { e.preventDefault(); topAction(map[k]); }
 });
+
+// ---------- Việc cần làm trong ngày (thay đổi theo từng ngày, làm xong thì biến mất) ----------
+const TASK_TAB = { training: 'roster', squad: 'roster', rest: 'roster', scout: 'transfers', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
+function todayTasks() {
+  const ut = userTeam();
+  if (!S.tasks || S.tasks.day !== S.day) {
+    // sinh việc cho ngày mới
+    const items = [];
+    const nm = nextUserMatch();
+    const comp = nm && S.comps[nm.comp];
+    if (userMatchToday()) items.push({ id: 'match', kind: 'match' });
+    if (nm && comp && (comp.league === 'INTL' || ['playoffs', 'rtm', 'playin', 'knockout', 'regional', 'promotion'].includes(comp.stage)) && nm.day - S.day <= 1 && S.tacticsFor !== nm.id) {
+      const opp = nm.a === ut.id ? nm.b : nm.a;
+      items.push({ id: 'tactics', kind: 'tactics', opp: S.teams[opp].short, mid: nm.id });
+    }
+    if (S.day - (S.trainingSetDay ?? -99) >= 7) items.push({ id: 'training', kind: 'training' });
+    const tired = teamPlayers(ut).filter((p) => Object.values(ut.lineup).includes(p.id) && (p.cond ?? 100) < 62);
+    if (tired.length) items.push({ id: 'rest', kind: 'rest', who: tired.map((p) => p.ign).join(', ') });
+    if (ut.roster.length < 7 || (S.day % 6 === 0)) items.push({ id: 'scout', kind: 'scout' });
+    if (ut.budget < 0) items.push({ id: 'finance', kind: 'finance' });
+    if (S.phase === 'offseason') items.push({ id: 'squad', kind: 'squad' });
+    S.tasks = { day: S.day, items, done: [] };
+  }
+  const offers = (S.offers || []).filter((o) => S.players[o.pid]?.teamId === ut.id);
+  const expiring = teamPlayers(ut).filter((p) => p.contractUntil <= S.season && !(S.renewed || []).includes(p.id));
+  const list = S.tasks.items.filter((x) => !S.tasks.done.includes(x.id) && !(x.kind === 'match' && !userMatchToday()) && !(x.kind === 'training' && (S.trainingSetDay ?? -99) >= S.tasks.day));
+  // việc theo trạng thái: tự biến mất khi đã xử lý
+  if (offers.length) list.push({ id: 'offers', kind: 'offers', n: offers.length });
+  if (S.phase === 'offseason' && expiring.length) list.push({ id: 'renew', kind: 'renew', n: expiring.length });
+  if (ROLES.some((r) => !ut.lineup[r])) list.push({ id: 'lineup', kind: 'lineup' });
+  return list;
+}
+// đánh dấu xong khi người chơi mở đúng mục liên quan
+function markTasks(tab) {
+  if (!S.tasks) return;
+  for (const x of S.tasks.items) if (TASK_TAB[x.kind] === tab && x.kind !== 'training' && !S.tasks.done.includes(x.id)) {
+    S.tasks.done.push(x.id);
+    if (x.kind === 'tactics') S.tacticsFor = x.mid;
+  }
+}
+function taskLabel(x) {
+  return t('task.' + x.kind, { n: x.n, opp: esc(x.opp || ''), who: esc(x.who || '') });
+}
 
 // ---------- Trang chủ ----------
 // giai đoạn vòng tròn gần nhất của giải (để hiện bảng xếp hạng)
@@ -626,13 +671,7 @@ function dashboard(c) {
     evTitle = `${compTitle(S.comps[nm.comp])}<br>${esc(ut.short)} <span class="vs">vs</span> ${esc(S.teams[opp].short)}`;
     if (S.comps[nm.comp].league === 'INTL') evIcon = ICON.trophy;
   } else evTitle = t('dash.noMatchTitle');
-  const actions = [];
-  if (pa.act === 'match') actions.push({ ico: ICON.play, label: t('dash.actPlay'), act: 'match' });
-  if (offers.length) actions.push({ ico: ICON.mail, label: t('dash.actOffers', { n: offers.length }), go: 'alerts' });
-  if (S.phase === 'offseason' && expiring.length) actions.push({ ico: ICON.contract, label: t('dash.actRenew', { n: expiring.length }), go: 'alerts' });
-  actions.push({ ico: ICON.tactic, label: t('dash.actTraining'), act: 'training' });
-  actions.push({ ico: ICON.users, label: t('dash.actSquad'), tab: 'roster' });
-  actions.push({ ico: ICON.mail, label: t('dash.actScout'), tab: 'transfers' });
+  const actions = todayTasks().map((x) => ({ label: taskLabel(x), act: x.kind === 'match' ? 'match' : null, go: ['offers', 'renew'].includes(x.kind) ? 'alerts' : null, tab: TASK_TAB[x.kind] || null }));
   const newsList = S.news.slice(0, 6);
   view.newsIdx = clamp(view.newsIdx || 0, 0, Math.max(newsList.length - 1, 0));
   const ni = newsList[view.newsIdx];
@@ -644,23 +683,15 @@ function dashboard(c) {
       <div class="c-next">${S.phase === 'offseason' ? t('phase.offseason') : nm ? (daysTo <= 0 ? t('dash.today') : t('dash.nextIn', { n: daysTo })) : t('dash.noMatch')}</div>
       <div class="c-event"><div class="c-title">${evTitle}</div></div>
       <button class="btn pill c-adv" data-act="${pa.act}">${pa.label}</button>
-      <div class="c-actions">${actions.map((a, i) => `<button class="c-row ${i === 0 ? 'sel' : ''}" ${a.act ? `data-act="${a.act}"` : ''} ${a.tab ? `data-tab-go="${a.tab}"` : ''} ${a.go ? `data-scroll="${a.go}"` : ''}>${a.label}</button>`).join('')}</div>
+      <div class="c-tasks-h">${t('task.title')}${actions.length ? ` · ${actions.length}` : ''}</div>
+      <div class="c-actions">${actions.length ? '' : `<div class="c-none">${t('task.none')}</div>`}${actions.map((a, i) => `<button class="c-row ${i === 0 ? 'sel' : ''}" ${a.act ? `data-act="${a.act}"` : ''} ${a.tab ? `data-tab-go="${a.tab}"` : ''} ${a.go ? `data-scroll="${a.go}"` : ''}>${a.label}</button>`).join('')}</div>
     </div>
     <div class="c-right">${ni ? socialCard(ni) : ''}
       <div class="dots"><button data-news="-1" aria-label="prev">‹</button>${newsList.map((_, i) => `<i class="${i === view.newsIdx ? 'on' : ''}"></i>`).join('')}<button data-news="1" aria-label="next">›</button></div>
     </div>
   </section>
   ${alerts.length ? `<div class="card alerts" id="alerts">${alerts.join('')}</div>` : ''}
-  <div class="home-grid">
-    <div class="card ${pa.act === 'match' ? 'hl' : ''}">${nextPanel}</div>
-    <div class="card">${teamPanel}</div>
-    <div class="card">${moneyPanel}</div>
-  </div>
-  <div class="home-grid r2">
-    <div class="card">${pHead(t('dash.calendar'))}${calendarHtml()}</div>
-    <div class="card">${pHead(t('dash.news'), `<button class="btn sm ghost" data-tab-go="world">${t('world.title')} ›</button>`)}<div class="feed">${S.news.slice(0, 14).map(postHtml).join('')}</div></div>
-    <div class="card">${stPanel}</div>
-  </div>`;
+`;
   c.querySelectorAll('[data-news]').forEach((b) => b.onclick = () => { view.newsIdx = (view.newsIdx + +b.dataset.news + newsList.length) % newsList.length; render(); });
   c.querySelectorAll('[data-scroll]').forEach((b) => b.onclick = () => document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   c.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
@@ -696,6 +727,19 @@ function bindPlayerLinks(c) {
     playerModal(el.dataset.player);
   }));
   c.querySelectorAll('[data-renew]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); renewModal(b.dataset.renew); });
+}
+
+// thống kê tích luỹ từ các trận mô phỏng (mùa này + sự nghiệp trong game)
+const simLine = (st) => {
+  if (!st || !st.g) return null;
+  const m = Math.max(st.min || st.g * 30, 1);
+  return { g: st.g, wr: st.w / st.g, kda: ((st.k + st.a) / Math.max(st.d, 1)).toFixed(2), cspm: (st.cs / m).toFixed(1), dpm: Math.round((st.dmg || 0) / m), mvp: st.mvp || 0 };
+};
+function simStatsHtml(p) {
+  const rows = [['p.thisSeason', simLine(p.season)], ['p.career', simLine(p.career)]];
+  if (!rows.some(([, r]) => r)) return `<p class="muted small">${t('p.noGames')}</p>`;
+  return `<table class="tbl sim-st"><thead><tr><th></th><th>${t('p.games')}</th><th>${t('st.wr')}</th><th>KDA</th><th>CS/${t('min')}</th><th>${t('p.dpmS')}</th><th>MVP</th></tr></thead><tbody>
+    ${rows.map(([k, r]) => `<tr><td>${t(k)}</td>${r ? `<td>${r.g}</td><td>${pct(r.wr)}</td><td>${r.kda}</td><td>${r.cspm}</td><td>${r.dpm}</td><td>${r.mvp}</td>` : '<td colspan="6" class="muted">—</td>'}</tr>`).join('')}</tbody></table>`;
 }
 
 // ---------- Hồ sơ tuyển thủ (dùng cho cả panel đội hình và cửa sổ) ----------
@@ -748,15 +792,15 @@ function playerDetail(p) {
       </div>
       <div><div class="pd-sub">${t('p.pool')}</div>
         <div class="pool">${p.pool.slice(0, 8).map((x) => `<div class="pool-c">${champIcon(x.c, 38)}<span>${x.g} · ${x.g ? pct(x.w / x.g) : '–'}</span></div>`).join('') || '<span class="muted">—</span>'}</div>
-        <div class="pd-sub" style="margin-top:1rem">${rec ? t('p.real') : t('p.seasonStats')}</div>
-        <div class="pd-row2">${rec ? `<span>${t('p.games')}</span><b>${p.realGames} · ${pct(rec.wr)}</b><span>KDA</span><b>${rec.kda}</b><span>${t('p.cspm')}</span><b>${rec.cspm}</b><span>${t('p.dpm')}</span><b>${rec.dpm}</b>` : ''}
-          <span>${t('p.seasonStats')}</span><b>${ss.g} · ${ss.g ? pct(ss.w / ss.g) : '–'} · KDA ${kda}</b></div>
+        <div class="pd-sub" style="margin-top:1rem">${t('p.simStats')}</div>
+        ${simStatsHtml(p)}
       </div>
     </div>
     ${mine ? `<div class="pd-sub" style="margin-top:1.2rem">${t('p.dev')}</div>
       <div class="pd-row2"><span>${t('p.plan')}</span><span class="chips" style="margin:0">${Object.keys(ATTR_GROUPS).map((g) => `<button class="chip sm ${S.training === g ? 'on' : ''}" data-train="${g}">${t('train.' + g)}</button>`).join('')}</span>
       <span>${t('p.progress')}</span><div class="prog-line"><b>${p.ovr}</b><div class="bar"><i style="width:${clamp(((p.ovr - 40) / Math.max(p.potential - 40, 1)) * 100, 4, 100)}%"></i></div><b>${p.potential}</b></div></div>` : ''}
     ${(p.titles || []).length ? `<div class="pd-sub" style="margin-top:1rem">${t('p.titles')}</div><div class="small">${p.titles.map((x) => esc(x)).join(' · ')}</div>` : ''}
+    ${(p.awards || []).length ? `<div class="pd-sub" style="margin-top:1rem">${t('p.awards')}</div><div class="small">${p.awards.map((x) => { const [k, ev] = x.split('|'); return `<span class="aw-tag">${t('rec.' + k)}</span> ${esc(ev)}`; }).join(' · ')}</div>` : ''}
     <div class="pd-actions">${actions}</div>`;
 }
 
@@ -782,7 +826,7 @@ function bindDetail(root, p, refresh) {
     ut.lineup[r] = p.id;
     refresh();
   });
-  root.querySelectorAll('[data-train]').forEach((b) => b.onclick = () => { S.training = b.dataset.train; refresh(); });
+  root.querySelectorAll('[data-train]').forEach((b) => b.onclick = () => { S.training = b.dataset.train; S.trainingSetDay = S.day; refresh(); });
 }
 
 export function playerModal(pid) {
@@ -941,6 +985,75 @@ function schedule(c) {
   c.querySelector('.sch-day.today')?.scrollIntoView({ block: 'nearest' });
 }
 
+// ---------- Kỷ lục & Vinh danh ----------
+function records(c) {
+  const f = view.filters;
+  f.recTab ??= 'hall';
+  f.recLg ??= 'all';
+  S.hall ??= []; S.records ??= { game: {}, event: {} }; S.evstats ??= {};
+  const pn = (w) => (w ? `<b data-player="${esc(w.pid)}" class="plink">${esc(w.ign)}</b>${w.team ? ` <span class="muted small">${esc(w.team)}</span>` : ''}` : '—');
+  const ctx = (r) => `<span class="muted small">${esc(r.event)} ${r.season}</span>`;
+  const mmss = (v) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, '0')}`;
+  const tabs = ['hall', 'events', 'records', 'titles', 'career'];
+  const lgOk = (lg) => f.recLg === 'all' || lg === f.recLg;
+  let body = '';
+  if (f.recTab === 'hall') {
+    const list = S.hall.filter((h) => lgOk(h.league));
+    body = list.length ? `<div class="scroll-x"><table class="tbl rec-t"><thead><tr><th>${t('rec.event')}</th><th>${t('rec.champ')}</th><th>${t('rec.mvp')}</th><th>${t('rec.fmvp')}</th><th>${t('rec.allpro')}</th><th>${t('rec.rookie')}</th></tr></thead><tbody>
+      ${list.map((h) => `<tr><td><span class="row gap">${leagueBadge(h.league === 'INTL' ? (h.event === 'MSI' ? 'MSI' : h.event === 'Worlds' ? 'WORLDS' : 'FST') : h.league, 'xs')}<b>${esc(h.title)}</b> ${h.season}</span></td>
+        <td><b>${esc(h.champ)}</b> <span class="muted small">${t('rec.over')} ${esc(h.runner)}</span></td><td>${pn(h.mvp)}</td><td>${pn(h.fmvp)}</td>
+        <td class="small">${ROLES.map((r) => h.allpro[r] ? `${t('roleS.' + r)}: ${pn(h.allpro[r])}` : '').filter(Boolean).join('<br>')}</td><td>${pn(h.rookie)}</td></tr>`).join('')}</tbody></table></div>`
+      : `<p class="muted">${t('rec.noneYet')}</p>`;
+  } else if (f.recTab === 'events') {
+    const evs = Object.entries(S.evstats).filter(([, E]) => lgOk(E.league));
+    f.recEv = evs.some(([k]) => k === f.recEv) ? f.recEv : evs[0]?.[0];
+    const E = S.evstats[f.recEv];
+    const rows = E ? Object.entries(E.players).map(([pid, r]) => ({ pid, g: r[0], w: r[1], k: r[2], d: r[3], a: r[4], cs: r[5], dmg: r[6], min: r[8], mvp: r[9] })) : [];
+    f.recSort ??= 'kda';
+    const key = { kda: (x) => (x.k + x.a) / Math.max(x.d, 1), k: (x) => x.k, a: (x) => x.a, dpm: (x) => x.dmg / Math.max(x.min, 1), cspm: (x) => x.cs / Math.max(x.min, 1), mvp: (x) => x.mvp, g: (x) => x.g }[f.recSort];
+    rows.sort((a, b) => key(b) - key(a));
+    const th = (k, l) => `<th><button class="th-sort ${f.recSort === k ? 'on' : ''}" data-rsort="${k}">${l}</button></th>`;
+    body = `<div class="seg">${evs.map(([k]) => `<button class="chip ${k === f.recEv ? 'on' : ''}" data-rev="${esc(k)}">${esc(k)}</button>`).join('') || `<span class="muted">${t('rec.noneYet')}</span>`}</div>
+      ${rows.length ? `<div class="scroll-x"><table class="tbl rec-t"><thead><tr><th>#</th><th>${t('name')}</th>${th('g', t('p.games'))}<th>${t('st.wr')}</th>${th('k', t('rec.k'))}${th('a', t('rec.a'))}${th('kda', 'KDA')}${th('cspm', 'CS/' + t('min'))}${th('dpm', t('p.dpmS'))}${th('mvp', 'MVP')}</tr></thead><tbody>
+        ${rows.slice(0, 60).map((x, i) => { const p = S.players[x.pid]; return `<tr class="${p?.teamId === S.userTeam ? 'me' : ''}"><td>${i + 1}</td><td>${p ? `<span class="row gap">${roleTag(E.role?.[x.pid] || p.role)}${pn({ pid: x.pid, ign: p.ign, team: p.teamId ? S.teams[p.teamId].short : '' })}</span>` : '?'}</td>
+          <td>${x.g}</td><td>${pct(x.w / x.g)}</td><td>${x.k}</td><td>${x.a}</td><td>${key === undefined ? '' : ((x.k + x.a) / Math.max(x.d, 1)).toFixed(2)}</td><td>${(x.cs / Math.max(x.min, 1)).toFixed(1)}</td><td>${Math.round(x.dmg / Math.max(x.min, 1))}</td><td>${x.mvp}</td></tr>`; }).join('')}</tbody></table></div>` : ''}`;
+  } else if (f.recTab === 'records') {
+    const G = S.records.game, E = S.records.event;
+    const card = (label, r, fmt = (v) => v, champ = true) => `<div class="rec-card"><small>${label}</small><b>${r ? fmt(r.v) : '—'}</b>${r ? `<div>${r.ign ? pn(r) : esc(r.teams)}${champ && r.champ ? ` · ${esc(cname(r.champ))}` : ''}</div>${ctx(r)}` : ''}</div>`;
+    body = `<h3>${t('rec.single')}</h3><div class="rec-grid">
+      ${card(t('rec.mostKills'), G.kills)}${card(t('rec.mostAssists'), G.assists)}${card(t('rec.mostCs'), G.cs)}${card(t('rec.mostDmg'), G.dmg, (v) => (v / 1000).toFixed(1) + 'K')}${card(t('rec.mostGold'), G.gold, (v) => (v / 1000).toFixed(1) + 'K')}
+      ${card(t('rec.longest'), G.longest, mmss, false)}${card(t('rec.shortest'), G.shortest, mmss, false)}${card(t('rec.bloodiest'), G.bloodiest, (v) => v, false)}</div>
+      <h3>${t('rec.inEvent')}</h3><div class="rec-grid">${card(t('rec.evKills'), E.kills)}${card(t('rec.evKda'), E.kda)}${card(t('rec.evMvps'), E.mvps)}</div>`;
+  } else if (f.recTab === 'titles') {
+    const teams = Object.values(S.teams).map((tm) => ({ tm, n: tm.trophies.length, intl: tm.trophies.filter((x) => /^(MSI|Worlds|First Stand)/.test(x)).length })).filter((x) => x.n).sort((a, b) => b.intl - a.intl || b.n - a.n).slice(0, 20);
+    const ppl = Object.values(S.players).map((p) => {
+      const aw = p.awards || [];
+      const cnt = (k) => aw.filter((x) => x.startsWith(k + '|')).length;
+      return { p, titles: (p.titles || []).length, mvp: cnt('mvp'), fmvp: cnt('fmvp'), allpro: cnt('allpro') };
+    }).filter((x) => x.titles || x.mvp || x.fmvp || x.allpro).sort((a, b) => b.mvp * 3 + b.fmvp * 2 + b.titles - (a.mvp * 3 + a.fmvp * 2 + a.titles)).slice(0, 25);
+    body = `<div class="two"><div><h3>${t('rec.teamTitles')}</h3><table class="tbl rec-t"><thead><tr><th>${t('team')}</th><th>${t('rec.titles')}</th><th>${t('rec.intlTitles')}</th></tr></thead><tbody>
+      ${teams.map((x) => `<tr class="${x.tm.id === S.userTeam ? 'me' : ''}"><td class="row gap">${badge(x.tm.id, 'sm')} ${esc(x.tm.name)}</td><td>${x.n}</td><td>${x.intl}</td></tr>`).join('') || `<tr><td colspan="3" class="muted">${t('rec.noneYet')}</td></tr>`}</tbody></table></div>
+      <div><h3>${t('rec.playerTitles')}</h3><table class="tbl rec-t"><thead><tr><th>${t('name')}</th><th>${t('rec.titles')}</th><th>MVP</th><th>${t('rec.fmvpS')}</th><th>All-Pro</th></tr></thead><tbody>
+      ${ppl.map((x) => `<tr class="${x.p.teamId === S.userTeam ? 'me' : ''}"><td>${pn({ pid: x.p.id, ign: x.p.ign, team: x.p.teamId ? S.teams[x.p.teamId].short : '' })}</td><td>${x.titles}</td><td>${x.mvp}</td><td>${x.fmvp}</td><td>${x.allpro}</td></tr>`).join('') || `<tr><td colspan="5" class="muted">${t('rec.noneYet')}</td></tr>`}</tbody></table></div></div>`;
+  } else {
+    const ps = Object.values(S.players).filter((p) => p.career && p.career.g && !p.retired && lgOk(p.teamId ? S.teams[p.teamId].league : ''));
+    const top = (fn, min = 0) => ps.filter((p) => p.career.g >= min).sort((a, b) => fn(b) - fn(a)).slice(0, 10);
+    const box = (label, list, fn, fmt = (v) => v) => `<div class="rec-card list"><small>${label}</small>${list.map((p, i) => `<div class="rl"><span>${i + 1}</span>${pn({ pid: p.id, ign: p.ign, team: p.teamId ? S.teams[p.teamId].short : '' })}<b>${fmt(fn(p))}</b></div>`).join('') || '—'}</div>`;
+    body = `<div class="rec-grid">${box(t('rec.cKills'), top((p) => p.career.k), (p) => p.career.k)}${box(t('rec.cGames'), top((p) => p.career.g), (p) => p.career.g)}
+      ${box(t('rec.cWins'), top((p) => p.career.w), (p) => p.career.w)}${box(t('rec.cKda'), top((p) => (p.career.k + p.career.a) / Math.max(p.career.d, 1), 20), (p) => (p.career.k + p.career.a) / Math.max(p.career.d, 1), (v) => v.toFixed(2))}
+      ${box(t('rec.cMvp'), top((p) => p.career.mvp), (p) => p.career.mvp)}</div>`;
+  }
+  c.innerHTML = `<div class="gpr-hero rec-hero"><h1>${t('rec.title')}</h1><p>${t('rec.sub')}</p></div>
+    <div class="row between wrap gap"><div class="seg">${tabs.map((k) => `<button class="chip ${f.recTab === k ? 'on' : ''}" data-rtab="${k}">${t('rec.tab.' + k)}</button>`).join('')}</div>
+      <select data-rlg><option value="all">${t('gpr.allLeagues')}</option>${[...DB.leagues.map((l) => l.id), 'INTL'].map((l) => `<option value="${l}" ${f.recLg === l ? 'selected' : ''}>${l === 'INTL' ? t('sch.intl') : l}</option>`).join('')}</select></div>
+    <div class="card rec-body">${body}</div>`;
+  c.querySelectorAll('[data-rtab]').forEach((b) => b.onclick = () => { f.recTab = b.dataset.rtab; records(c); });
+  c.querySelectorAll('[data-rev]').forEach((b) => b.onclick = () => { f.recEv = b.dataset.rev; records(c); });
+  c.querySelectorAll('[data-rsort]').forEach((b) => b.onclick = () => { f.recSort = b.dataset.rsort; records(c); });
+  c.querySelector('[data-rlg]').onchange = (e) => { f.recLg = e.target.value; records(c); };
+  bindPlayerLinks(c);
+}
+
 // ---------- Bảng xếp hạng sức mạnh toàn cầu ----------
 const ordn = (n) => (getLang() === 'vi' ? `#${n}` : `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`);
 function power(c) {
@@ -1049,14 +1162,14 @@ function transfers(c) {
   const shown = list.slice(f.trPage * per, f.trPage * per + per);
   const card = (p, i) => {
     const rank = f.trPage * per + i + 1;
-    const rec = p.record;
+    const rec = simLine(p.season) || simLine(p.career);
     const price = p.teamId ? askingPrice(p) : p.salary;
     return `<div class="pcard" data-player="${esc(p.id)}">
       <div class="pc-top"><span class="pc-rank ${rank <= 3 ? 'r' + rank : ''}">${rank}</span>${face(p, 'md', 'sq')}
         <div class="pc-id"><b>${esc(p.ign)}</b> <span class="age">- ${p.age}</span><div>${cc(p.country)} OVR ${p.ovr} / POT ${p.potential}</div></div>
         <div class="pc-role">${roleIcon(p.role)}<span>${p.teamId ? esc(S.teams[p.teamId].short) : t('p.freeAgent')}</span></div></div>
       <div class="pc-price">${p.teamId ? '' : '<span class="small muted">' + t('salary') + '</span>'}${money(price)}</div>
-      <div class="pc-sub">${rec ? `${p.realGames} ${t('p.games').toLowerCase()} · ${pct(rec.wr)}` : `<span class="muted">${p.rookie ? t('p.rookie') : '—'}</span>`}</div>
+      <div class="pc-sub">${rec ? `${rec.g} ${t('p.games').toLowerCase()} · ${pct(rec.wr)}` : `<span class="muted">${p.rookie ? t('p.rookie') : '—'}</span>`}</div>
       <div class="pc-bot"><div class="st"><b>${rec ? rec.cspm : '–'}</b><small>CS/${t('min')}</small></div>
         <button class="btn primary sm" data-offer="${esc(p.id)}">${p.teamId ? t('tr.offer') : t('p.sign')}</button>
         <div class="st"><b>${rec ? rec.kda : '–'}</b><small>KDA</small></div></div></div>`;

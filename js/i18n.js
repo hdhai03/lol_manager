@@ -727,6 +727,65 @@ Object.assign(en, {
   'gpr.formula': 'Score = 80% team Elo + 20% regional strength. Regional scores start from the real end-of-2026 GPR values.',
 });
 
+Object.assign(vi, {
+  'pg.victory': 'CHIẾN THẮNG', 'pg.defeat': 'THẤT BẠI', 'pg.time': 'THỜI GIAN', 'pg.stats': 'CHỈ SỐ TRẬN', 'pg.gold': 'Vàng', 'pg.towers': 'Trụ',
+  'pg.inhibs': 'Nhà lính', 'pg.grubs': 'Sâu Hư Không', 'pg.heralds': 'Sứ Giả', 'pg.dragons': 'Rồng', 'pg.elders': 'Rồng Ngàn Tuổi', 'pg.barons': 'Baron', 'pg.bans': 'Cấm',
+  'pg.continue': 'TIẾP TỤC', 'pg.damage': 'SÁT THƯƠNG GÂY RA LÊN TƯỚNG', 'pg.after14': 'Sau phút 14', 'pg.until14': 'Trước phút 14', 'pg.goldDiff': 'CHÊNH LỆCH VÀNG',
+  'ev.grubs': "{min}' {team} hạ {n} Sâu Hư Không", 'ev.inhib': "{min}' {team} phá nhà lính", 'bn.inhib': 'NHÀ LÍNH · {team}',
+  'cm.inhib': '{team} phá nhà lính, siêu lính sẽ ép đường trong 5 phút.', 'cm.inhibBack': 'Nhà lính của {team} đã hồi sinh.',
+  'cm.heraldCharge': 'Sứ Giả của {team} húc thẳng vào trụ!', 'cm.grubs': '{team} lấy Sâu Hư Không.',
+});
+Object.assign(en, {
+  'pg.victory': 'VICTORY', 'pg.defeat': 'DEFEAT', 'pg.time': 'GAME TIME', 'pg.stats': 'MATCH STATS', 'pg.gold': 'Gold', 'pg.towers': 'Towers',
+  'pg.inhibs': 'Inhibitors', 'pg.grubs': 'Void Grubs', 'pg.heralds': 'Heralds', 'pg.dragons': 'Dragons', 'pg.elders': 'Elders', 'pg.barons': 'Barons', 'pg.bans': 'Bans',
+  'pg.continue': 'CONTINUE', 'pg.damage': 'TOTAL DAMAGE DEALT TO CHAMPIONS', 'pg.after14': 'Damage after 14 min', 'pg.until14': 'Damage until 14 min', 'pg.goldDiff': 'GOLD DIFFERENCE',
+  'ev.grubs': "{min}' {team} take {n} Void Grubs", 'ev.inhib': "{min}' {team} destroy an inhibitor", 'bn.inhib': 'INHIBITOR · {team}',
+  'cm.inhib': '{team} take down an inhibitor; super minions will push for 5 minutes.', 'cm.inhibBack': "{team}'s inhibitor has respawned.",
+  'cm.heraldCharge': "{team}'s Rift Herald charges straight into the tower!", 'cm.grubs': '{team} take the Void Grubs.',
+});
+
+Object.assign(vi, {
+  'p.simStats': 'Thống kê thi đấu', 'p.thisSeason': 'Mùa này', 'p.career': 'Sự nghiệp', 'p.noGames': 'Chưa thi đấu trận nào trong game.', 'st.wr': 'Tỉ lệ thắng', 'p.dpmS': 'ST/phút',
+  'task.title': 'Việc hôm nay', 'task.none': 'Không còn việc nào hôm nay.',
+  'task.match': 'Vào trận đấu hôm nay', 'task.tactics': 'Chuẩn bị chiến thuật cho trận gặp {opp}', 'task.training': 'Chọn giáo án tập luyện cho tuần này',
+  'task.rest': 'Theo dõi thể lực: {who} đang mệt', 'task.scout': 'Đọc báo cáo tuyển trạch mới trên thị trường', 'task.finance': 'Ngân sách đang âm, xem lại tài chính',
+  'task.squad': 'Gặp gỡ đội hình trước mùa mới', 'task.offers': 'Trả lời {n} lời đề nghị chuyển nhượng', 'task.renew': 'Gia hạn hợp đồng ({n} tuyển thủ)', 'task.lineup': 'Đội hình thi đấu còn thiếu người',
+});
+Object.assign(en, {
+  'p.simStats': 'Match stats', 'p.thisSeason': 'This season', 'p.career': 'Career', 'p.noGames': 'No games played in this save yet.', 'st.wr': 'Win rate', 'p.dpmS': 'DMG/min',
+  'task.title': "Today's tasks", 'task.none': 'Nothing left to do today.',
+  'task.match': "Play today's match", 'task.tactics': 'Prepare tactics for the match against {opp}', 'task.training': "Set this week's training plan",
+  'task.rest': 'Watch condition: {who} tired', 'task.scout': 'Read the new scouting report', 'task.finance': 'Budget is negative: review finances',
+  'task.squad': 'Meet the squad before the new season', 'task.offers': 'Answer {n} transfer offers', 'task.renew': 'Renew contracts ({n} players)', 'task.lineup': 'Starting lineup is incomplete',
+});
+
+Object.assign(vi, {
+  'nav.records': 'Kỷ lục', 'rec.title': 'Kỷ lục & Vinh danh', 'rec.sub': 'Thống kê từng giải qua các mùa, giải thưởng cá nhân và các kỷ lục trong save của bạn.',
+  'rec.tab.hall': 'Vinh danh', 'rec.tab.events': 'Thống kê giải mùa này', 'rec.tab.records': 'Kỷ lục', 'rec.tab.titles': 'Danh hiệu', 'rec.tab.career': 'Sự nghiệp',
+  'rec.event': 'Giải', 'rec.champ': 'Vô địch', 'rec.over': 'thắng', 'rec.mvp': 'MVP giải', 'rec.fmvp': 'MVP chung kết', 'rec.fmvpS': 'MVP CK', 'rec.allpro': 'Đội hình tiêu biểu', 'rec.allproS': 'All-Pro', 'rec.rookie': 'Tân binh xuất sắc',
+  'rec.noneYet': 'Chưa có dữ liệu — hãy chơi tiếp để ghi tên vào lịch sử.', 'rec.k': 'Hạ gục', 'rec.a': 'Hỗ trợ',
+  'rec.single': 'Kỷ lục một ván', 'rec.inEvent': 'Kỷ lục trong một giải', 'rec.mostKills': 'Nhiều mạng nhất', 'rec.mostAssists': 'Nhiều hỗ trợ nhất', 'rec.mostCs': 'Nhiều lính nhất',
+  'rec.mostDmg': 'Sát thương cao nhất', 'rec.mostGold': 'Nhiều vàng nhất', 'rec.longest': 'Ván dài nhất', 'rec.shortest': 'Ván ngắn nhất', 'rec.bloodiest': 'Ván nhiều mạng nhất (cả hai đội)',
+  'rec.evKills': 'Nhiều mạng nhất một giải', 'rec.evKda': 'KDA cao nhất một giải (≥5 ván)', 'rec.evMvps': 'Nhiều danh hiệu MVP ván nhất một giải',
+  'rec.teamTitles': 'Đội nhiều danh hiệu nhất', 'rec.playerTitles': 'Tuyển thủ nhiều danh hiệu nhất', 'rec.titles': 'Danh hiệu', 'rec.intlTitles': 'Quốc tế',
+  'rec.cKills': 'Nhiều mạng nhất sự nghiệp', 'rec.cGames': 'Nhiều ván nhất', 'rec.cWins': 'Nhiều trận thắng nhất', 'rec.cKda': 'KDA sự nghiệp (≥20 ván)', 'rec.cMvp': 'Nhiều MVP ván nhất',
+  'rec.allproT': 'All-Pro', 'p.awards': 'Giải thưởng cá nhân',
+  'news.awards': '{title}: MVP giải là {mvp} ({mvpTeam}), MVP chung kết là {fmvp}.',
+});
+Object.assign(en, {
+  'nav.records': 'Records', 'rec.title': 'Records & Hall of Fame', 'rec.sub': 'Per-event stats across seasons, individual awards and records in your save.',
+  'rec.tab.hall': 'Hall of fame', 'rec.tab.events': "This season's events", 'rec.tab.records': 'Records', 'rec.tab.titles': 'Titles', 'rec.tab.career': 'Career',
+  'rec.event': 'Event', 'rec.champ': 'Champion', 'rec.over': 'over', 'rec.mvp': 'Event MVP', 'rec.fmvp': 'Finals MVP', 'rec.fmvpS': 'Finals MVP', 'rec.allpro': 'All-Pro team', 'rec.allproS': 'All-Pro', 'rec.rookie': 'Rookie of the event',
+  'rec.noneYet': 'No data yet. Keep playing to write history.', 'rec.k': 'Kills', 'rec.a': 'Assists',
+  'rec.single': 'Single-game records', 'rec.inEvent': 'Single-event records', 'rec.mostKills': 'Most kills', 'rec.mostAssists': 'Most assists', 'rec.mostCs': 'Most CS',
+  'rec.mostDmg': 'Highest damage', 'rec.mostGold': 'Most gold', 'rec.longest': 'Longest game', 'rec.shortest': 'Shortest game', 'rec.bloodiest': 'Bloodiest game (both teams)',
+  'rec.evKills': 'Most kills in an event', 'rec.evKda': 'Best KDA in an event (≥5 games)', 'rec.evMvps': 'Most game MVPs in an event',
+  'rec.teamTitles': 'Most decorated teams', 'rec.playerTitles': 'Most decorated players', 'rec.titles': 'Titles', 'rec.intlTitles': 'International',
+  'rec.cKills': 'Career kills', 'rec.cGames': 'Most games', 'rec.cWins': 'Most wins', 'rec.cKda': 'Career KDA (≥20 games)', 'rec.cMvp': 'Most game MVPs',
+  'rec.allproT': 'All-Pro', 'p.awards': 'Individual awards',
+  'news.awards': '{title}: event MVP {mvp} ({mvpTeam}), Finals MVP {fmvp}.',
+});
+
 export const DICTS = { vi, en };
 let lang = 'vi';
 try { lang = localStorage.getItem('lolm_lang') || 'vi'; } catch { /* */ }

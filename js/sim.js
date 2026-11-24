@@ -5,6 +5,7 @@ import { ROLES, rand, clamp, logistic, gauss } from './util.js';
 import { runGame } from './engine.js';
 import { aiTactics, drainCondition } from './attrs.js';
 import { gprOnSeries } from './gpr.js';
+import { archiveGame } from './awards.js';
 
 // Thứ tự cấm/chọn chuẩn giải chuyên nghiệp
 export const DRAFT_ORDER = [
@@ -176,6 +177,7 @@ export function applyGameResult(g) {
       const st = p[k];
       st.g++; if (win) st.w++;
       st.k += x.k; st.d += x.d; st.a += x.a; st.cs += x.cs;
+      st.dmg = (st.dmg || 0) + (x.dmg || 0); st.gold = (st.gold || 0) + (x.gold || 0); st.min = (st.min || 0) + (g.durS ? g.durS / 60 : g.dur);
       if (g.mvp === p.id) st.mvp++;
     }
     p.form = clamp((p.form || 0) * 0.85 + (win ? 0.6 : -0.6) + (g.mvp === p.id ? 0.8 : 0), -5, 5);
@@ -205,6 +207,7 @@ export function simSeries(match) {
 
 export function recordGame(match, g, detailed) {
   applyGameResult(g);
+  archiveGame(match, g);
   if (match.bo > 1) match.fearless = [...(match.fearless || []), ...Object.values(g.picks.B), ...Object.values(g.picks.R)];
   if (g.winnerId === match.a) match.winsA++; else match.winsB++;
   // lưu gọn để giảm dung lượng lưu trữ

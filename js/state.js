@@ -40,7 +40,7 @@ export function newGame({ teamId, manager }) {
   return s;
 }
 
-export function blankStats() { return { g: 0, w: 0, k: 0, d: 0, a: 0, cs: 0, mvp: 0 }; }
+export function blankStats() { return { g: 0, w: 0, k: 0, d: 0, a: 0, cs: 0, mvp: 0, dmg: 0, gold: 0, min: 0 }; }
 
 export const team = (id) => S.teams[id];
 export const player = (id) => S.players[id];
