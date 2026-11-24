@@ -10,7 +10,8 @@ async function loadGroup(index, g, progress) {
   const info = index[g];
   if (!info) return;
   const bufs = await Promise.all(Array.from({ length: info.chunks }, async (_, i) => {
-    const r = await fetch(`data/bin/${g}-${i}.bin`);
+    // một số nơi host chỉ phục vụ đuôi file quen thuộc: cho phép đổi đuôi qua window.RIFT_PACK_EXT
+    const r = await fetch(`data/bin/${g}-${i}.${globalThis.RIFT_PACK_EXT || 'bin'}`);
     if (!r.ok) throw new Error(`${g}-${i}`);
     const b = await r.arrayBuffer();
     progress && progress(b.byteLength);
