@@ -147,7 +147,10 @@ async function main() {
   }
   console.log('Ảnh tuyển thủ:', ok, '/', links.length);
 
-  // logo quá tối (đen/xanh than) sẽ được UI đặt trên nền sáng
+  // tách nền logo dạng ô vuông để mọi logo cùng một kiểu trong suốt
+  console.log(execFileSync('python3', ['-I', ROOT + 'scripts/clean_logos.py']).toString().trim());
+
+  // logo quá tối (đen/xanh than) sẽ được UI viền sáng nhẹ để nổi trên nền tối
   const LUM = "import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGBA')\npx=[(r,g,b) for r,g,b,a in im.getdata() if a>128]\nprint(sum(0.2126*r+0.7152*g+0.0722*b for r,g,b in px)/max(len(px),1))";
   images.dark = [];
   for (const path of [...Object.values(images.leagues), ...Object.values(images.teams)]) {
