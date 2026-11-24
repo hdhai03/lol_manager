@@ -8,6 +8,7 @@ import {
 import { ROLES, esc, logistic, clamp } from './util.js';
 import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon, bgArt } from './ui.js';
 import { champImg, champArt, champTile } from './data.js';
+import { loadThree, webglOk, createArena } from './arena3d.js';
 const roleIconSvg = (r) => roleIcon(r);
 
 let overlay = null;
@@ -24,6 +25,7 @@ function root() {
   return overlay;
 }
 function close() {
+  stopArena();
   overlay?.remove();
   overlay = null;
 }
@@ -204,6 +206,8 @@ function renderDraft() {
 // ---------------- Xem trận trực tiếp ----------------
 let timer = null;
 let quickMode = false;
+let arena = null;
+const stopArena = () => { if (arena) { arena.dispose(); arena = null; } };
 
 // ----- Bản đồ thu nhỏ (toạ độ 0..100; phe Xanh góc dưới-trái, phe Đỏ góc trên-phải) -----
 const MIR = ([x, y]) => [100 - x, 100 - y];
@@ -274,9 +278,12 @@ function liveGame(d, opts = {}) {
     </div>
     <div class="lv-stage">
       <div class="lv-side">${ROLES.map((r) => slot('B', r)).join('')}</div>
-      <div class="map-wrap" id="map">${mapSvg()}
-        ${Object.keys(tok).map((k) => `<div class="tk tk-${k[0]}" id="tk-${k}" style="left:${tok[k].pos[0]}%;top:${tok[k].pos[1]}%">${champIcon(g.picks[k[0]][k.slice(1)], 30)}<i></i></div>`).join('')}
-        <div class="fx" id="fx"></div><div class="banner" id="banner"></div>
+      <div class="arena flat" id="arena">
+        <div class="map-wrap" id="map">${mapSvg()}
+          ${Object.keys(tok).map((k) => `<div class="tk tk-${k[0]}" id="tk-${k}" style="left:${tok[k].pos[0]}%;top:${tok[k].pos[1]}%">${champIcon(g.picks[k[0]][k.slice(1)], 30)}<i></i></div>`).join('')}
+          <div class="fx" id="fx"></div>
+        </div>
+        <div class="banner" id="banner"></div><div class="a-load" id="aload"></div>
       </div>
       <div class="lv-side">${ROLES.map((r) => slot('R', r)).join('')}</div>
     </div>
@@ -285,7 +292,8 @@ function liveGame(d, opts = {}) {
       <div class="card feed-live" id="feed"></div>
     </div>
     <div class="row center gap lv-ctrl"><span class="muted small">${t('m.speed')}</span>
-      ${[1, 3, 8, 16].map((x) => `<button class="chip ${speed === x ? 'on' : ''}" data-sp="${x}">${x}x</button>`).join('')}
+      ${[1, 2, 4, 8, 16].map((x) => `<button class="chip ${speed === x ? 'on' : ''}" data-sp="${x}">${x}x</button>`).join('')}
+      <button class="chip" data-view title="2D / 3D">2D / 3D</button>
       <button class="btn ghost" data-skip>${t('m.skip')}</button>${!match.done ? `<button class="btn ghost" data-skipall>${t('m.skipAll')}</button>` : ''}</div>
   </div>`;
   const r = root();
@@ -296,7 +304,7 @@ function liveGame(d, opts = {}) {
   const kill = (sd, killerRole, victimRole, at) => {
     const os = sd === 'B' ? 'R' : 'B';
     const v = tok[os + victimRole];
-    v.dead = Math.min(3, 1 + Math.floor(minute / 15)); v.d++; v.pos = BASE[os];
+    v.dead = Math.min(3, 1 + Math.floor(minute / 15)); v.d++; v.diedAt = at; v.pos = BASE[os];
     if (killerRole) tok[sd + killerRole].k++;
     for (const a of alive(sd).filter((x) => x !== killerRole).slice(0, 2)) tok[sd + a].a++;
     flash(at, sd);
@@ -307,6 +315,7 @@ function liveGame(d, opts = {}) {
     el.style.left = at[0] + '%'; el.style.top = at[1] + '%';
     r.querySelector('#fx').appendChild(el);
     setTimeout(() => el.remove(), 1400);
+    arena?.flash(at, sd);
   };
   const banner = (text, sd) => {
     const b = r.querySelector('#banner');
@@ -321,6 +330,7 @@ function liveGame(d, opts = {}) {
     if (!next) return null;
     const el = map.querySelector(`[data-tw="${loser}-${next[0]}-${next[1]}"]`);
     if (el) el.classList.add('down');
+    arena?.towerDown(`${loser}-${next[0]}-${next[1]}`);
     const pt = BLUE_TOWERS[next[0]][next[1]];
     return loser === 'B' ? pt : MIR(pt);
   };
@@ -368,10 +378,10 @@ function liveGame(d, opts = {}) {
     }
     if (e.type === 'dragon' || e.type === 'soul' || e.type === 'elder') {
       if (e.type === 'dragon') live.drakes[e.side]++;
-      gather(PIT.dragon, [e.side], 3); flash(PIT.dragon, e.side);
+      gather(PIT.dragon, [e.side], 3); flash(PIT.dragon, e.side); arena?.objective('dragon', e.side);
       banner(e.type === 'soul' ? t('bn.soul', { team: tShort(e.side), drake: t('drake.' + e.drake) }) : e.type === 'elder' ? t('bn.elder', { team: tShort(e.side) }) : t('bn.dragon', { team: tShort(e.side), drake: t('drake.' + e.drake) }), e.side);
     }
-    if (e.type === 'baron') { live.barons[e.side]++; gather(PIT.baron, [e.side], 3); flash(PIT.baron, e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side); }
+    if (e.type === 'baron') { live.barons[e.side]++; gather(PIT.baron, [e.side], 3); flash(PIT.baron, e.side); arena?.objective('baron', e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side); }
     if (e.type === 'herald' || e.type === 'grubs') { gather(PIT.baron, [e.side], 3); }
     if (e.type === 'tower' || e.type === 'firsttower') {
       live.towers[e.side]++;
@@ -379,7 +389,7 @@ function liveGame(d, opts = {}) {
       if (at) { gather(at, [e.side], 4); flash(at, e.side); }
       if (e.type === 'firsttower') banner(t('bn.firsttower', { team: tShort(e.side) }), e.side);
     }
-    if (e.type === 'nexus') { gather(BASE[os], [e.side], 4); flash(BASE[os], e.side); banner(t('bn.victory', { team: tShort(e.side) }), e.side); }
+    if (e.type === 'nexus') { gather(BASE[os], [e.side], 4); flash(BASE[os], e.side); arena?.nexusDown(os); banner(t('bn.victory', { team: tShort(e.side) }), e.side); }
     feed.push({ side: e.side, text: evText(e) });
   };
 
@@ -411,10 +421,13 @@ function liveGame(d, opts = {}) {
     for (const tk of Object.values(tok)) if (tk.dead) tk.dead--;
     placeAll();
     while (evIdx < g.events.length && g.events[evIdx].m <= minute) applyEv(g.events[evIdx++]);
+    if (arena) { arena.minuteTick(lead()); arena.setTargets(tok); }
     draw();
-    if (minute >= g.dur) { clearInterval(timer); timer = null; setTimeout(() => postGame(g), Math.max(600, 2400 / speed)); }
+    if (minute >= g.dur) { clearInterval(timer); timer = null; setTimeout(() => { stopArena(); postGame(g); }, Math.max(900, (arena ? 6000 : 2400) / speed)); }
   };
-  const run = () => { clearInterval(timer); timer = setInterval(step, 1000 / speed); };
+  // 3D: một phút trận = 4 giây (1x) để kịp diễn giải di chuyển và giao tranh
+  const minuteMs = () => (arena ? 4000 : 1000) / speed;
+  const run = () => { clearInterval(timer); timer = setInterval(step, minuteMs()); arena?.setSpeed(speed); };
   r.querySelectorAll('[data-sp]').forEach((b) => b.onclick = () => {
     speed = +b.dataset.sp;
     try { localStorage.setItem('lolm_speed', speed); } catch { /* */ }
@@ -422,19 +435,48 @@ function liveGame(d, opts = {}) {
     run();
   });
   r.querySelector('[data-skip]').onclick = () => {
-    clearInterval(timer); timer = null;
+    clearInterval(timer); timer = null; stopArena();
     while (minute < g.dur) { minute++; while (evIdx < g.events.length && g.events[evIdx].m <= minute) { const e = g.events[evIdx++]; feed.push({ side: e.side, text: evText(e) }); } }
     postGame(g);
   };
   r.querySelector('[data-skipall]')?.addEventListener('click', () => {
-    clearInterval(timer); timer = null;
+    clearInterval(timer); timer = null; stopArena();
     if (!g.recorded) { g.recorded = true; recordGame(match, g, true); }
     if (!match.done) simSeries(match);
     seriesEnd();
   });
+  // bật sân 3D (three.js); lỗi hoặc không có WebGL thì giữ bản đồ 2D
+  const arenaEl = r.querySelector('#arena');
+  const start3D = async () => {
+    if (!webglOk()) return false;
+    const ld = r.querySelector('#aload');
+    ld.textContent = t('m.loading3d');
+    try { await loadThree(); } catch { ld.textContent = ''; return false; }
+    if (!overlay || !arenaEl.isConnected || minute >= g.dur) return false;
+    const towerIds = {};
+    for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => { towerIds[`B-${lane}-${i}`] = pt; towerIds[`R-${lane}-${i}`] = MIR(pt); });
+    const names = Object.fromEntries(Object.keys(tok).map((k) => [k, ign(k[0], k.slice(1))]));
+    try {
+      arenaEl.classList.remove('flat');
+      arena = createArena(arenaEl, { picks: g.picks, champUrl: champTile, names, towerIds });
+    } catch (e) { console.warn(e); arenaEl.classList.add('flat'); ld.textContent = ''; return false; }
+    // đồng bộ trạng thái đã diễn ra
+    map.querySelectorAll('.tw.down').forEach((el) => arena.towerDown(el.dataset.tw));
+    arena.setTargets(tok);
+    ld.textContent = '';
+    return true;
+  };
+  let want3D = true;
+  try { want3D = localStorage.getItem('lolm_view') !== '2d'; } catch { /* */ }
+  r.querySelector('[data-view]').onclick = async () => {
+    if (arena) { stopArena(); arenaEl.classList.add('flat'); want3D = false; }
+    else { want3D = await start3D(); }
+    try { localStorage.setItem('lolm_view', want3D ? '3d' : '2d'); } catch { /* */ }
+    run();
+  };
   placeAll();
   draw();
-  run();
+  if (want3D) start3D().then(() => run()); else run();
 }
 
 function postGame(g) {

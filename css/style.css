@@ -911,3 +911,28 @@ body > .bg-art { z-index: 0; }
   .lv-under { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) { .tk { width: 22px; height: 22px; margin: -11px 0 0 -11px; } .lv-pl small { display: none; } }
+
+/* ---- Sân đấu 3D ---- */
+.lv-stage { grid-template-columns: minmax(0, 220px) minmax(0, 1fr) minmax(0, 220px); }
+.arena { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 68vh; border-radius: 16px; overflow: hidden; background: #0c1418; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, .95), 0 0 0 1px rgba(255, 255, 255, .08); }
+.arena canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; cursor: grab; }
+.arena canvas:active { cursor: grabbing; }
+.arena.flat { aspect-ratio: auto; max-height: none; background: transparent; box-shadow: none; overflow: visible; display: grid; place-items: center; }
+.arena:not(.flat) .map-wrap { position: absolute; right: 12px; bottom: 12px; width: clamp(120px, 20%, 190px); z-index: 5; opacity: .93; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .15); }
+.arena:not(.flat) .tk { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+.arena:not(.flat) .tk i { display: none; }
+.arena:not(.flat) .tk-B { box-shadow: 0 0 0 1.5px #6ea4ff; }
+.arena:not(.flat) .tk-R { box-shadow: 0 0 0 1.5px #ff8c8c; }
+.arena .banner { z-index: 6; top: 7%; }
+.a-load { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: var(--muted); font-weight: 500; z-index: 7; }
+.a-load:empty { display: none; }
+.u3 { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; will-change: transform; }
+.u3 b { font-size: .68rem; font-weight: 600; text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, .8); white-space: nowrap; }
+.u3 span { width: 44px; height: 5px; background: rgba(0, 0, 0, .6); border-radius: 3px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, .6); }
+.u3 i { display: block; height: 100%; transition: width .25s; }
+.u3-B i { background: linear-gradient(90deg, #4c8df6, #8fbaff); }
+.u3-R i { background: linear-gradient(90deg, #e2434f, #ff9a8a); }
+@media (max-width: 1000px) {
+  .lv-stage { grid-template-columns: 1fr 1fr; }
+  .arena { grid-column: 1 / -1; grid-row: 1; }
+}
