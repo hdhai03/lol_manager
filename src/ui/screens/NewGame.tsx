@@ -53,7 +53,7 @@ function TeamPick({ lg }: { lg: string }) {
   return (
     <>
       <div className="pick-grid stag">
-        <div className="gp hl row-span-2 items-center justify-center text-center p-4" style={{ gridRow: '1 / 3' }}>
+        <div className="gp hl pick-hero items-center justify-center text-center p-4">
           <div className="k-label flex items-center gap-2"><LeagueBadge id={lg} size="sm" /> {L.region}</div>
           <div className="k-disp text-2xl mt-3">{pv.tm.display || sel}</div>
           <div className="flex items-center gap-3 my-4">
@@ -78,7 +78,7 @@ function TeamPick({ lg }: { lg: string }) {
             <div><div className="muted">{t('new.salary')}</div><b className="k-num text-xl">{money(pv.salary)}</b></div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3" style={{ gridColumn: '2 / 4' }}>
+        <div className="pick-sub">
           <div className={`gp tile2 ${diffClass}`}><div className="lbl">{t('new.difficulty')}</div><div className="val">{t('diff.' + diff)}</div></div>
           <div className={`gp tile2 ${lvlClass[fin]}`}><div className="lbl">{t('new.finance')}</div><div className="val">{t('lvl.' + fin)}</div></div>
           <div className={`gp tile2 ${lvlClass[youth]}`}><div className="lbl">{t('new.youth')}</div><div className="val">{t('lvl.' + youth)}</div></div>
@@ -94,7 +94,7 @@ function TeamPick({ lg }: { lg: string }) {
       <div className="teamstrip">{ids.map((id) => (
         <button key={id} className={id === sel ? 'on' : ''} data-team={id} title={DB.teams[id].display} onClick={() => { ui.newTeam = id; refresh(); }}><Badge id={id} size="md" /></button>
       ))}</div>
-      <div className="flex items-end gap-3 flex-wrap justify-end">
+      <div className="pick-start2">
         <label className="flex flex-col gap-1 k-label">{t('new.manager')}
           <input id="mgr" className="gin" maxLength={24} placeholder={t('new.managerPh')} defaultValue={ui.mgr} onChange={(e) => { ui.mgr = e.target.value; }} />
         </label>

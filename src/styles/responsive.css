@@ -1,0 +1,223 @@
+/* =====================================================================
+   Responsive: điện thoại (≤720), tablet dọc (≤900), tablet ngang/laptop nhỏ (≤1100),
+   màn thấp nằm ngang, màn rất rộng (≥1920).
+   ===================================================================== */
+
+/* ---------- Màn rất rộng: nội dung không bị kéo giãn, chữ lớn hơn ---------- */
+@media (min-width: 1900px) { html { font-size: 16.5px; } }
+@media (min-width: 2300px) { html { font-size: 18px; } }
+@media (min-width: 2000px) {
+  .view > *, .hud, .subnav { max-width: 2200px; margin-inline: auto; width: 100%; }
+  .hud { padding-inline: 48px; }
+  .pick { max-width: 2000px; margin-inline: auto; }
+  .menu { max-width: 2200px; margin-inline: auto; }
+}
+
+/* ---------- Khối có bảng: cuộn ngang trong khối thay vì bị cắt ---------- */
+.gp > .gp-b { overflow-x: auto; }
+.gp > .gp-b::-webkit-scrollbar { height: 6px; }
+.gp > .gp-b::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); border-radius: 3px; }
+
+/* ---------- Chọn đội ---------- */
+.pick-hero { grid-row: 1 / 3; }
+.pick-sub { grid-column: 2 / 4; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+.pick-start2 { display: flex; align-items: flex-end; gap: .75rem; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 1100px) {
+  .pick-grid { flex: none; grid-template-rows: none; }
+  .pick-hero { grid-row: auto; grid-column: 1 / -1; }
+  .pick-sub { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .pick-hero { min-height: 0; }
+  .pick-hero .badge-hero { width: 120px; height: 120px; }
+  .pick-sub { grid-template-columns: 1fr 1fr; }
+  .pick-sub > .col-span-2 { grid-column: 1 / -1; }
+  .pick-start2 { flex-direction: column; align-items: stretch; }
+  .pick-start2 .gb { width: 100%; }
+  .tile2 .huge { font-size: 2.4rem; }
+  .lg-tiles { grid-template-columns: 1fr 1fr; }
+  .lg-tile { min-height: 150px; padding: 1rem; }
+}
+
+/* ---------- Khung game ---------- */
+@media (max-width: 1100px) {
+  .bc .bc-p { width: 58px; }
+}
+@media (max-width: 900px) {
+  .gt { min-width: 600px; }
+  .gt.meta { min-width: 760px; }
+  .cols { gap: 14px; }
+  .pg-title h1 { font-size: 1.35rem; }
+}
+@media (max-width: 720px) {
+  :root { --pad: 14px; --gap: 12px; }
+  .hud { gap: 0 .6rem; padding: .7rem 14px 0; }
+  .hud .right { gap: .5rem; margin-bottom: .5rem; }
+  .hud .logo { margin-bottom: .5rem; }
+  .ctl .ib { width: 2.1rem; height: 2.1rem; }
+  .nv { font-size: .95rem; padding-bottom: .8rem; }
+  .subnav { padding: .7rem 14px 0; }
+  .subnav button { padding: .42rem .8rem; font-size: .82rem; }
+  .subnav > span { display: none !important; }
+  .view { padding: 1rem 14px 1.4rem; }
+  /* trang chủ */
+  .ctr { padding-right: 0; }
+  .ctr .date { font-size: 1.9rem; }
+  .ctr .event { margin: 1rem 0; }
+  .pill { padding: .85rem 1.8rem; font-size: 1.05rem; }
+  .nm-acts { grid-template-columns: 1fr 1fr; }
+  .nm-acts .gb:last-child { grid-column: 1 / -1; }
+  .yt-meta { flex-wrap: wrap; gap: .5rem .9rem; }
+  .yt-meta .money { margin-left: 0; }
+  .home .gp, .home .social-w { min-height: 0; }
+  .home .social-w { height: 420px; }
+  .home .yt { height: 190px; flex: none; }
+  /* thông báo: nhãn + thời gian ở dòng trên, nội dung xuống dòng */
+  .in-row.flex, .in-row.task { flex-wrap: wrap; gap: .25rem .8rem; }
+  .in-row .k-label { width: auto !important; }
+  .in-row .grow { flex-basis: 100%; order: 3; }
+  /* hồ sơ & thẻ */
+  .pd-hero { min-height: 0; gap: .9rem; }
+  .pd-hero .ph { width: 96px; height: 112px; }
+  .pd-hero .ovrbig { font-size: 2.6rem; }
+  .pd-hero .big { font-size: 1.5rem; }
+  .pcards { grid-template-columns: 1fr; }
+  .modal { padding: 18px 14px; max-height: 92vh; }
+  .modal-wrap { padding: 8px; }
+  .chips { gap: .35rem; }
+  .chp { padding: .42rem .8rem; font-size: .8rem; }
+  .gp > .gp-h { flex-wrap: wrap; row-gap: .5rem; }
+  .gp > .gp-h .gp-r { flex-wrap: wrap; }
+  .menu { padding: 3.5rem 18px 3rem; align-content: center; }
+  .menu .foot { left: 18px; right: 18px; font-size: .72rem; }
+  .menu .mi { padding: .9rem 1rem; }
+  .sch-top { flex-wrap: wrap; }
+  .sch-side { display: none; }
+  .gpr-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ---------- Đối đầu & kết thúc loạt ---------- */
+@media (max-width: 720px) {
+  .md-inner { padding-inline: 12px !important; }
+  .vsx { gap: 1.1rem; min-height: 0; padding-bottom: 1rem; }
+  .vsx-line { gap: .35rem; }
+  .vsx-p .cap b { font-size: .78rem; }
+  .vsx-p .cap .flex { display: none; }
+  .vsx-mid { padding: .7rem 1rem; flex-direction: row; gap: 1rem; justify-self: center; }
+  .vsx-prob { grid-template-columns: 1fr auto; }
+  .vsx-prob .k-label { grid-column: 1 / -1; }
+  .md-actions { flex-direction: column; align-items: stretch; }
+  .md-actions .gb { width: 100%; }
+  .md-score { gap: .7rem !important; }
+  .md-score .badge-lg { width: 42px; height: 42px; }
+  .md-score > b { font-size: 1.9rem !important; min-width: 0 !important; }
+  .result { font-size: 1.6rem !important; }
+}
+
+/* ---------- Cấm / chọn ---------- */
+@media (max-width: 860px) {
+  .dr-ph { gap: .6rem !important; }
+  .dr-roles { flex-wrap: wrap; }
+  .dr-search { min-width: 0 !important; flex: 1 1 100%; }
+  .dr-grid { max-height: 40vh !important; gap: .6rem .4rem !important; padding: .6rem .8rem !important; }
+  .dr-c em { font-size: .66rem !important; }
+  .dr-foot { gap: .6rem !important; }
+  .dr-foot .gb { flex: 1 1 100%; }
+  .dr-banrow { padding: 0 10px; }
+  .dr-bans { height: 40px !important; gap: 3px; }
+  .dr-ban { width: 40px !important; height: 40px !important; }
+  .dr-progress { margin: .5rem 10px 0; }
+  .dr-bar { padding: 6px 10px 12px !important; gap: 4px; min-height: 0 !important; }
+  .dr-slot { min-height: 92px !important; padding: .6rem .2rem .7rem !important; }
+  .dr-slot .glyph { width: 40px !important; height: 40px !important; }
+  .dr-center { padding: .6rem !important; }
+  .dr-center .tms { gap: .8rem !important; }
+  .dr-center .badge-lg { width: 40px; height: 40px; }
+  .dr-top { grid-template-columns: auto 1fr !important; gap: .5rem; }
+  .dr-top .fl-note { grid-column: 1 / -1; text-align: left; }
+}
+@media (max-width: 520px) {
+  .dr-slot { min-height: 78px !important; }
+  .dr-slot .pn { font-size: .78rem !important; }
+  .dr-slot .cn { font-size: .58rem !important; }
+  .dr-slot .rl { font-size: .58rem !important; top: .3rem !important; left: .3rem !important; }
+  .dr-slot .ft { display: none; }
+}
+
+/* ---------- HUD xem trận: điện thoại ---------- */
+@media (max-width: 720px) {
+  .bc .sb { left: 0; right: 0; transform: none; }
+  .bc .sb-row { width: 100%; justify-content: space-between; border-radius: 0; }
+  .bc .sb-team { min-width: 0; padding: .3rem .55rem; font-size: .95rem; gap: .35rem; }
+  .bc .sb-team b { display: none; }
+  .bc .sb-team .badge { width: 26px; height: 26px; }
+  .bc .sb-k { min-width: 34px; font-size: 1.55rem; }
+  .bc .sb-c .clock { font-size: .98rem; }
+  .bc .sb-sub { margin: 4px auto 0; gap: .5rem; padding: .2rem .6rem; font-size: .82rem; }
+  .bc .sb-sub .side { min-width: 0; gap: .45rem; }
+  .bc .sb-sub .dk, .bc .sb-sub .buff, .bc .gdiff { display: none; }
+  .bc .sb-lg { display: none; }
+  .bc .bc-timers { top: auto; bottom: calc(34vw + 3.6rem); left: .4rem; flex-direction: column; gap: 3px; }
+  .bc .bc-timers > div { font-size: .78rem; padding: .2rem .45rem; }
+  .bc .bc-side { top: 5.6rem; transform: none; gap: 3px; }
+  .bc .bc-p { width: 42px; padding: .15rem; }
+  .bc .bc-p .ph { width: 36px; height: 36px; }
+  .bc .bc-p .lv { font-size: .62rem; }
+  .bc .bc-p .rs { font-size: 1rem; }
+  .bc .bc-mini { width: 34vw; right: .4rem; bottom: .4rem; }
+  .bc .bc-mini .md { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; }
+  .bc .bc-feed { top: 5.6rem; right: 3.2rem; bottom: auto; gap: 3px; }
+  .bc .kf .champ { width: 20px !important; height: 20px !important; }
+  .bc .kf-sep { width: 12px; height: 12px; }
+  .bc .bc-cast { display: none; }
+  .bc .bc-ctrl { left: .4rem; bottom: .4rem; max-width: calc(100vw - 34vw - 1.4rem); }
+  .bc .bc-ctrl .chip { padding: .3rem .45rem; font-size: .72rem; }
+  .bc .banner { top: 34%; min-width: 0; width: 88vw; padding: .5rem 1rem !important; }
+  .bc .banner b { font-size: 1.25rem !important; }
+  .bc .banner small { font-size: .72rem; }
+  .bc .arena.flat .map-wrap { width: min(80vw, 52vh); }
+  .u3-bars b { font-size: .62rem; }
+  .u3 .u3-hp { width: 44px; height: 5px; }
+}
+/* điện thoại nằm ngang / màn thấp */
+@media (max-height: 520px) and (orientation: landscape) {
+  .bc .bc-bottom { display: none; }
+  .bc .bc-side { top: 4.4rem; transform: none; gap: 2px; }
+  .bc .bc-p { width: 40px; padding: .1rem; }
+  .bc .bc-p .info { display: none; }
+  .bc .bc-p .ph { width: 34px; height: 34px; }
+  .bc .bc-mini { width: min(30vh, 22vw); }
+  .bc .bc-cast { bottom: .5rem; font-size: .72rem; }
+  .bc .bc-timers { top: .4rem; }
+  .bc .sb-lg { display: none; }
+  .bc .arena.flat .map-wrap { width: min(70vh, 46vw); }
+  .bc .banner { top: 30%; }
+  .hud .logo { width: 36px; height: 36px; margin-bottom: .4rem; }
+  .hud .sect { display: none; }
+  .view { overflow-y: auto; }
+  .home { grid-template-columns: 1fr 1fr; grid-template-rows: auto; flex: none; }
+  .home > .ctr { grid-row: auto; grid-column: 1 / -1; }
+  .home .gp, .home .social-w { min-height: 300px; }
+}
+
+/* ---------- Tổng kết ván ---------- */
+@media (max-width: 720px) {
+  .pg { padding: 12px !important; }
+  .pg-head { grid-template-columns: 1fr !important; }
+  .pg-time { grid-row: 1; border: 0 !important; padding: 6px !important; flex-direction: row; gap: .6rem; }
+  .pg-time b { font-size: 1.6rem !important; }
+  .pg-team, .pg-team.R { flex-direction: row !important; padding: 8px 12px !important; gap: 10px !important; }
+  .pg-team .badge-lg { width: 36px; height: 36px; }
+  .pg-team b { font-size: 1.25rem !important; }
+  .pg-sc { font-size: 1.25rem !important; }
+  .pg-res, .pg-team.R .pg-res { margin-left: auto !important; margin-right: 0 !important; padding: 0 0 0 10px !important; border: 0 !important; font-size: .9rem !important; }
+  .pg-row { grid-template-columns: 1fr 92px 1fr !important; min-height: 38px !important; }
+  .pg-row > span { font-size: 1.05rem !important; }
+  .pg-row > b { font-size: .66rem !important; }
+  .pg-bans .champ { width: 20px; height: 20px; }
+  .pg-sub { flex-direction: column; }
+  .pg-panel { padding: 12px 12px !important; }
+  .pg-dm span { font-size: .9rem; }
+  .pg-d .champ { width: 34px; height: 34px; }
+  .pg-chart { height: 180px; }
+}
