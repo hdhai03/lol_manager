@@ -10,7 +10,7 @@ DB.champList = Object.values(DB.champions).sort((a, b) => a.name.localeCompare(b
 DB.leagueById = Object.fromEntries(DB.leagues.map((l) => [l.id, l]));
 
 newGame({ teamId: process.argv[2] || 'Saigon Warriors', manager: 'Test' });
-startPhase('split1');
+startPhase('kickoff');
 for (let season = 0; season < 2; season++) {
   let guard = 0;
   while (S.phase !== 'offseason' && guard++ < 2000) {

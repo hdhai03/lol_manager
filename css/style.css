@@ -1078,3 +1078,19 @@ body > .bg-art { z-index: 0; }
 .bc-cast.pop { animation: castPop .45s ease-out; }
 @keyframes castPop { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (max-width: 700px) { .bc-cast { top: auto; bottom: calc(19vw + 4.8rem); font-size: .72rem; max-width: 92vw; } }
+
+/* ===== Thể thức giải: nhánh đấu, Swiss ===== */
+.fmt-card p { margin: .35rem 0 0; line-height: 1.55; }
+.b-lbl { margin: .6rem 0 .35rem; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.b-k { padding: .2rem .55rem; font-size: .66rem; color: var(--muted); background: rgba(255, 255, 255, .03); border-bottom: 1px solid var(--line); }
+.b-team.tbd span { color: var(--muted); font-weight: 500; font-style: italic; }
+.b-match.final { border-color: rgba(255, 210, 120, .45); }
+.b-round:empty { min-width: 0; }
+.swiss { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .4rem; }
+.sw-row { display: flex; align-items: center; gap: .45rem; padding: .4rem .55rem; border-radius: 8px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); font-weight: 700; font-size: .85rem; }
+.sw-row span { flex: 1; }
+.sw-row.adv { background: rgba(91, 220, 124, .1); border-color: rgba(91, 220, 124, .35); }
+.sw-row.out { opacity: .5; }
+.sw-row.me span { color: var(--teal); }
+.dr-c.fl::after { content: 'F'; position: absolute; top: 3px; left: 3px; font-size: .6rem; font-weight: 800; padding: 0 .25rem; border-radius: 3px; background: #c0392b; color: #fff; }
+.fl-note { font-size: .78rem; color: #ffb3a6; text-align: right; }

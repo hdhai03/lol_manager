@@ -53,10 +53,11 @@ export function compTraits(champIds) {
 }
 
 // ----- AI cấm chọn -----
-export function newDraft(blueTeamId, redTeamId) {
-  return { blue: blueTeamId, red: redTeamId, step: 0, bans: { B: [], R: [] }, picks: { B: {}, R: {} }, log: [] };
+// locked: tướng đã dùng ở các ván trước trong loạt (Hard Fearless Draft — mỗi tướng chỉ được chọn một lần trong cả loạt)
+export function newDraft(blueTeamId, redTeamId, locked = []) {
+  return { blue: blueTeamId, red: redTeamId, step: 0, bans: { B: [], R: [] }, picks: { B: {}, R: {} }, log: [], locked: [...locked] };
 }
-export const draftTaken = (d) => new Set([...d.bans.B, ...d.bans.R, ...Object.values(d.picks.B), ...Object.values(d.picks.R)]);
+export const draftTaken = (d) => new Set([...d.bans.B, ...d.bans.R, ...Object.values(d.picks.B), ...Object.values(d.picks.R), ...(d.locked || [])]);
 export const openRoles = (d, side) => ROLES.filter((r) => !d.picks[side][r]);
 
 function lineupMap(teamId) {
@@ -132,8 +133,8 @@ export function swapPicks(d, side, r1, r2) {
   for (const r of [r1, r2]) if (!p[r]) delete p[r];
 }
 
-export function autoDraft(blueId, redId) {
-  const d = newDraft(blueId, redId);
+export function autoDraft(blueId, redId, locked = []) {
+  const d = newDraft(blueId, redId, locked);
   while (d.step < DRAFT_ORDER.length) {
     const ch = aiChoose(d);
     applyDraftAction(d, ch.champ, ch.role);
@@ -196,13 +197,14 @@ export function simSeries(match) {
     const gi = match.games.length;
     const aBlue = gi % 2 === 0 ? match.aBlueFirst !== false : match.aBlueFirst === false;
     const blue = aBlue ? match.a : match.b, red = aBlue ? match.b : match.a;
-    const g = simulateGame(autoDraft(blue, red), { series: gi });
+    const g = simulateGame(autoDraft(blue, red, match.fearless || []), { series: gi });
     recordGame(match, g, false);
   }
 }
 
 export function recordGame(match, g, detailed) {
   applyGameResult(g);
+  if (match.bo > 1) match.fearless = [...(match.fearless || []), ...Object.values(g.picks.B), ...Object.values(g.picks.R)];
   if (g.winnerId === match.a) match.winsA++; else match.winsB++;
   // lưu gọn để giảm dung lượng lưu trữ
   const keep = { winner: g.winnerId, dur: g.dur };
@@ -212,5 +214,6 @@ export function recordGame(match, g, detailed) {
   if (match.winsA >= need || match.winsB >= need) {
     match.done = true;
     match.winner = match.winsA > match.winsB ? match.a : match.b;
+    delete match.fearless;
   }
 }

@@ -4,149 +4,24 @@ import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, t
 import { simSeries } from './sim.js';
 import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
 
-export const PHASES = ['split1', 'playoffs1', 'msi', 'split2', 'playoffs2', 'worlds', 'offseason'];
-export const WORLDS_SLOTS = { LCK: 4, LPL: 4, LEC: 3, LCS: 2, LCP: 1, CBLOL: 1, VCS: 1 };
+import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats.js';
+export { PHASES, standings, compOrder, runnerUp };
+// tiền thưởng (nghìn USD) theo hạng 1 / 2 / 3-4 / 5-8
 const PRIZE = {
-  leagueChamp: 400, leagueRunner: 200, leagueSemi: 80,
-  msiChamp: 1000, msiRunner: 500, msiSemi: 250, msiQF: 120,
-  worldsChamp: 2500, worldsRunner: 1200, worldsSemi: 600, worldsQF: 300, worldsGroup: 120,
+  cup: [250, 120, 60, 25], league: [400, 200, 80, 30], fst: [1000, 600, 250, 120],
+  msi: [1000, 500, 250, 120], worlds: [2500, 1200, 600, 300, 120],
 };
-
-let mid = 0;
-function makeMatch(compId, day, a, b, bo, round = 0) {
-  const id = `${compId}#${++mid}_${Math.random().toString(36).slice(2, 6)}`;
-  return { id, comp: compId, day, a, b, bo, round, winsA: 0, winsB: 0, games: [], done: false, winner: null, aBlueFirst: rand() < 0.5 };
-}
-
-function roundRobin(teams, double) {
-  const t = [...teams];
-  if (t.length % 2) t.push(null);
-  const n = t.length, rounds = [];
-  for (let r = 0; r < n - 1; r++) {
-    const pairs = [];
-    for (let i = 0; i < n / 2; i++) {
-      const a = t[i], b = t[n - 1 - i];
-      if (a && b) pairs.push(r % 2 ? [b, a] : [a, b]);
-    }
-    rounds.push(pairs);
-    t.splice(1, 0, t.pop());
-  }
-  if (double) return [...rounds, ...rounds.map((ps) => ps.map(([a, b]) => [b, a]))];
-  return rounds;
-}
+export { makeMatch, roundRobin };
 
 export const leagueTeams = (lg) => Object.values(S.teams).filter((t) => t.league === lg).map((t) => t.id);
 
+const PHASE_NEWS = { kickoff: 'news.kickoff', fst: 'news.fstStart', spring: 'news.springStart', msi: 'news.msiStart', summer: 'news.summerStart', worlds: 'news.worldsStart', offseason: 'news.offseason' };
 export function startPhase(phase) {
   S.phase = phase;
   S.phaseComps = [];
-  const y = S.season;
-  if (phase === 'split1' || phase === 'split2') {
-    for (const L of DB.leagues) {
-      const id = `${y}-${phase}-${L.id}`;
-      const teams = leagueTeams(L.id);
-      const rr = roundRobin(shuffle(teams), teams.length <= 10);
-      const comp = { id, type: 'league', phase, league: L.id, name: L.id, teams, matches: [], bo: 1, done: false };
-      rr.forEach((pairs, r) => pairs.forEach(([a, b]) => comp.matches.push(makeMatch(id, S.day + r, a, b, 1, r))));
-      S.comps[id] = comp;
-      S.phaseComps.push(id);
-    }
-    addNews('news.splitStart', { split: phase === 'split1' ? 1 : 2, season: y }, true);
-  } else if (phase === 'playoffs1' || phase === 'playoffs2') {
-    const split = phase === 'playoffs1' ? 'split1' : 'split2';
-    for (const L of DB.leagues) {
-      const st = standings(S.comps[`${y}-${split}-${L.id}`]);
-      const seeds = st.slice(0, 4).map((r) => r.team);
-      const id = `${y}-${phase}-${L.id}`;
-      createBracket(id, { phase, league: L.id, name: L.id, seeds: [seeds[0], seeds[3], seeds[1], seeds[2]], bo: 5, kind: 'playoffs' });
-    }
-  } else if (phase === 'msi') {
-    const champ = (lg) => S.comps[`${y}-playoffs1-${lg}`];
-    const w = (lg) => champ(lg).winner;
-    const lckRunner = runnerUp(champ('LCK'));
-    const seeds = [w('LCK'), w('VCS'), w('LEC'), w('LCP'), w('LPL'), w('CBLOL'), w('LCS'), lckRunner];
-    createBracket(`${y}-msi`, { phase, league: 'INTL', name: 'MSI', seeds, bo: 5, kind: 'msi' });
-    addNews('news.msiStart', { season: y }, true);
-  } else if (phase === 'worlds') {
-    const pots = [[], [], [], []];
-    const qualified = [];
-    for (const L of DB.leagues) {
-      const order = finalOrder(L.id).slice(0, WORLDS_SLOTS[L.id]);
-      order.forEach((t, i) => qualified.push({ t, lg: L.id, seed: i }));
-    }
-    const potOf = { LCK: [0, 1, 2, 3], LPL: [0, 1, 2, 3], LEC: [0, 1, 2], LCS: [0, 3], LCP: [1], CBLOL: [2], VCS: [3] };
-    for (const q of qualified) pots[potOf[q.lg][q.seed]].push(q);
-    let groups;
-    for (let tries = 0; tries < 200; tries++) {
-      groups = [[], [], [], []];
-      for (const pot of pots) shuffle(pot).forEach((q, i) => groups[i].push(q));
-      if (groups.every((g) => new Set(g.map((q) => q.lg)).size === g.length)) break;
-    }
-    const id = `${y}-worlds-groups`;
-    const comp = { id, type: 'groups', phase, league: 'INTL', name: 'Worlds', groups: groups.map((g) => g.map((q) => q.t)), matches: [], bo: 1, done: false };
-    comp.groups.forEach((g, gi) => {
-      roundRobin(g, true).forEach((pairs, r) => pairs.forEach(([a, b]) => {
-        const m = makeMatch(id, S.day + r, a, b, 1, r);
-        m.group = gi;
-        comp.matches.push(m);
-      }));
-    });
-    S.comps[id] = comp;
-    S.phaseComps.push(id);
-    addNews('news.worldsStart', { season: y }, true);
-  } else if (phase === 'offseason') {
-    addNews('news.offseason', { season: y }, true);
-  }
-}
-
-function createBracket(id, { phase, league, name, seeds, bo, kind }) {
-  const comp = { id, type: 'bracket', phase, league, name, kind, seeds, rounds: [], matches: [], bo, done: false };
-  const r0 = [];
-  for (let i = 0; i < seeds.length; i += 2) {
-    const m = makeMatch(id, S.day, seeds[i], seeds[i + 1], bo, 0);
-    comp.matches.push(m);
-    r0.push(m.id);
-  }
-  comp.rounds.push(r0);
-  S.comps[id] = comp;
-  S.phaseComps.push(id);
-  return comp;
-}
-
-export function runnerUp(comp) {
-  const f = comp.matches.find((m) => m.id === comp.rounds[comp.rounds.length - 1][0]);
-  return f.winner === f.a ? f.b : f.a;
-}
-
-// thứ tự cuối mùa của một giải (để lấy suất Worlds)
-export function finalOrder(lg) {
-  const y = S.season;
-  const po = S.comps[`${y}-playoffs2-${lg}`];
-  const st = standings(S.comps[`${y}-split2-${lg}`]).map((r) => r.team);
-  const order = [];
-  if (po && po.done) {
-    order.push(po.winner, runnerUp(po));
-  }
-  for (const t of st) if (!order.includes(t)) order.push(t);
-  return order;
-}
-
-export function standings(comp, groupIdx = null) {
-  if (!comp) return [];
-  const teams = groupIdx === null ? comp.teams : comp.groups[groupIdx];
-  const rows = Object.fromEntries(teams.map((t) => [t, { team: t, w: 0, l: 0, gw: 0, gl: 0, streak: [] }]));
-  for (const m of comp.matches) {
-    if (!m.done || !rows[m.a] || !rows[m.b]) continue;
-    if (groupIdx !== null && m.group !== groupIdx) continue;
-    const wa = m.winner === m.a;
-    rows[m.a][wa ? 'w' : 'l']++;
-    rows[m.b][wa ? 'l' : 'w']++;
-    rows[m.a].gw += m.winsA; rows[m.a].gl += m.winsB;
-    rows[m.b].gw += m.winsB; rows[m.b].gl += m.winsA;
-    rows[m.a].streak.push(wa ? 'W' : 'L');
-    rows[m.b].streak.push(wa ? 'L' : 'W');
-  }
-  return Object.values(rows).sort((x, y) => y.w - x.w || (y.gw - y.gl) - (x.gw - x.gl) || teamOvr(S.teams[y.team]) - teamOvr(S.teams[x.team]));
+  (S.phaseStart ??= {})[phase] = S.day;
+  startStages(phase);
+  addNews(PHASE_NEWS[phase], { season: S.season }, true);
 }
 
 export const allPhaseMatches = () => S.phaseComps.flatMap((id) => S.comps[id].matches);
@@ -178,41 +53,34 @@ export function advanceDay() {
   return true;
 }
 
-// sau khi đội người chơi đá xong, cập nhật nhánh đấu
+// sau mỗi ngày / mỗi trận của người chơi: cập nhật nhánh đấu, tạo giai đoạn kế tiếp
 export function progressComps() {
-  for (const id of S.phaseComps) {
-    const c = S.comps[id];
-    if (c.done) continue;
-    if (c.type === 'league') {
-      if (c.matches.every((m) => m.done)) c.done = true;
-    } else if (c.type === 'bracket') {
-      const last = c.rounds[c.rounds.length - 1].map((mid2) => c.matches.find((m) => m.id === mid2));
-      if (!last.every((m) => m.done)) continue;
-      if (last.length === 1) {
-        c.done = true;
-        c.winner = last[0].winner;
-        continue;
-      }
-      const day = Math.max(...last.map((m) => m.day)) + 1;
-      const nr = [];
-      for (let i = 0; i < last.length; i += 2) {
-        const m = makeMatch(c.id, day, last[i].winner, last[i + 1].winner, c.bo, c.rounds.length);
-        c.matches.push(m);
-        nr.push(m.id);
-      }
-      c.rounds.push(nr);
-    } else if (c.type === 'groups') {
-      if (!c.matches.every((m) => m.done)) continue;
-      c.done = true;
-      const q = c.groups.map((_, gi) => standings(c, gi).slice(0, 2).map((r) => r.team));
-      c.qualified = q;
-      const seeds = [q[0][0], q[1][1], q[2][0], q[3][1], q[1][0], q[0][1], q[3][0], q[2][1]];
-      const day = Math.max(...c.matches.map((m) => m.day)) + 1;
-      const saved = S.day;
-      S.day = day;
-      createBracket(`${S.season}-worlds-ko`, { phase: 'worlds', league: 'INTL', name: 'Worlds', seeds, bo: 5, kind: 'worlds' });
-      S.day = saved;
-    }
+  const before = new Set(S.phaseComps.filter((id) => S.comps[id].done));
+  progressStages();
+  for (const id of S.phaseComps) if (S.comps[id].done && !before.has(id)) finishComp(S.comps[id]);
+}
+
+// phát thưởng / ghi danh hiệu khi một giai đoạn có cúp kết thúc
+function finishComp(c) {
+  if (!c.trophy) return;
+  const y = S.season;
+  const ut = S.userTeam;
+  const order = compOrder(c);
+  const tiers = PRIZE[c.trophy.tier];
+  order.forEach((t, i) => {
+    const amt = i === 0 ? tiers[0] : i === 1 ? tiers[1] : i < 4 ? tiers[2] : i < 8 ? tiers[3] : tiers[4] || 0;
+    if (!amt) return;
+    if (t === ut) addFinance('fin.prize', amt);
+    else S.teams[t].budget += amt;
+  });
+  const champ = order[0], runner = order[1];
+  const title = `${c.trophy.title} ${y}`;
+  S.teams[champ].trophies.push(title);
+  S.history.unshift({ season: y, title, champ, runner, kind: c.trophy.tier, league: c.league });
+  addNews(['fst', 'msi', 'worlds'].includes(c.trophy.tier) ? 'news.intlChamp' : 'news.leagueChamp', { team: S.teams[champ].name, title, runner: S.teams[runner].name }, true);
+  for (const pid of S.teams[champ].roster) {
+    const p = S.players[pid];
+    if (p) (p.titles = p.titles || []).push(title);
   }
 }
 
@@ -266,41 +134,11 @@ function addFinanceQuiet(cost, income) {
 function endPhase() {
   const y = S.season;
   const ut = S.userTeam;
-  const prizeFor = (teamId, amount, key) => {
-    if (teamId === ut) addFinance(key, amount);
-    else S.teams[teamId].budget += amount;
-  };
   // ghi tổng kết chi phí ngày
   if (S.dailyCost) {
     S.finance.unshift({ key: 'fin.salaries', amount: Math.round(S.dailyCost), day: S.day, season: y });
     S.finance.unshift({ key: 'fin.sponsor', amount: Math.round(S.dailyIncome), day: S.day, season: y });
     S.dailyCost = 0; S.dailyIncome = 0;
-  }
-  for (const id of S.phaseComps) {
-    const c = S.comps[id];
-    if (c.type !== 'bracket') continue;
-    const final = c.matches.find((m) => m.id === c.rounds[c.rounds.length - 1][0]);
-    const champ = final.winner, runner = runnerUp(c);
-    const semis = c.rounds.length >= 2 ? c.rounds[c.rounds.length - 2].map((x) => c.matches.find((m) => m.id === x)).map((m) => (m.winner === m.a ? m.b : m.a)) : [];
-    const qf = c.rounds.length >= 3 ? c.rounds[c.rounds.length - 3].map((x) => c.matches.find((m) => m.id === x)).map((m) => (m.winner === m.a ? m.b : m.a)) : [];
-    const kind = c.kind === 'playoffs' ? 'league' : c.kind;
-    prizeFor(champ, PRIZE[kind + 'Champ'], 'fin.prize');
-    prizeFor(runner, PRIZE[kind + 'Runner'], 'fin.prize');
-    semis.forEach((t) => prizeFor(t, PRIZE[kind + 'Semi'], 'fin.prize'));
-    if (PRIZE[kind + 'QF']) qf.forEach((t) => prizeFor(t, PRIZE[kind + 'QF'], 'fin.prize'));
-    const title = c.kind === 'playoffs' ? `${c.league} ${c.phase === 'playoffs1' ? 'Split 1' : 'Split 2'} ${y}` : `${c.kind === 'msi' ? 'MSI' : 'Worlds'} ${y}`;
-    S.teams[champ].trophies.push(title);
-    S.history.unshift({ season: y, title, champ, runner, kind: c.kind, league: c.league });
-    addNews(c.kind === 'playoffs' ? 'news.leagueChamp' : 'news.intlChamp', { team: S.teams[champ].name, title, runner: S.teams[runner].name }, true);
-    for (const pid of S.teams[champ].roster) {
-      const p = S.players[pid];
-      if (p) (p.titles = p.titles || []).push(title);
-    }
-  }
-  if (S.phase === 'worlds') {
-    const g = S.comps[`${y}-worlds-groups`];
-    const out = g.groups.flat().filter((t) => !g.qualified.flat().includes(t));
-    out.forEach((t) => prizeFor(t, PRIZE.worldsGroup, 'fin.prize'));
   }
   autoSaveHook && autoSaveHook();
 }
@@ -382,10 +220,17 @@ export function startNewSeason() {
   }
   S.freeAgents = S.freeAgents.filter((id) => S.players[id]);
   S.news = S.news.slice(0, 60);
+  // thăng/xuống hạng LCP ↔ VCS
+  if (S.pendingSwap) {
+    const { up, down } = S.pendingSwap;
+    if (S.teams[up] && S.teams[down]) { S.teams[up].league = 'LCP'; S.teams[down].league = 'VCS'; }
+    S.pendingSwap = null;
+  }
   S.season++;
   S.day++;
+  S.phaseStart = {};
   addFinance('fin.sponsorDeal', 0, {});
-  startPhase('split1');
+  startPhase('kickoff');
 }
 
 export function removeFromTeam(p) {
@@ -483,9 +328,16 @@ export function renewContract(pid, salary, years) {
   p.morale = clamp(p.morale + 8, 0, 100);
 }
 
+// ngày tháng theo lịch thật 2026 của từng pha (day: số ngày tính từ đầu mùa)
 export function seasonDate(day) {
-  const d = new Date(Date.UTC(S.season, 0, 12));
-  d.setUTCDate(d.getUTCDate() + Math.round(day * 3.2) % 330);
+  const abs = +day + (S.seasonStartDay || 0);
+  const starts = Object.entries(S.phaseStart || {}).filter(([, d]) => d <= abs).sort((a, b) => b[1] - a[1]);
+  const [ph, d0] = starts[0] || ['kickoff', S.seasonStartDay || 0];
+  const [[m1, d1], [m2, d2], len] = PHASE_WINDOW[ph] || PHASE_WINDOW.kickoff;
+  const from = Date.UTC(S.season, m1, d1), to = Date.UTC(S.season, m2, d2);
+  const t = Math.min(to, from + ((abs - d0) / len) * (to - from));
+  const d = new Date(t);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 export { clamp };

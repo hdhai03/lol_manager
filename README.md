@@ -11,7 +11,7 @@ Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt
 - **Mô phỏng trong trận (`js/engine.js`)**: trận đấu không được định trước kết quả. Mỗi nhịp 15 giây, 10 AI tuyển thủ tự farm, đổi máu, gank, roam, tranh Rồng/Bọ/Sứ Giả/Baron, công/thủ trụ, đẩy lẻ, bắt lẻ và giao tranh tổng. Chỉ số không cộng thẳng vào sát thương mà quyết định hành vi: trúng/né chiêu, có phát hiện gank hay không, đọc được giao tranh thắng/thua, rút lui đúng lúc, outplay, cướp mục tiêu... Màn xem trận phát lại đúng các khung hình này, kèm bình luận viên giải thích từng pha.
 - **Tướng tủ thật**: lấy từ những tướng mỗi tuyển thủ đã chơi trong năm 2026.
 - **Meta tướng chuyên nghiệp**: xếp hạng S/A/B/C/D theo tỉ lệ có mặt, cấm/chọn và tỉ lệ thắng ở các patch gần nhất. Trang bị pro được tính từ các trận thật.
-- **Mùa giải đầy đủ**: Split 1 → Playoffs → MSI → Split 2 → Playoffs → CKTG (vòng bảng và loại trực tiếp) → kỳ chuyển nhượng → mùa mới.
+- **Thể thức giải đấu 2026 thật** (`js/formats.js`, theo Leaguepedia): LCK Cup (bảng Baron/Elder, Super Week) → Vòng 1-2 → Road to MSI → Vòng 3-4 Legend/Rise → Play-In waterfall → Playoffs; LPL Ascend/Nirvana, Knight's Road, Regional Finals theo điểm hệ thống; LEC Versus/Spring/Summer; LCS Lock-In (Swiss)/Spring/Summer; LCP Split 1-2 và Split 3 Swiss; CBLOL Cup/Split 1/Split 2; VCS Spring/Summer kèm trận thăng hạng LCP. Giải quốc tế: First Stand (8 đội), MSI (Play-In 4 đội + Bracket 8 đội loại kép), CKTG 19 đội (Play-In → Swiss 16 đội → tứ kết). Phân suất MSI/CKTG đúng như 2026, kể cả suất đặc cách và suất thêm từ MSI. Mọi loạt Bo3/Bo5 dùng Hard Fearless Draft.
 - **Ngày thi đấu**: tự cấm/chọn theo thứ tự chuẩn giải đấu (20 lượt, có độ hợp tướng với từng tuyển thủ), xem trận diễn biến trực tiếp với biểu đồ chênh lệch vàng, rồng, Baron, trụ và giao tranh, hoặc giả lập nhanh.
 - **Quản lý**: xếp đội hình, chọn giáo án tập luyện, mua/bán/giải phóng/gia hạn hợp đồng, theo dõi tài chính (lương, tài trợ, tiền thưởng). Mỗi mùa có tân binh mới, và tuyển thủ lớn tuổi có thể giải nghệ.
 - **Lưu game**: tự lưu mỗi ngày, có 3 ô lưu tay, xuất/nhập file save `.json`.
@@ -81,7 +81,8 @@ css/style.css       giao diện
 js/i18n.js          bản dịch Việt / Anh
 js/data.js          tải dữ liệu
 js/state.js         trạng thái game, lưu/tải
-js/season.js        lịch thi đấu, playoffs, MSI, CKTG, chuyển nhượng
+js/formats.js       thể thức 2026: vòng tròn nhiều bảng, Swiss, mẫu nhánh đấu, First Stand/MSI/CKTG
+js/season.js        ngày thi đấu, phát thưởng, chuyển nhượng, mùa mới
 js/attrs.js         hệ chỉ số chi tiết, đặc điểm, thể lực, chiến thuật
 js/engine.js        mô phỏng trong trận theo nhịp 15 giây
 js/sim.js           cấm/chọn AI, nối engine với mùa giải

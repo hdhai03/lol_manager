@@ -114,8 +114,8 @@ function bindLang(root) {
   root.querySelectorAll('[data-lang]').forEach((b) => b.onclick = () => { setLang(b.dataset.lang); render(); });
 }
 
-export const compTitle = (c) => (c.league === 'INTL' ? t('phase.' + c.phase) : `${c.name} ${t('phase.' + c.phase)}`);
-const compLogoId = (c) => (c.league === 'INTL' ? (c.phase === 'msi' ? 'MSI' : 'WORLDS') : c.league);
+export const compTitle = (c) => (c.stage ? `${c.name} · ${t('stage.' + c.stage)}` : `${c.name} ${t('phase.' + c.phase)}`);
+export const compLogoId = (c) => c.logo || (c.league === 'INTL' ? (c.phase === 'msi' ? 'MSI' : 'WORLDS') : c.league);
 
 // ảnh nền: splash mờ của tướng tủ ngôi sao đội người chơi (hoặc tướng meta)
 function featuredChamp() {
@@ -293,7 +293,7 @@ function renderNew() {
   r.querySelector('[data-start]')?.addEventListener('click', () => {
     const name = r.querySelector('#mgr').value.trim() || (getLang() === 'vi' ? 'HLV' : 'Coach');
     newGame({ teamId: view.newTeam, manager: name });
-    startPhase('split1');
+    startPhase('kickoff');
     S.seasonStartDay = 0;
     const ovr = teamOvr(userTeam());
     const rank = leagueTeams(userTeam().league).map((x) => teamOvr(S.teams[x])).sort((a, b) => b - a).indexOf(ovr);
@@ -306,6 +306,13 @@ function renderNew() {
 
 export function startGameUI() {
   setAutoSave(() => saveGame('auto'));
+  // save cũ (thể thức Split 1/2): bắt đầu lại mùa hiện tại theo thể thức 2026
+  if (S && !PHASES.includes(S.phase)) {
+    for (const id of Object.keys(S.comps)) if (id.startsWith(`${S.season}-`)) delete S.comps[id];
+    S.phaseStart = {};
+    S.seasonStartDay = S.day;
+    startPhase('kickoff');
+  }
   view.tab = 'dashboard';
   view.selPlayer = null;
   go('game');
@@ -439,9 +446,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------- Trang chủ ----------
+// giai đoạn vòng tròn gần nhất của giải (để hiện bảng xếp hạng)
 function currentSplitComp(lg) {
-  const split = PHASES.indexOf(S.phase) >= PHASES.indexOf('split2') && S.phase !== 'offseason' ? 'split2' : (S.phase === 'offseason' ? 'split2' : 'split1');
-  return S.comps[`${S.season}-${split}-${lg}`] || S.comps[`${S.season}-split1-${lg}`];
+  const list = Object.values(S.comps).filter((c) => c.id.startsWith(`${S.season}-`) && c.league === lg && c.type !== 'bracket');
+  return list[list.length - 1] || null;
 }
 function recordOf(teamId) {
   const comp = currentSplitComp(S.teams[teamId].league);
@@ -854,12 +862,38 @@ function schedule(c) {
 }
 
 // ---------- Bảng xếp hạng ----------
+// nhánh đấu: cột theo vòng, nhánh thắng ở trên, nhánh thua ở dưới; trận chưa xác định đội hiện "Chờ"
 function bracketHtml(comp) {
-  return `<div class="bracket">${comp.rounds.map((r) => `<div class="b-round">${r.map((id) => {
-    const m = comp.matches.find((x) => x.id === id);
-    const row = (tid, w) => `<div class="b-team ${m.done && m.winner === tid ? 'win' : ''} ${tid === S.userTeam ? 'me' : ''}">${badge(tid, 'sm')}<span>${esc(S.teams[tid].short)}</span><b>${m.games.length ? w : ''}</b></div>`;
-    return `<div class="b-match">${row(m.a, m.winsA)}${row(m.b, m.winsB)}</div>`;
-  }).join('')}</div>`).join('')}</div>`;
+  if (!comp.nodes) return '';
+  const cols = Math.max(...comp.nodes.map((n) => n.col)) + 1;
+  const hasLo = comp.nodes.some((n) => n.lo);
+  const seedName = (sv) => (typeof sv === 'number' ? (comp.seeds[sv - 1] ? null : `#${sv}`) : t(sv[0] === 'W' ? 'br.winner' : 'br.loser', { m: sv.slice(2) }));
+  const cell = (n) => {
+    const m = comp.matches.find((x) => x.id === comp.mk[n.k]);
+    const row = (tid, w, sv) => tid ? `<div class="b-team ${m && m.done && m.winner === tid ? 'win' : ''} ${tid === S.userTeam ? 'me' : ''}">${badge(tid, 'sm')}<span>${esc(S.teams[tid].short)}</span><b>${m && m.games.length ? w : ''}</b></div>`
+      : `<div class="b-team tbd"><span>${esc(seedName(sv) || '?')}</span></div>`;
+    const a = m ? m.a : (typeof n.a === 'number' ? comp.seeds[n.a - 1] : null);
+    const b = m ? m.b : (typeof n.b === 'number' ? comp.seeds[n.b - 1] : null);
+    return `<div class="b-match ${n.k === 'GF' || n.k === 'F' ? 'final' : ''}"><div class="b-k">${esc(n.k)}${m ? ` · Bo${m.bo}` : ''}</div>${row(a, m ? m.winsA : 0, n.a)}${row(b, m ? m.winsB : 0, n.b)}</div>`;
+  };
+  const lane = (lo) => `<div class="bracket">${Array.from({ length: cols }, (_, ci) => {
+    const ns = comp.nodes.filter((n) => n.col === ci && !!n.lo === lo);
+    return `<div class="b-round">${ns.map(cell).join('')}</div>`;
+  }).join('')}</div>`;
+  return `${hasLo ? `<div class="b-lbl">${t('br.upper')}</div>` : ''}${lane(false)}${hasLo ? `<div class="b-lbl">${t('br.lower')}</div>${lane(true)}` : ''}`;
+}
+function swissHtml(comp) {
+  const rows = comp.teams.map((tm) => ({ tm, r: comp.rec[tm] })).sort((x, y) => y.r[0] - x.r[0] || x.r[1] - y.r[1]);
+  const st = (r) => (r[0] >= 3 ? 'adv' : r[1] >= 3 ? 'out' : '');
+  return `<div class="swiss">${rows.map(({ tm, r }) => `<div class="sw-row ${st(r)} ${tm === S.userTeam ? 'me' : ''}">${badge(tm, 'sm')}<span>${esc(S.teams[tm].short)}</span><b>${r[0]}-${r[1]}</b></div>`).join('')}</div>
+    <div class="muted small" style="margin-top:.5rem">${t('st.swissHint')}</div>`;
+}
+function leagueHtml(comp) {
+  if (!comp.groups || comp.groups.length <= 1) return standingsTable(standings(comp), S.userTeam);
+  // LCK Cup: điểm nhóm (thắng Bo3 = 1, thắng Super Week Bo5 = 2)
+  const pts = [0, 0];
+  if (comp.cross) for (const m of comp.matches) if (m.done) pts[comp.groups[0].teams.includes(m.winner) ? 0 : 1] += m.superWeek ? 2 : 1;
+  return `<div class="groups">${comp.groups.map((g, gi) => `<div><h4>${g.name ? esc(g.name) : t('st.group', { g: 'ABCD'[gi] })}${comp.cross ? ` · ${t('st.points', { n: pts[gi] })}` : ''}${comp.winnersGroup != null ? ` · ${t(comp.winnersGroup === gi ? 'st.winnersGroup' : 'st.losersGroup')}` : ''}</h4>${standingsTable(standings(comp, gi), S.userTeam, true)}</div>`).join('')}</div>`;
 }
 
 function standingsTab(c) {
@@ -867,12 +901,15 @@ function standingsTab(c) {
   const y = S.season;
   const comps = Object.values(S.comps).filter((x) => x.id.startsWith(y + '-') && (x.league === lg || (lg === 'INTL' && x.league === 'INTL')));
   const tabs = [...DB.leagues.map((l) => l.id), 'INTL'];
-  c.innerHTML = `<div class="seg">${tabs.map((x) => `<button class="chip row gap ${x === lg ? 'on' : ''}" data-lg="${x}">${leagueBadge(x, 'xs')}${x === 'INTL' ? 'MSI / Worlds' : x}</button>`).join('')}</div>
-    ${comps.length ? comps.map((comp) => {
-      const title = `<span class="row gap">${leagueBadge(compLogoId(comp), 'sm')} ${compTitle(comp)} ${y}</span>`;
-      if (comp.type === 'league') return `<div class="card">${pHead(title)}${standingsTable(standings(comp), S.userTeam)}</div>`;
-      if (comp.type === 'groups') return `<div class="card">${pHead(title)}<div class="groups">${comp.groups.map((_, gi) => `<div><h4>${t('st.group', { g: 'ABCD'[gi] })}</h4>${standingsTable(standings(comp, gi), S.userTeam, true)}</div>`).join('')}</div></div>`;
-      return `<div class="card">${pHead(title, `<span class="muted small">${t('st.bracket')}</span>`)}${bracketHtml(comp)}</div>`;
+  c.innerHTML = `<div class="seg">${tabs.map((x) => `<button class="chip row gap ${x === lg ? 'on' : ''}" data-lg="${x}">${leagueBadge(x, 'xs')}${x === 'INTL' ? 'First Stand / MSI / Worlds' : x}</button>`).join('')}</div>
+    <div class="card fmt-card"><b>${t('fmt.title')}</b><p class="muted small">${t('fmt.' + lg)}</p></div>
+    ${comps.length ? [...comps].reverse().map((comp) => {
+      const title = `<span class="row gap">${leagueBadge(compLogoId(comp), 'sm')} ${esc(compTitle(comp))} ${y}</span>`;
+      const tag = comp.done ? `<span class="muted small">${t('st.done')}</span>` : `<em class="tagx">${t('st.live')}</em>`;
+      if (comp.type === 'league') return `<div class="card">${pHead(title, tag)}${leagueHtml(comp)}</div>`;
+      if (comp.type === 'swiss') return `<div class="card">${pHead(title, tag)}${swissHtml(comp)}</div>`;
+      if (comp.type === 'groups') return '';
+      return `<div class="card">${pHead(title, tag)}${bracketHtml(comp)}</div>`;
     }).join('') : `<p class="muted">${t('st.notStarted')}</p>`}`;
   c.querySelectorAll('[data-lg]').forEach((b) => b.onclick = () => { view.filters.stLeague = b.dataset.lg; render(); });
 }

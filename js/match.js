@@ -7,7 +7,7 @@ import {
 } from './sim.js';
 import { ROLES, esc, logistic, clamp } from './util.js';
 import { TICK, MIR, BLUE_TOWERS, BASE, PIT } from './engine.js';
-import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon, bgArt } from './ui.js';
+import { badge, champIcon, roleTag, ovrTag, compTitle, compLogoId, face, leagueBadge, roleIcon, bgArt } from './ui.js';
 import { champImg, champArt, champTile, itemImg, mapImg } from './data.js';
 import { loadThree, webglOk, createArena } from './arena3d.js';
 const roleIconSvg = (r) => roleIcon(r);
@@ -52,7 +52,7 @@ export function openMatchDay(m, done) {
 function header() {
   const comp = S.comps[match.comp];
   return `${bgArt()}<div class="md-head">
-    <div class="muted small row center gap">${leagueBadge(comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league, 'xs')} ${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })}</div>
+    <div class="muted small row center gap">${leagueBadge(compLogoId(comp), 'xs')} ${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })}</div>
     <div class="md-score">${badge(match.a, 'lg')}<span class="md-sname">${esc(S.teams[match.a].name)}</span>
       <b>${match.winsA} - ${match.winsB}</b>
       <span class="md-sname">${esc(S.teams[match.b].name)}</span>${badge(match.b, 'lg')}</div>
@@ -80,8 +80,8 @@ function preMatch() {
   root().querySelectorAll('[data-a]').forEach((b) => b.onclick = () => {
     const a = b.dataset.a;
     if (a === 'manual') draftScreen();
-    else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red)); }
-    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red), { fast: true }); }
+    else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || [])); }
+    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); }
   });
 }
 
@@ -91,7 +91,7 @@ let draft = null, dsel = null, dfilter = 'all', dq = '', swapSel = null;
 
 function draftScreen() {
   const { blue, red } = sides();
-  draft = newDraft(blue, red);
+  draft = newDraft(blue, red, match.fearless || []);
   dsel = null; dfilter = 'all'; dq = ''; swapSel = null;
   renderDraft();
 }
@@ -111,7 +111,7 @@ function renderDraft() {
   if (dq) champs = champs.filter((c) => (c.name + ' ' + c.nameVi).toLowerCase().includes(dq.toLowerCase()));
   const myOpen = openRoles(draft, ms);
   const bestFit = (cid) => Math.round(Math.max(...myOpen.map((r) => champFit(myLine[r], cid, r)), 0));
-  const lgId = comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league;
+  const lgId = compLogoId(comp);
 
   const bans = (s) => {
     const next = !done && side === s && type === 'ban' ? draft.bans[s].length : -1;
@@ -143,7 +143,7 @@ function renderDraft() {
   const tr = ms === 'B' ? trB : trR;
 
   root().innerHTML = `<div class="draft">
-    <div class="dr-top"><button data-leave>‹ ${t('dr.leave')}</button><span>${esc(compTitle(comp))}</span><span></span></div>
+    <div class="dr-top"><button data-leave>‹ ${t('dr.leave')}</button><span>${esc(compTitle(comp))}</span><span class="fl-note">${match.bo > 1 ? `${t('dr.fearless')}${draft.locked.length ? ` · ${t('dr.fearlessN', { n: draft.locked.length })}` : ''}` : ''}</span></div>
     <div class="dr-mid">
       <div class="dr-panel">
         <div class="dr-ph"><h3>${t('dr.champions')}</h3>
@@ -151,7 +151,8 @@ function renderDraft() {
           <label class="dr-search">⌕<input type="search" placeholder="${t('meta.search')}" value="${esc(dq)}" data-q></label></div>
         <div class="dr-grid">${champs.map((c) => {
           const dis = taken.has(c.id);
-          return `<button class="dr-c ${dis ? 'dis' : ''} ${dsel === c.id ? 'on' : ''}" ${dis || !myTurn ? 'disabled' : ''} data-c="${c.id}">
+          const fl = draft.locked.includes(c.id);
+          return `<button class="dr-c ${dis ? 'dis' : ''} ${fl ? 'fl' : ''}" title="${fl ? esc(t('dr.fearlessUsed')) : ''} ${dsel === c.id ? 'on' : ''}" ${dis || !myTurn ? 'disabled' : ''} data-c="${c.id}">
             <img loading="lazy" src="${champTile(c.id)}" alt="">${['S', 'A'].includes(c.tier) ? `<span class="hx">${c.tier}</span>` : ''}
             ${myTurn && type === 'pick' && !dis ? `<span class="fit">${bestFit(c.id)}</span>` : ''}<em>${esc(cname(c.id))}</em></button>`;
         }).join('')}</div>
@@ -266,7 +267,7 @@ function liveGame(d, opts = {}) {
     <span class="ro">${roleIconSvg(rl)}</span>
     ${champIcon(pick('R', rl), 36)}<span class="kd" id="kd-R${rl}">0/0/0</span><span class="cs" id="cs-R${rl}">0</span><div class="it r" id="it-R${rl}"></div></div>`;
   const comp = S.comps[match.comp];
-  const lgId = comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league;
+  const lgId = compLogoId(comp);
 
   root().innerHTML = `<div class="bc">
     <div class="arena flat" id="arena">
@@ -507,11 +508,11 @@ function postGame(g) {
   r.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => {
     const a = b.dataset.a;
     if (a === 'manual') draftScreen();
-    else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red)); }
-    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red), { fast: true }); }
+    else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || [])); }
+    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); }
   });
   // giả lập nhanh: tự sang ván tiếp sau vài giây
-  if (quickMode && !over) setTimeout(() => { if (overlay && r.isConnected && !match.done && root().querySelector('[data-a=quick]')) { const { blue, red } = sides(); liveGame(autoDraft(blue, red), { fast: true }); } }, 2500);
+  if (quickMode && !over) setTimeout(() => { if (overlay && r.isConnected && !match.done && root().querySelector('[data-a=quick]')) { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); } }, 2500);
 }
 
 function seriesEnd() {
