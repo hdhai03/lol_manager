@@ -1,4 +1,4 @@
-import { DB, champImg, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo } from './data.js';
+import { DB, champImg, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
 import { t, cname, iname, getLang, setLang } from './i18n.js';
 import {
   S, setState, newGame, team, player, userTeam, teamPlayers, teamSalary, teamOvr, autoLineup, lineupPlayers,
@@ -20,19 +20,19 @@ export function badge(teamId, size = 'md') {
   const src = tm || DB.teams[teamId] || { short: '?', name: teamId };
   const h = tm ? tm.hue : [...(src.name || '?')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 0);
   const logo = teamLogo(teamId);
-  if (logo) return `<span class="badge badge-${size} logo ${isDarkLogo(logo) ? 'on-light' : ''}" title="${esc(src.name || src.display)}"><img src="${logo}" alt="${esc(src.short || '')}" loading="lazy"></span>`;
+  if (logo) return `<span class="badge badge-${size} logo ${isDarkLogo(logo) ? 'on-light' : ''}" title="${esc(src.name || src.display)}"><img src="${asset(logo)}" alt="${esc(src.short || '')}" loading="lazy"></span>`;
   return `<span class="badge badge-${size}" style="--h:${h}" title="${esc(src.name)}">${esc(src.short || '?')}</span>`;
 }
 export function leagueBadge(id, size = 'sm') {
-  const src = leagueLogo(id === 'INTL' ? 'WORLDS' : id);
-  if (!src) return '';
-  return `<span class="lg-logo lg-${size} ${isDarkLogo(src) ? 'on-light' : ''}" title="${esc(id)}"><img src="${src}" alt="${esc(id)}" loading="lazy"></span>`;
+  const lp = leagueLogo(id === 'INTL' ? 'WORLDS' : id);
+  if (!lp) return '';
+  return `<span class="lg-logo lg-${size} ${isDarkLogo(lp) ? 'on-light' : ''}" title="${esc(id)}"><img src="${asset(lp)}" alt="${esc(id)}" loading="lazy"></span>`;
 }
 // mini face tuyển thủ; không có ảnh thì dùng chữ cái đầu
 export function face(p, size = 'md') {
   if (!p) return `<span class="face face-${size} none"></span>`;
-  const src = playerFace(p.id);
-  if (src) return `<span class="face face-${size}"><img src="${src}" alt="${esc(p.ign)}" loading="lazy"></span>`;
+  const fp = playerFace(p.id);
+  if (fp) return `<span class="face face-${size}"><img src="${asset(fp)}" alt="${esc(p.ign)}" loading="lazy"></span>`;
   return `<span class="face face-${size} none">${esc((p.ign || '?').slice(0, 2).toUpperCase())}</span>`;
 }
 export const champIcon = (id, size = 32, extra = '') => id

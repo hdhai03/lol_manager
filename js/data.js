@@ -14,13 +14,19 @@ export async function loadData() {
   } catch { DB.images = null; }
   DB.images ??= { leagues: {}, teams: {}, players: {}, dark: [] };
   DB.darkLogos = new Set(DB.images.dark || []);
+  // gói ảnh (data URI) — chỉ dùng khi trang bật window.RIFT_PACK (bản deploy giới hạn số file)
+  DB.pack = null;
+  if (globalThis.RIFT_PACK) {
+    try { const r = await fetch('data/assets-pack.json'); if (r.ok) DB.pack = await r.json(); } catch { /* dùng file lẻ */ }
+  }
   DB.champList = Object.values(DB.champions).sort((a, b) => a.name.localeCompare(b.name));
   DB.leagueById = Object.fromEntries(DB.leagues.map((l) => [l.id, l]));
 }
 
 // Ảnh tải sẵn vào assets/ (scripts/fetch-data.mjs) để game chạy offline
-export const champImg = (id) => `assets/champion/${id}.png`;
-export const itemImg = (id) => `assets/item/${id}.png`;
+export const src = (path) => (DB.pack && DB.pack[path]) || path;
+export const champImg = (id) => src(`assets/champion/${id}.png`);
+export const itemImg = (id) => src(`assets/item/${id}.png`);
 export const teamLogo = (id) => DB.images.teams[id] || null;
 export const leagueLogo = (id) => DB.images.leagues[id] || null;
 export const playerFace = (id) => DB.images.players[id] || null;

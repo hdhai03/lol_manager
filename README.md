@@ -48,6 +48,14 @@ Script tải logo 7 giải, MSI và CKTG, logo 62 đội và ảnh chân dung c�
 
 > Logo đội/giải và ảnh tuyển thủ thuộc bản quyền của các đội, Riot Games và nhiếp ảnh gia. Chỉ dùng cho dự án fan phi thương mại; nếu phát hành rộng, hãy cân nhắc bỏ thư mục `assets/team`, `assets/player`, `assets/league`. Game vẫn chạy bình thường khi thiếu chúng.
 
+### Gói ảnh (tuỳ chọn)
+
+```bash
+python3 scripts/build_pack.py
+```
+
+Lệnh này gộp toàn bộ ảnh thành một file `data/assets-pack.json` (khoảng 2MB). Dùng gói này khi deploy lên nơi giới hạn số file. Muốn game dùng gói, đặt `window.RIFT_PACK = true` trước `js/main.js`. File gói không được commit lên repo.
+
 ## Kiểm thử
 
 ```bash
