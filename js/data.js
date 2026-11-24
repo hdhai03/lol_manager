@@ -11,5 +11,6 @@ export async function loadData() {
   DB.leagueById = Object.fromEntries(DB.leagues.map((l) => [l.id, l]));
 }
 
-export const champImg = (id) => `https://ddragon.leagueoflegends.com/cdn/${DB.meta.ddragon}/img/champion/${id}.png`;
-export const itemImg = (id) => `https://ddragon.leagueoflegends.com/cdn/${DB.meta.ddragon}/img/item/${id}.png`;
+// Ảnh tải sẵn vào assets/ (scripts/fetch-data.mjs) để game chạy offline
+export const champImg = (id) => `assets/champion/${id}.png`;
+export const itemImg = (id) => `assets/item/${id}.png`;

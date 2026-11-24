@@ -253,6 +253,17 @@ async function main() {
     items[id] = { id, name: it.name, nameVi: itemVi[id]?.name || it.name, gold: it.gold.total, tags: it.tags, plain: itemVi[id]?.plaintext || it.plaintext };
   }
 
+  // tải ảnh tướng & trang bị về assets/
+  const ASSETS = new URL('../assets/', import.meta.url).pathname;
+  for (const [dir, ids] of [['champion', Object.keys(champions)], ['item', Object.keys(items)]]) {
+    mkdirSync(ASSETS + dir, { recursive: true });
+    for (const id of ids) {
+      const f = `${ASSETS}${dir}/${id}.png`;
+      if (existsSync(f)) continue;
+      execFileSync('curl', ['-s', '-f', '-m', '30', '-o', f, `https://ddragon.leagueoflegends.com/cdn/${ver}/img/${dir}/${id}.png`]);
+    }
+  }
+
   const patchLabel = `${Math.floor(latest / 100)}.${latest % 100}`;
   writeFileSync(OUT + 'leagues.json', JSON.stringify(LEAGUES.map(({ like, roster, ...l }) => ({ ...l, source: roster })), null, 1));
   writeFileSync(OUT + 'teams.json', JSON.stringify(teams));
