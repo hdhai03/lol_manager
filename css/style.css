@@ -936,3 +936,96 @@ body > .bg-art { z-index: 0; }
   .lv-stage { grid-template-columns: 1fr 1fr; }
   .arena { grid-column: 1 / -1; grid-row: 1; }
 }
+
+/* =====================================================================
+   Màn xem trận kiểu phát sóng giải đấu (HUD toàn màn hình 16:9)
+   ===================================================================== */
+.matchday:has(.bc) { overflow: hidden; background: #05080b; }
+.bc { position: fixed; inset: 0; z-index: 51; overflow: hidden; background: #070b0e; font-family: var(--body); --hud: rgba(10, 13, 22, .86); --hud2: rgba(18, 22, 36, .92); }
+.bc .arena { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+.bc .arena.flat { display: grid; place-items: center; background: radial-gradient(60% 60% at 50% 45%, #13241d, #070b0e); }
+.bc .arena.flat .map-wrap { position: relative; width: min(58vh, 46vw); max-width: none; right: auto; bottom: auto; }
+.bc .arena:not(.flat) .map-wrap { display: none; }
+.bc .u3 b { font-size: .72rem; }
+/* thanh tỉ số */
+.bc-top { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: auto auto auto; align-items: stretch; z-index: 10; filter: drop-shadow(0 8px 20px rgba(0, 0, 0, .55)); }
+.bc-team { display: flex; align-items: center; gap: .6rem; padding: .45rem 1rem; background: var(--hud2); font-family: var(--display); font-weight: 700; font-size: 1.15rem; }
+.bc-team.l { clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%); padding-left: 1.6rem; border-bottom: 3px solid var(--blue); }
+.bc-team.r { clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); padding-right: 1.6rem; border-bottom: 3px solid var(--red); }
+.bc-mid { display: flex; align-items: center; gap: .9rem; padding: .35rem 1.1rem; background: var(--hud); font-variant-numeric: tabular-nums; }
+.bc-mid .g { font-weight: 600; font-size: .95rem; color: #d9c58a; min-width: 52px; text-align: center; }
+.bc-mid .g::before { content: '◆ '; font-size: .6rem; vertical-align: middle; }
+.bc-mid .g.up { color: #ffe08a; }
+.bc-mid .tw { font-weight: 600; font-size: .95rem; color: var(--muted); }
+.bc-mid .tw::before { content: '♜ '; }
+.bc-mid .k { font-family: var(--display); font-size: 1.7rem; min-width: 36px; text-align: center; }
+.bc-mid .k.b { color: #8fbaff; }
+.bc-mid .k.r { color: #ff9a9a; }
+.bc-mid .clock { font-weight: 600; font-size: .95rem; background: rgba(255, 255, 255, .08); padding: .15rem .55rem; border-radius: 4px; }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 9px; height: 9px; border: 1.5px solid rgba(255, 255, 255, .6); transform: rotate(45deg); }
+.pips i.on { background: #fff; }
+.bc-sub { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .25rem .8rem; background: rgba(6, 9, 14, .8); font-size: .72rem; color: var(--muted); }
+.bc-sub .lg { display: flex; align-items: center; gap: .35rem; white-space: nowrap; }
+.dk { display: flex; gap: 4px; min-width: 120px; }
+.dk.r { justify-content: flex-end; }
+.dk i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .3); display: inline-grid; place-items: center; font-style: normal; font-size: .6rem; font-weight: 700; color: #fff; }
+.dr-infernal { background: #f06a2b; } .dr-mountain { background: #b08a5a; } .dr-ocean { background: #2fa7c9; } .dr-cloud { background: #b9d4e6; } .dr-hextech { background: #2fd6d0; } .dr-chemtech { background: #6fcf3a; }
+.dk i.ba { background: #9a5cff; width: auto; padding: 0 5px; border-radius: 7px; }
+/* đồng hồ mục tiêu */
+.bc-timers { position: absolute; top: .6rem; left: .8rem; display: flex; gap: .5rem; z-index: 10; }
+.bc-timers > div { display: flex; align-items: center; gap: .4rem; background: var(--hud); padding: .3rem .65rem; border-radius: 4px; font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ob { width: 12px; height: 12px; border-radius: 50%; }
+.ob.dr { background: #f06a2b; } .ob.ba { background: #9a5cff; }
+/* cột chân dung hai bên */
+.bc-side { position: absolute; top: 50%; transform: translateY(-58%); display: flex; flex-direction: column; gap: .45rem; z-index: 9; }
+.bc-side.l { left: .6rem; }
+.bc-side.r { right: .6rem; align-items: flex-end; }
+.bc-p { width: 74px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.bc-p .ph { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px var(--blue), 0 6px 14px rgba(0, 0, 0, .6); }
+.bc-p.R .ph { box-shadow: 0 0 0 2px var(--red), 0 6px 14px rgba(0, 0, 0, .6); }
+.bc-p .ph .champ { width: 100%; height: 100%; border-radius: 0; }
+.bc-p .lv { position: absolute; right: 0; bottom: 0; background: rgba(0, 0, 0, .8); font-size: .66rem; font-weight: 700; padding: 0 4px; border-top-left-radius: 4px; }
+.bc-p .rs { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 1.25rem; text-shadow: 0 2px 4px #000; }
+.bc-p.dead .ph .champ { filter: grayscale(1) brightness(.45); }
+.bc-p .hp { width: 64px; height: 5px; background: rgba(0, 0, 0, .7); border-radius: 2px; overflow: hidden; }
+.bc-p .hp i { display: block; height: 100%; background: linear-gradient(90deg, #39c55c, #7be38d); transition: width .3s; }
+.bc-p b { font-size: .66rem; font-weight: 600; text-shadow: 0 1px 3px #000; max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* kill feed */
+.bc-feed { position: absolute; top: 5.4rem; right: 6.2rem; display: flex; flex-direction: column; gap: .3rem; z-index: 9; align-items: flex-end; }
+.kf { display: flex; align-items: center; gap: .35rem; background: var(--hud); padding: .2rem .35rem; border-radius: 4px; animation: kfin .4s cubic-bezier(.16, 1, .3, 1); }
+.kf.B { box-shadow: inset 3px 0 0 var(--blue); }
+.kf.R { box-shadow: inset 3px 0 0 var(--red); }
+.kf span { font-size: .8rem; color: var(--muted); }
+@keyframes kfin { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+/* bảng đối đầu phía dưới */
+.bc-bottom { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 2px; padding: .4rem .6rem .5rem; background: linear-gradient(180deg, rgba(10, 13, 22, .78), rgba(10, 13, 22, .95)); border-top-left-radius: 10px; border-top-right-radius: 10px; z-index: 9; font-variant-numeric: tabular-nums; }
+.bc-row { display: flex; align-items: center; gap: .45rem; }
+.bc-row .champ { border-radius: 4px; }
+.bc-row .ro { width: 22px; color: var(--muted); display: grid; place-items: center; }
+.bc-row .kd { width: 58px; text-align: center; font-weight: 600; font-size: .85rem; }
+.bc-row .cs { width: 34px; text-align: center; color: var(--muted); font-size: .8rem; }
+.bc-row .it { display: flex; gap: 2px; }
+.bc-row .it.l { flex-direction: row-reverse; }
+.bc-row .it img, .bc-row .it span { width: 24px; height: 24px; border-radius: 3px; background: rgba(255, 255, 255, .06); display: block; }
+/* minimap */
+.bc-mini { position: absolute; right: .6rem; bottom: .6rem; width: clamp(170px, 19vw, 260px); aspect-ratio: 1; z-index: 9; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, .15), 0 10px 30px rgba(0, 0, 0, .7); --tt: .8s; }
+.bc-mini img { width: 100%; height: 100%; display: block; }
+.bc-mini .md { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; overflow: hidden; transition: left var(--tt) linear, top var(--tt) linear, opacity .3s; }
+.bc-mini .md .champ { width: 100%; height: 100%; border-radius: 50%; }
+.bc-mini .md-B { box-shadow: 0 0 0 2px #4c8df6; }
+.bc-mini .md-R { box-shadow: 0 0 0 2px #f2575f; }
+.bc-mini .md.dead { opacity: 0; }
+/* banner & điều khiển */
+.bc .banner { position: absolute; top: 18%; z-index: 11; font-size: clamp(.9rem, 1.8vw, 1.3rem); padding: .7rem 2rem; }
+.bc-ctrl { position: absolute; left: .6rem; bottom: .6rem; display: flex; gap: .3rem; flex-wrap: wrap; z-index: 10; max-width: 26vw; }
+.bc-ctrl .chip { background: var(--hud); }
+.bc-ctrl .chip.on { background: #f3f5f9; }
+@media (max-width: 1000px) {
+  .bc-bottom { display: none; }
+  .bc-side { transform: translateY(-50%); }
+  .bc-p { width: 52px; } .bc-p .ph { width: 46px; height: 46px; } .bc-p .hp { width: 46px; } .bc-p b { display: none; }
+  .bc-feed { right: .6rem; top: auto; bottom: calc(19vw + 1.6rem); }
+  .bc-team { font-size: .85rem; padding: .35rem .6rem; } .bc-mid .g, .bc-mid .tw { display: none; }
+  .bc-ctrl { max-width: 60vw; }
+}

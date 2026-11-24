@@ -14,7 +14,7 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "bin")
 CHUNK = 14 * 1024 * 1024  # mỗi file < 15MB
-GROUPS = ["league", "team", "champion", "item", "tile", "player", "loading", "splash"]
+GROUPS = ["league", "team", "champion", "item", "tile", "player", "map", "loading", "splash"]
 MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg"}
 
 os.makedirs(OUT, exist_ok=True)

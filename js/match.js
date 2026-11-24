@@ -7,7 +7,7 @@ import {
 } from './sim.js';
 import { ROLES, esc, logistic, clamp } from './util.js';
 import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon, bgArt } from './ui.js';
-import { champImg, champArt, champTile } from './data.js';
+import { champImg, champArt, champTile, itemImg, mapImg } from './data.js';
 import { loadThree, webglOk, createArena } from './arena3d.js';
 const roleIconSvg = (r) => roleIcon(r);
 
@@ -251,7 +251,8 @@ function liveGame(d, opts = {}) {
   const tShort = (s) => esc(S.teams[s === 'B' ? g.blue : g.red].short);
   const ign = (s, r) => { const x = pmap[s + r]; return x && S.players[x.pid] ? esc(S.players[x.pid].ign) : '?'; };
   let minute = 0, evIdx = 0;
-  const live = { kills: { B: 0, R: 0 }, towers: { B: 0, R: 0 }, drakes: { B: 0, R: 0 }, barons: { B: 0, R: 0 } };
+  const live = { kills: { B: 0, R: 0 }, towers: { B: 0, R: 0 }, drakes: { B: 0, R: 0 }, barons: { B: 0, R: 0 }, dk: { B: [], R: [] }, nextDr: 5, nextBa: 20 };
+  const kfeed = [];
   const feed = [];
   const tok = {}; // trạng thái từng tướng trên bản đồ
   for (const sd of ['B', 'R']) for (const r of ROLES) tok[sd + r] = { pos: BASE[sd], dead: 0, k: 0, d: 0, a: 0 };
@@ -266,35 +267,46 @@ function liveGame(d, opts = {}) {
     if (e.type === 'teamfight') { p.kb = e.side === 'B' ? e.kb : e.kr; p.kr = e.side === 'B' ? e.kr : e.kb; }
     return t('ev.' + e.type, p);
   };
-  const slot = (sd, r) => `<div class="lv-pl ${sd === 'B' ? 'blue' : 'red'}" id="pl-${sd}${r}">${champIcon(g.picks[sd][r], 44)}
-    <div class="grow"><b>${ign(sd, r)}</b><small>${esc(cname(g.picks[sd][r]))}</small></div><span class="kda" id="kda-${sd}${r}">0/0/0</span></div>`;
+  const pick = (sd, rl) => g.picks[sd][rl];
+  const side = (sd) => (sd === 'B' ? g.blue : g.red);
+  const winsOf = (tid) => (tid === match.a ? match.winsA : match.winsB);
+  const pips = (tid) => `<span class="pips">${Array.from({ length: Math.ceil(match.bo / 2) }, (_, i) => `<i class="${i < winsOf(tid) ? 'on' : ''}"></i>`).join('')}</span>`;
+  const portrait = (sd, rl) => `<div class="bc-p ${sd}" id="sp-${sd}${rl}"><div class="ph">${champIcon(pick(sd, rl), 64)}<span class="lv" id="lv-${sd}${rl}">1</span><span class="rs" id="rs-${sd}${rl}"></span></div>
+    <div class="hp"><i id="hp-${sd}${rl}"></i></div><b>${ign(sd, rl)}</b></div>`;
+  const row = (rl) => `<div class="bc-row">
+    <div class="it l" id="it-B${rl}"></div><span class="cs" id="cs-B${rl}">0</span><span class="kd" id="kd-B${rl}">0/0/0</span>${champIcon(pick('B', rl), 36)}
+    <span class="ro">${roleIconSvg(rl)}</span>
+    ${champIcon(pick('R', rl), 36)}<span class="kd" id="kd-R${rl}">0/0/0</span><span class="cs" id="cs-R${rl}">0</span><div class="it r" id="it-R${rl}"></div></div>`;
+  const comp = S.comps[match.comp];
+  const lgId = comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league;
 
-  root().innerHTML = `<div class="md-inner live">${header()}
-    <div class="lv-top">
-      <div class="lv-team blue">${badge(g.blue, 'md')} ${tShort('B')}</div>
-      <div class="lv-mid"><div class="lv-k"><b id="kB">0</b><span id="clock">00:00</span><b id="kR">0</b></div>
-        <div class="lv-obj small"><span id="oB"></span><span id="gd" class="gd"></span><span id="oR"></span></div></div>
-      <div class="lv-team red">${tShort('R')} ${badge(g.red, 'md')}</div>
-    </div>
-    <div class="lv-stage">
-      <div class="lv-side">${ROLES.map((r) => slot('B', r)).join('')}</div>
-      <div class="arena flat" id="arena">
-        <div class="map-wrap" id="map">${mapSvg()}
-          ${Object.keys(tok).map((k) => `<div class="tk tk-${k[0]}" id="tk-${k}" style="left:${tok[k].pos[0]}%;top:${tok[k].pos[1]}%">${champIcon(g.picks[k[0]][k.slice(1)], 30)}<i></i></div>`).join('')}
-          <div class="fx" id="fx"></div>
-        </div>
-        <div class="banner" id="banner"></div><div class="a-load" id="aload"></div>
+  root().innerHTML = `<div class="bc">
+    <div class="arena flat" id="arena">
+      <div class="map-wrap" id="map">${mapSvg()}
+        ${Object.keys(tok).map((k) => `<div class="tk tk-${k[0]}" id="tk-${k}" style="left:${tok[k].pos[0]}%;top:${tok[k].pos[1]}%">${champIcon(g.picks[k[0]][k.slice(1)], 30)}<i></i></div>`).join('')}
+        <div class="fx" id="fx"></div>
       </div>
-      <div class="lv-side">${ROLES.map((r) => slot('R', r)).join('')}</div>
+      <div class="a-load" id="aload"></div>
     </div>
-    <div class="lv-under">
-      <div class="card"><div class="small muted">${t('m.gold')}</div><svg id="gold" viewBox="0 0 300 80" preserveAspectRatio="none"><line x1="0" y1="40" x2="300" y2="40" class="axis"/><polyline id="gl" points="" /></svg></div>
-      <div class="card feed-live" id="feed"></div>
+    <div class="bc-top">
+      <div class="bc-team l">${badge(g.blue, 'md')}<b>${tShort('B')}</b>${pips(g.blue)}</div>
+      <div class="bc-mid">
+        <span class="g" id="gB">0</span><span class="tw" id="twB">0</span><b class="k b" id="kB">0</b>
+        <span class="clock" id="clock">00:00</span>
+        <b class="k r" id="kR">0</b><span class="tw" id="twR">0</span><span class="g" id="gR">0</span>
+      </div>
+      <div class="bc-team r">${pips(g.red)}<b>${tShort('R')}</b>${badge(g.red, 'md')}</div>
+      <div class="bc-sub"><span class="dk" id="dkB"></span><span class="lg">${leagueBadge(lgId, 'xs')} ${esc(compTitle(comp))} · ${t('dr.game', { n: match.games.length + 1 })}</span><span class="dk r" id="dkR"></span></div>
     </div>
-    <div class="row center gap lv-ctrl"><span class="muted small">${t('m.speed')}</span>
-      ${[1, 2, 4, 8, 16].map((x) => `<button class="chip ${speed === x ? 'on' : ''}" data-sp="${x}">${x}x</button>`).join('')}
-      <button class="chip" data-view title="2D / 3D">2D / 3D</button>
-      <button class="btn ghost" data-skip>${t('m.skip')}</button>${!match.done ? `<button class="btn ghost" data-skipall>${t('m.skipAll')}</button>` : ''}</div>
+    <div class="bc-timers"><div><span class="ob dr"></span><span id="tDr">05:00</span></div><div><span class="ob ba"></span><span id="tBa">20:00</span></div></div>
+    <div class="bc-side l">${ROLES.map((rl) => portrait('B', rl)).join('')}</div>
+    <div class="bc-side r">${ROLES.map((rl) => portrait('R', rl)).join('')}</div>
+    <div class="bc-feed" id="kfeed"></div>
+    <div class="bc-bottom">${ROLES.map(row).join('')}</div>
+    <div class="bc-mini"><img src="${mapImg()}" alt="">${Object.keys(tok).map((k) => `<i class="md md-${k[0]}" id="md-${k}">${champIcon(g.picks[k[0]][k.slice(1)], 22)}</i>`).join('')}</div>
+    <div class="banner" id="banner"></div>
+    <div class="bc-ctrl">${[1, 2, 4, 8, 16].map((x) => `<button class="chip sm ${speed === x ? 'on' : ''}" data-sp="${x}">${x}x</button>`).join('')}
+      <button class="chip sm" data-view>2D/3D</button><button class="chip sm" data-skip>${t('m.skip')}</button>${!match.done ? `<button class="chip sm" data-skipall>${t('m.skipAll')}</button>` : ''}</div>
   </div>`;
   const r = root();
   const map = r.querySelector('#map');
@@ -304,8 +316,9 @@ function liveGame(d, opts = {}) {
   const kill = (sd, killerRole, victimRole, at) => {
     const os = sd === 'B' ? 'R' : 'B';
     const v = tok[os + victimRole];
-    v.dead = Math.min(3, 1 + Math.floor(minute / 15)); v.d++; v.diedAt = at; v.pos = BASE[os];
+    v.dead = Math.min(3, 1 + Math.floor(minute / 15)); v.deadMax = v.dead; v.d++; v.diedAt = at; v.pos = BASE[os];
     if (killerRole) tok[sd + killerRole].k++;
+    kfeed.push({ sd, kc: g.picks[sd][killerRole || ROLES[0]], vc: g.picks[os][victimRole], id: Math.random() });
     for (const a of alive(sd).filter((x) => x !== killerRole).slice(0, 2)) tok[sd + a].a++;
     flash(at, sd);
   };
@@ -377,11 +390,12 @@ function liveGame(d, opts = {}) {
       banner(t('bn.teamfight', { team: tShort(e.side), kb: e.side === 'B' ? e.kb : e.kr, kr: e.side === 'B' ? e.kr : e.kb }), e.side);
     }
     if (e.type === 'dragon' || e.type === 'soul' || e.type === 'elder') {
-      if (e.type === 'dragon') live.drakes[e.side]++;
+      if (e.type === 'dragon') { live.drakes[e.side]++; live.dk[e.side].push(e.drake); }
+      live.nextDr = e.type === 'elder' || e.type === 'soul' ? minute + 6 : minute + 5;
       gather(PIT.dragon, [e.side], 3); flash(PIT.dragon, e.side); arena?.objective('dragon', e.side);
       banner(e.type === 'soul' ? t('bn.soul', { team: tShort(e.side), drake: t('drake.' + e.drake) }) : e.type === 'elder' ? t('bn.elder', { team: tShort(e.side) }) : t('bn.dragon', { team: tShort(e.side), drake: t('drake.' + e.drake) }), e.side);
     }
-    if (e.type === 'baron') { live.barons[e.side]++; gather(PIT.baron, [e.side], 3); flash(PIT.baron, e.side); arena?.objective('baron', e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side); }
+    if (e.type === 'baron') { live.nextBa = minute + 6; live.barons[e.side]++; gather(PIT.baron, [e.side], 3); flash(PIT.baron, e.side); arena?.objective('baron', e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side); }
     if (e.type === 'herald' || e.type === 'grubs') { gather(PIT.baron, [e.side], 3); }
     if (e.type === 'tower' || e.type === 'firsttower') {
       live.towers[e.side]++;
@@ -393,28 +407,58 @@ function liveGame(d, opts = {}) {
     feed.push({ side: e.side, text: evText(e) });
   };
 
+  const mm = (x) => `${String(x).padStart(2, '0')}:00`;
+  const kfmt = (n) => (n / 1000).toFixed(1) + 'K';
   const draw = () => {
+    const f = Math.min(1, minute / g.dur);
+    const teamGold = { B: 0, R: 0 };
     for (const [k, tk] of Object.entries(tok)) {
+      const sd = k[0], rl = k.slice(1);
+      const x = pmap[k];
+      // 2D
       const el = r.querySelector('#tk-' + k);
       el.style.left = tk.pos[0] + '%'; el.style.top = tk.pos[1] + '%';
       el.classList.toggle('dead', tk.dead > 0);
       el.querySelector('i').textContent = tk.dead > 0 ? tk.dead : '';
-      r.querySelector('#kda-' + k).textContent = `${tk.k}/${tk.d}/${tk.a}`;
-      r.querySelector('#pl-' + k).classList.toggle('dead', tk.dead > 0);
+      // minimap
+      const md = r.querySelector('#md-' + k);
+      md.style.left = tk.pos[0] + '%'; md.style.top = tk.pos[1] + '%';
+      md.classList.toggle('dead', tk.dead > 0);
+      // chỉ số trực tiếp (ước tính tăng dần tới kết quả cuối)
+      const gold = x ? 500 + (x.gold - 500) * f : 0;
+      teamGold[sd] += gold;
+      const lvl = Math.min(18, Math.max(1, Math.floor(1 + minute * (rl === 'Support' ? .5 : .6) + tk.k * .3 + tk.a * .1)));
+      r.querySelector('#lv-' + k).textContent = lvl;
+      r.querySelector('#rs-' + k).textContent = tk.dead > 0 ? Math.round(Math.min(60, 7 + minute * 1.2) * tk.dead / Math.max(tk.deadMax || tk.dead, 1)) : '';
+      r.querySelector('#sp-' + k).classList.toggle('dead', tk.dead > 0);
+      const hp = tk.dead > 0 ? 0 : arena ? arena.hp(k) : 1;
+      r.querySelector('#hp-' + k).style.width = `${Math.round(hp * 100)}%`;
+      r.querySelector('#kd-' + k).textContent = `${tk.k}/${tk.d}/${tk.a}`;
+      r.querySelector('#cs-' + k).textContent = x ? Math.round(x.cs * f) : 0;
+      const build = (DB.champions[pick(sd, rl)]?.build || []).filter((i) => DB.items[i]);
+      const n = Math.min(build.length, Math.floor(gold / (rl === 'Support' ? 2600 : 3100)));
+      const it = r.querySelector('#it-' + k);
+      if (it.dataset.n !== String(n)) {
+        it.dataset.n = n;
+        it.innerHTML = Array.from({ length: 6 }, (_, i) => (i < n ? `<img src="${itemImg(build[i])}" alt="">` : '<span></span>')).join('');
+      }
     }
     map.style.setProperty('--tt', `${Math.max(.15, 0.9 / speed)}s`);
+    r.querySelector('.bc-mini').style.setProperty('--tt', `${Math.max(.15, (arena ? 3.6 : .9) / speed)}s`);
     r.querySelector('#kB').textContent = live.kills.B;
     r.querySelector('#kR').textContent = live.kills.R;
-    r.querySelector('#clock').textContent = `${String(minute).padStart(2, '0')}:00`;
-    r.querySelector('#oB').textContent = `🏰${live.towers.B} 🐉${live.drakes.B} 👑${live.barons.B}`;
-    r.querySelector('#oR').textContent = `👑${live.barons.R} 🐉${live.drakes.R} 🏰${live.towers.R}`;
-    const pts = g.gold.slice(0, minute + 1).map((v, i) => `${(i / g.dur) * 300},${40 - (v / 15000) * 38}`).join(' ');
-    r.querySelector('#gl').setAttribute('points', pts);
-    const gd = g.gold[Math.min(minute, g.dur)];
-    const gdEl = r.querySelector('#gd');
-    gdEl.textContent = gd ? `${gd > 0 ? tShort('B') : tShort('R')} +${(Math.abs(gd) / 1000).toFixed(1)}k` : '';
-    gdEl.className = `gd ${gd > 0 ? 'blue-t' : gd < 0 ? 'red-t' : ''}`;
-    r.querySelector('#feed').innerHTML = feed.slice(-40).reverse().map((x) => `<div class="${x.side === 'B' ? 'blue-t' : 'red-t'}">${x.text}</div>`).join('');
+    r.querySelector('#clock').textContent = mm(minute);
+    r.querySelector('#gB').textContent = kfmt(teamGold.B);
+    r.querySelector('#gR').textContent = kfmt(teamGold.R);
+    r.querySelector('#gB').classList.toggle('up', teamGold.B > teamGold.R);
+    r.querySelector('#gR').classList.toggle('up', teamGold.R > teamGold.B);
+    r.querySelector('#twB').textContent = live.towers.B;
+    r.querySelector('#twR').textContent = live.towers.R;
+    for (const sd of ['B', 'R']) r.querySelector('#dk' + sd).innerHTML = live.dk[sd].map((d) => `<i class="dr-${d}" title="${t('drake.' + d)}"></i>`).join('') + (live.barons[sd] ? `<i class="ba" title="Baron">${live.barons[sd]}</i>` : '');
+    r.querySelector('#tDr').textContent = live.nextDr <= minute ? 'LIVE' : mm(live.nextDr);
+    r.querySelector('#tBa').textContent = live.nextBa <= minute ? 'LIVE' : mm(live.nextBa);
+    const kf = r.querySelector('#kfeed');
+    kf.innerHTML = kfeed.slice(-5).map((x) => `<div class="kf ${x.sd}">${champIcon(x.kc, 30)}<span>⚔</span>${champIcon(x.vc, 30)}</div>`).join('');
   };
   const step = () => {
     minute++;
@@ -436,7 +480,7 @@ function liveGame(d, opts = {}) {
   });
   r.querySelector('[data-skip]').onclick = () => {
     clearInterval(timer); timer = null; stopArena();
-    while (minute < g.dur) { minute++; while (evIdx < g.events.length && g.events[evIdx].m <= minute) { const e = g.events[evIdx++]; feed.push({ side: e.side, text: evText(e) }); } }
+    minute = g.dur;
     postGame(g);
   };
   r.querySelector('[data-skipall]')?.addEventListener('click', () => {

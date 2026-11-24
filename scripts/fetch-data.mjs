@@ -276,6 +276,9 @@ async function main() {
     } catch { console.warn('  thiếu loading art', id); }
     try { execFileSync('rm', ['-f', tmp]); } catch { /* */ }
   }
+  // minimap chính thức (Data Dragon) cho màn xem trận
+  mkdirSync(ASSETS + 'map', { recursive: true });
+  if (!existsSync(ASSETS + 'map/map11.png')) execFileSync('curl', ['-s', '-f', '-m', '30', '-o', ASSETS + 'map/map11.png', `https://ddragon.leagueoflegends.com/cdn/${ver}/img/map/map11.png`]);
   // ảnh độ phân giải cao: tile vuông 380px (icon lớn) và splash 1215px (ảnh nền, thẻ tin, cấm/chọn)
   for (const [dir, url, q] of [['tile', (id) => `https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/${id}_0.jpg`, '86'], ['splash', (id) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_0.jpg`, '78']]) {
     mkdirSync(ASSETS + dir, { recursive: true });

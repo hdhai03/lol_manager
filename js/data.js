@@ -1,7 +1,7 @@
 export const DB = {};
 
 // Gói ảnh nhị phân (bản deploy giới hạn số file): nhóm cần ngay thì chờ, nhóm lớn tải nền.
-const BOOT_GROUPS = ['league', 'team', 'champion', 'item', 'tile', 'player'];
+const BOOT_GROUPS = ['league', 'team', 'champion', 'item', 'tile', 'player', 'map'];
 const LATER_GROUPS = ['loading', 'splash'];
 let onAssets = null;
 export function setOnAssets(fn) { onAssets = fn; }
@@ -60,6 +60,7 @@ export const champTile = (id) => src(`assets/tile/${id}.webp`);
 export const champArt = (id) => src(`assets/loading/${id}.webp`);
 export const champSplash = (id) => src(`assets/splash/${id}.webp`);
 export const itemImg = (id) => src(`assets/item/${id}.png`);
+export const mapImg = () => src('assets/map/map11.png');
 export const teamLogo = (id) => DB.images.teams[id] || null;
 export const leagueLogo = (id) => DB.images.leagues[id] || null;
 export const playerFace = (id) => DB.images.players[id] || null;

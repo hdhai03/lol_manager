@@ -299,6 +299,7 @@ export function createArena(container, opts) {
     minuteTick(lead) { api.lead = lead; for (const mo of [dragon, baron]) if (!mo.alive && --mo.respawn <= 0) mo.alive = true; },
     nexusDown(sd) { const n = nexus[sd]; n.alive = false; burst(n.crys.position, 0xffffff, 30); },
     setSpeed(s) { api.speed = s; },
+    hp(k) { const u = units[k]; return u ? (u.alive ? u.hp : 0) : 1; },
     lead: 0, speed: 1,
     dispose() { cancelAnimationFrame(raf); ro.disconnect(); renderer.dispose(); container.querySelectorAll('.u3').forEach((x) => x.remove()); renderer.domElement.remove(); },
   };
