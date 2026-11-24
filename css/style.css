@@ -660,3 +660,134 @@ input:focus, select:focus { border-color: var(--teal); outline: none; }
   .c-ico { width: 60px; height: 60px; }
   .c-row { padding: .9rem 1rem; gap: 1rem; font-size: .98rem; }
 }
+
+/* =====================================================================
+   Lớp phong cách FC: font tròn-rộng cho tiêu đề, chữ thường, panel không viền,
+   nút viên thuốc trong mờ, chọn = viền teal phát sáng + vệt sáng đáy
+   ===================================================================== */
+:root {
+  --display: 'Unbounded', 'Lexend', system-ui, sans-serif;
+  --body: 'Lexend', 'Be Vietnam Pro', system-ui, sans-serif;
+  --panel: rgba(27, 29, 46, .9);
+  --panel-solid: #1b1d2e;
+  --teal: #2fe0cf;
+  --teal-glow: rgba(47, 224, 207, .38);
+  --line: rgba(255, 255, 255, .07);
+  --line-2: rgba(255, 255, 255, .14);
+  --muted: #a7afbf;
+  font-family: var(--body);
+}
+html, body { font-size: 15.5px; font-weight: 400; letter-spacing: .005em; }
+/* nền: phòng tối, ánh teal bên trái, ánh ấm bên phải, sàn có vết nứt, hạt nhiễu nhẹ */
+html { background: #141e23; }
+body { background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(50% 55% at 6% 32%, rgba(95, 170, 178, .62), transparent 72%),
+    radial-gradient(45% 40% at 35% 8%, rgba(78, 128, 140, .55), transparent 72%),
+    radial-gradient(38% 50% at 100% 18%, rgba(214, 178, 150, .36), transparent 72%),
+    radial-gradient(70% 45% at 60% 100%, rgba(120, 140, 150, .22), transparent 72%),
+    radial-gradient(130% 100% at 50% 40%, transparent 60%, rgba(0, 0, 0, .45) 100%),
+    linear-gradient(180deg, #2a3d44 0%, #23343b 40%, #1b282e 68%, #141e23 100%); background-attachment: fixed; }
+body::before { display: none; }
+body::after { height: 48vh; opacity: .5; }
+h1 { font-family: var(--display); font-weight: 700; font-stretch: normal; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 0; }
+h3 { font-size: 1.08rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+h4 { font-size: .9rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.disp, .c-date, .c-title, .brand-name, .tile .huge, .tile .val, .pick-card .tname-big, .pick-team .region, .pick-team .league-name,
+.pd-name, .result, .md-score > b, .home-hero .date, .league-tile b, .nm-vs, .ring, .pc-rank, .lv-k b, .mono {
+  font-family: var(--display); font-stretch: normal; font-weight: 700; letter-spacing: 0;
+}
+.c-date { font-size: clamp(1.9rem, 4vw, 3rem); }
+.c-title { font-size: clamp(1.15rem, 2.1vw, 1.65rem); }
+.mono { font-weight: 800; font-size: 1rem; }
+
+/* panel */
+.card, .tile, .league-tile, .pcard, .modal, .lv-top, .lv-p, .d-slot, .b-match {
+  background: var(--panel); border: 0; border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 18px 40px -24px rgba(0, 0, 0, .7);
+}
+.card { padding: 1.3rem 1.4rem; }
+.p-head { border-bottom: 1px solid var(--line-2); padding-bottom: .8rem; }
+.p-head h3 { font-size: 1.08rem; }
+.p-head .sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .82rem; }
+.p-head .sub b { font-size: .9rem; font-weight: 600; }
+
+/* trạng thái chọn kiểu FC */
+.card.hl, .pick-card.hl, .league-tile:hover, .pcard:hover, .c-row.sel, .c-row:hover, .menu-item.sel, .menu-item:hover:not(:disabled), .sq-table tr.sel td {
+  border-color: var(--teal) !important;
+}
+.card.hl { border: 2px solid var(--teal); box-shadow: 0 0 0 1px rgba(47, 224, 207, .15), 0 10px 30px -12px var(--teal-glow); position: relative; }
+.card.hl::after, .league-tile:hover::after, .pcard:hover::after, .menu-item.sel::after { content: ''; position: absolute; left: 15%; right: 5%; bottom: -2px; height: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .95), transparent); pointer-events: none; }
+.league-tile, .pcard, .menu-item { position: relative; border: 2px solid transparent; }
+.league-tile:hover, .pcard:hover { box-shadow: 0 10px 30px -12px var(--teal-glow); }
+
+/* nút: viên thuốc trong mờ, chữ thường */
+.btn { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: .95rem; border-radius: 999px; padding: .6em 1.4em; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22); }
+.btn:hover { background: rgba(255, 255, 255, .18); border-color: var(--teal); box-shadow: 0 0 0 3px rgba(47, 224, 207, .18); }
+.btn.primary { background: #f3f5f9; color: #141726; border-color: #f3f5f9; font-weight: 600; }
+.btn.ghost { background: transparent; }
+.btn.sm { font-size: .82rem; padding: .4em 1em; }
+.btn.big { font-size: 1.02rem; padding: .8em 1.9em; }
+.btn.pill { font-size: 1.1rem; padding: .7em 2.1em; }
+.chip { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: .86rem; border-radius: 999px; padding: .45em 1.05em; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); }
+.chip.sm { font-size: .78rem; }
+.chip.on { background: #f3f5f9; color: #141726; }
+.icon-btn { border-radius: 999px; text-transform: none; letter-spacing: 0; font-size: .8rem; font-weight: 500; }
+.lang { border-radius: 999px; }
+.field { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .9rem; }
+input[type=search], input[type=number], input:not([type]), select { border-radius: 999px; padding: .6em 1.1em; background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .16); }
+
+/* chữ: bỏ in hoa giãn chữ kiểu esports, dùng chữ thường như FC */
+.tname, .money-rows > div, .cal-head, .cal-legend, .nm-team b, .yt-row b, .yt-p .cap b, .yt-p .cap small, .st-switch, .pager, .pc-bot .st small,
+.tbl th, .md-head .muted, .md-game, .d-turn, .dr-top, .dr-roles button, .dr-foot .msg, .dr-center .t1, .dr-center .t2, .dr-center .t3, .dr-slot .cn, .dr-slot .rl,
+.mk-head h3, .home-hero .next, .md-sname, .lv-team, .feature .f-top b, .st-tag {
+  text-transform: none; letter-spacing: 0;
+}
+.tbl th { font-size: .85rem; font-weight: 400; color: var(--muted); }
+.tbl td { padding: .65rem .55rem; }
+.tname { font-size: .95rem; font-weight: 500; }
+.money-rows > div { font-size: .95rem; font-weight: 400; }
+.money-big { font-family: var(--display); font-weight: 700; font-size: clamp(1.4rem, 2.2vw, 1.85rem); }
+.cal-head { font-size: 1rem; font-weight: 600; }
+.cal .dow { font-weight: 500; color: var(--muted); }
+.cal-legend { font-size: .8rem; font-weight: 400; }
+.nm-team b { font-size: 1rem; font-weight: 600; }
+.nm-team span { font-weight: 400; }
+.pc-price { font-family: var(--display); font-weight: 700; color: var(--sky); }
+.pc-bot .st small { font-size: .72rem; font-weight: 400; }
+.pc-id div { font-weight: 400; }
+.yt-p .cap b { font-size: .8rem; font-weight: 600; }
+.yt-p .cap small { font-size: .66rem; font-weight: 400; }
+.st-tag { font-size: .72rem; font-weight: 500; border-radius: 999px; padding: .2em .65em; }
+.role { border-radius: 999px; font-weight: 600; padding: .22em .6em; }
+
+/* thanh trên & thanh gợi ý phím kiểu tay cầm */
+.topnav { padding-top: 1.4rem; }
+.topnav .sect { font-weight: 700; font-size: 1.7rem; }
+.tabs button { font-size: 1.08rem; font-weight: 400; color: rgba(241, 243, 247, .72); }
+.tabs button.on { font-weight: 700; color: #fff; }
+.hintbar { background: linear-gradient(0deg, rgba(10, 14, 18, .9), rgba(10, 14, 18, .55)); border-top: 0; }
+.hint { font-size: 1rem; font-weight: 400; }
+.hint kbd { border-color: rgba(255, 255, 255, .75); color: #fff; background: rgba(255, 255, 255, .1); width: 26px; height: 26px; }
+.hint kbd.wide { border-radius: 999px; width: auto; }
+
+/* tiêu đề ô thông tin chọn đội */
+.tile .lbl { font-size: 1.02rem; }
+.tile .val { font-size: 1.05rem; }
+.tile .huge { font-size: 3.8rem; }
+.tile .split .n { font-family: var(--body); font-weight: 300; font-size: 2.3rem; }
+.tile.grad { box-shadow: none; }
+.g-orange { background: linear-gradient(200deg, rgba(40, 40, 58, .95) 25%, #c46a2a 100%); }
+.g-gold { background: linear-gradient(200deg, rgba(40, 40, 58, .95) 25%, #b88d18 100%); }
+.g-blue { background: linear-gradient(200deg, rgba(40, 40, 58, .95) 25%, #2470d8 100%); }
+.g-red { background: linear-gradient(200deg, rgba(40, 40, 58, .95) 25%, #b8343c 100%); }
+.g-green { background: linear-gradient(200deg, rgba(40, 40, 58, .95) 25%, #24a065 100%); }
+
+/* hồ sơ tuyển thủ: số liệu to, nhãn thường */
+.pd-top { font-family: var(--body); font-weight: 300; }
+.pd-real { text-transform: uppercase; letter-spacing: .04em; font-weight: 300; }
+.attr-row { font-size: 1.02rem; }
+.attr-row b { font-weight: 500; }
+.sq-table td { padding: .55rem .6rem; }
+.sq-table th { font-weight: 400; }
+.sq-name { font-weight: 500; }
