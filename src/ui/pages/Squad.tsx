@@ -183,7 +183,7 @@ export function Roster() {
           </div>
         </div>
         <div className="gp-b scroll" style={{ paddingTop: 0 }}>
-          <table className="gt sq-table"><thead><tr><th>{t('role')}</th><th>{t('name')}</th><th>{t('age')}</th><th>OVR</th><th>{t('pot')}</th><th>{t('p.cond')}</th><th>{t('form')}</th><th /></tr></thead>
+          <table className="gt"><thead><tr><th>{t('role')}</th><th>{t('name')}</th><th>{t('age')}</th><th>OVR</th><th>{t('pot')}</th><th>{t('p.cond')}</th><th>{t('form')}</th><th /></tr></thead>
             <tbody>{rows.map(({ p, slot }, i) => (
               <tr key={p.id} className={`click ${p.id === ui.selPlayer ? 'sel' : ''} ${i === starterIds.length && i > 0 ? 'sep' : ''}`} data-sel={p.id} onClick={() => { ui.selPlayer = p.id; refresh(); }}>
                 <td><RoleTag r={slot || p.role} /></td>
