@@ -17,7 +17,13 @@ export async function loadData() {
   // gói ảnh (data URI) — chỉ dùng khi trang bật window.RIFT_PACK (bản deploy giới hạn số file)
   DB.pack = null;
   if (globalThis.RIFT_PACK) {
-    try { const r = await fetch('data/assets-pack.json'); if (r.ok) DB.pack = await r.json(); } catch { /* dùng file lẻ */ }
+    DB.pack = {};
+    const loadPack = async (name) => {
+      try { const r = await fetch(`data/pack-${name}.json`); if (r.ok) Object.assign(DB.pack, await r.json()); } catch { /* dùng file lẻ */ }
+    };
+    await Promise.all(['champion', 'item', 'league', 'team', 'player'].map(loadPack));
+    // ảnh dọc của tướng chỉ cần ở màn cấm/chọn: tải sau
+    DB.packLater = loadPack('loading');
   }
   DB.champList = Object.values(DB.champions).sort((a, b) => a.name.localeCompare(b.name));
   DB.leagueById = Object.fromEntries(DB.leagues.map((l) => [l.id, l]));
@@ -27,6 +33,7 @@ export async function loadData() {
 export const src = (path) => (DB.pack && DB.pack[path]) || path;
 export const champImg = (id) => src(`assets/champion/${id}.png`);
 export const itemImg = (id) => src(`assets/item/${id}.png`);
+export const champArt = (id) => src(`assets/loading/${id}.webp`);
 export const teamLogo = (id) => DB.images.teams[id] || null;
 export const leagueLogo = (id) => DB.images.leagues[id] || null;
 export const playerFace = (id) => DB.images.players[id] || null;

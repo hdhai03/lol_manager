@@ -1,4 +1,4 @@
-import { DB, champImg, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
+import { DB, champImg, champArt, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
 import { t, cname, iname, getLang, setLang } from './i18n.js';
 import {
   S, setState, newGame, userTeam, teamPlayers, teamSalary, teamOvr, autoLineup, lineupPlayers,
@@ -29,6 +29,9 @@ const ICON = {
   users: '<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.5"/><circle cx="16.5" cy="8.5" r="3"/><path d="M1.5 20c.5-4 3.2-6 6.5-6s6 2 6.5 6zM14 14.3c3.6-.6 7.6.6 8.5 5.7H16c-.3-2.4-1-4.2-2-5.7z"/></svg>',
   info: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm-1.3 8v8h2.6v-8zM12 5.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/></svg>',
   mail: '<svg viewBox="0 0 24 24"><path d="M2 5h20v14H2zm2 2v.5l8 5.5 8-5.5V7z"/></svg>',
+  invite: '<svg viewBox="0 0 64 64"><path d="M6 26 32 8l26 18v30H6z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/><path d="M6 26l26 18 26-18" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M22 14h20v8a10 10 0 0 1-20 0zm10 18v5m-5 2h10" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M22 16h-4a4 4 0 0 0 4 6m20-6h4a4 4 0 0 1-4 6" fill="none" stroke="currentColor" stroke-width="3"/></svg>',
+  trophy: '<svg viewBox="0 0 64 64"><path d="M18 8h28v14a14 14 0 0 1-28 0zM32 36v10m-10 8h20M18 12H8v4a10 10 0 0 0 10 10m28-14h10v4a10 10 0 0 1-10 10" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  tactic: '<svg viewBox="0 0 24 24"><path d="M2 5h20v14H2zm2 2v10h7V7zm9 0v10h7V7zM5 9h2v2H5zm2 4h2v2H7zm9-3h2v4h-2z"/></svg>',
   contract: '<svg viewBox="0 0 24 24"><path d="M5 2h10l4 4v16H5zm3 7h8v1.6H8zm0 4h8v1.6H8zm0 4h5v1.6H8z"/></svg>',
 };
 
@@ -446,6 +449,32 @@ function postHtml(n) {
     <div class="eng"><span>💬 ${kfmt((h % 180 + 12) * scale)}</span><span>🔁 ${kfmt((h % 90 + 5) * scale * 3)}</span><span>♡ ${kfmt((h % 400 + 40) * scale * 4)}</span></div></div></div>`;
 }
 
+// thẻ tin lớn kiểu mạng xã hội (ảnh + chú thích)
+function socialCard(n) {
+  const p = n.params || {};
+  const text = newsText(n);
+  const tm = Object.values(S.teams).find((x) => x.name === p.team || x.name === p.to) || (n.key === 'news.welcome' ? userTeam() : null);
+  const pl = p.player && Object.values(S.players).find((x) => x.ign === p.player);
+  const metaChamps = DB.champList.filter((c) => c.tier === 'S');
+  const art = champArt(metaChamps[hash(text) % metaChamps.length].id);
+  const hueTeam = tm || (pl && pl.teamId && S.teams[pl.teamId]) || userTeam();
+  let visual;
+  const fs = faceSrc(pl);
+  if (fs) visual = `<img class="s-face" src="${fs}" alt="">`;
+  else if (tm) visual = `<span class="s-logo">${badge(tm.id, 'hero')}</span>`;
+  else visual = `<span class="s-logo">${leagueBadge(/msi/i.test(n.key) ? 'MSI' : /worlds/i.test(n.key) ? 'WORLDS' : userTeam().league, 'xl')}</span>`;
+  const author = /transfer|signedFA|released|contractExpired|offer/.test(n.key) ? t('feed.transfers') : n.key === 'news.welcome' ? t('feed.board') : t('feed.esports');
+  const h = hash(text);
+  return `<article class="social" style="--h:${hueTeam.hue}">
+    <div class="s-img" style="background-image:url('${art}')"></div><div class="s-shade"></div>
+    ${n.day >= S.day - 1 ? `<span class="new-flag">${t('menu.new2')}</span>` : ''}
+    <div class="s-head"><span class="s-av">${badge(hueTeam.id, 'md')}</span><div><b>${esc(author)} <span class="ck">✔</span></b><small>${n.day >= S.day ? t('feed.today') : t('feed.daysAgo', { n: S.day - n.day })}</small></div></div>
+    <div class="s-visual">${visual}</div>
+    <div class="s-cap"><p>${esc(text)}</p>
+      <div class="s-eng"><span>♡ ${kfmt((h % 400 + 60) * 12)}</span><span>💬 ${kfmt(h % 180 + 20)}</span><span class="grow"></span><button class="btn sm ghost" data-tab-go="world">${t('dash.showMore')}</button></div></div>
+  </article>`;
+}
+
 function calendarHtml() {
   const base = seasonDate(S.day - (S.seasonStartDay || 0));
   const off = view.calOffset || 0;
@@ -547,11 +576,39 @@ function dashboard(c) {
       <button class="btn sm" data-renew="${esc(p.id)}">${t('p.renew')}</button></div>`) : []),
   ];
 
+  // ----- Khu "Central" kiểu FC: ngày, sự kiện, nút Advance, danh sách việc, thẻ tin lớn -----
+  let evTitle, evIcon = ICON.invite;
+  if (S.phase === 'offseason') { evTitle = t('dash.offseasonTitle', { y: S.season }); evIcon = ICON.contract; }
+  else if (nm) {
+    const opp = nm.a === ut.id ? nm.b : nm.a;
+    evTitle = `${compTitle(S.comps[nm.comp])}<br>${esc(ut.short)} <span class="vs">vs</span> ${esc(S.teams[opp].short)}`;
+    if (S.comps[nm.comp].league === 'INTL') evIcon = ICON.trophy;
+  } else evTitle = t('dash.noMatchTitle');
+  const actions = [];
+  if (pa.act === 'match') actions.push({ ico: ICON.play, label: t('dash.actPlay'), act: 'match' });
+  if (offers.length) actions.push({ ico: ICON.mail, label: t('dash.actOffers', { n: offers.length }), go: 'alerts' });
+  if (S.phase === 'offseason' && expiring.length) actions.push({ ico: ICON.contract, label: t('dash.actRenew', { n: expiring.length }), go: 'alerts' });
+  actions.push({ ico: ICON.tactic, label: t('dash.actTraining'), act: 'training' });
+  actions.push({ ico: ICON.users, label: t('dash.actSquad'), tab: 'roster' });
+  actions.push({ ico: ICON.mail, label: t('dash.actScout'), tab: 'transfers' });
+  const newsList = S.news.slice(0, 6);
+  view.newsIdx = clamp(view.newsIdx || 0, 0, Math.max(newsList.length - 1, 0));
+  const ni = newsList[view.newsIdx];
+
   c.innerHTML = `
-  <div class="home-hero"><div><div class="date">${today.toLocaleDateString(getLang(), { weekday: 'long', day: '2-digit', month: 'short', timeZone: 'UTC' })}</div>
-    <div class="next">${S.phase === 'offseason' ? t('phase.offseason') : nm ? (daysTo <= 0 ? t('dash.today') : t('dash.nextIn', { n: daysTo })) : t('dash.noMatch')}</div></div>
-    <div class="muted small">${t('dash.board')}: <b style="color:var(--text)">${t(S.goal || 'goal.playoffs')}</b>${ut.trophies.length ? ` · 🏆 ${ut.trophies.length}` : ''}</div></div>
-  ${alerts.length ? `<div class="card alerts">${alerts.join('')}</div>` : ''}
+  <section class="central">
+    <div class="c-left">
+      <div class="c-date">${today.toLocaleDateString(getLang(), { weekday: 'long', day: '2-digit', month: 'short', timeZone: 'UTC' })}</div>
+      <div class="c-next">${S.phase === 'offseason' ? t('phase.offseason') : nm ? (daysTo <= 0 ? t('dash.today') : t('dash.nextIn', { n: daysTo })) : t('dash.noMatch')}</div>
+      <div class="c-event"><span class="c-ico">${evIcon}</span><div class="c-title">${evTitle}</div></div>
+      <button class="btn pill c-adv" data-act="${pa.act}">${pa.label}</button>
+      <div class="c-actions">${actions.map((a, i) => `<button class="c-row ${i === 0 ? 'sel' : ''}" ${a.act ? `data-act="${a.act}"` : ''} ${a.tab ? `data-tab-go="${a.tab}"` : ''} ${a.go ? `data-scroll="${a.go}"` : ''}><span class="c-ri">${a.ico}</span>${a.label}</button>`).join('')}</div>
+    </div>
+    <div class="c-right">${ni ? socialCard(ni) : ''}
+      <div class="dots"><button data-news="-1" aria-label="prev">‹</button>${newsList.map((_, i) => `<i class="${i === view.newsIdx ? 'on' : ''}"></i>`).join('')}<button data-news="1" aria-label="next">›</button></div>
+    </div>
+  </section>
+  ${alerts.length ? `<div class="card alerts" id="alerts">${alerts.join('')}</div>` : ''}
   <div class="home-grid">
     <div class="card ${pa.act === 'match' ? 'hl' : ''}">${nextPanel}</div>
     <div class="card">${teamPanel}</div>
@@ -562,6 +619,8 @@ function dashboard(c) {
     <div class="card">${pHead(t('dash.news'), `<button class="btn sm ghost" data-tab-go="world">${t('world.title')} ›</button>`)}<div class="feed">${S.news.slice(0, 14).map(postHtml).join('')}</div></div>
     <div class="card">${stPanel}</div>
   </div>`;
+  c.querySelectorAll('[data-news]').forEach((b) => b.onclick = () => { view.newsIdx = (view.newsIdx + +b.dataset.news + newsList.length) % newsList.length; render(); });
+  c.querySelectorAll('[data-scroll]').forEach((b) => b.onclick = () => document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   c.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
   c.querySelectorAll('[data-tab-go]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tabGo; render(); });
   c.querySelectorAll('[data-cal]').forEach((b) => b.onclick = () => { view.calOffset = (view.calOffset || 0) + +b.dataset.cal; render(); });

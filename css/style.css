@@ -509,7 +509,7 @@ input:focus, select:focus { border-color: var(--teal); outline: none; }
 .dr-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(240px, 1.9fr) repeat(5, minmax(0, 1fr)); background: linear-gradient(180deg, #1a2a8a 0%, #0f1c5c 100%); min-height: 210px; padding-bottom: env(safe-area-inset-bottom, 0px); }
 .dr-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: end; padding: .8rem .3rem 1.1rem; border-right: 1px solid rgba(255, 255, 255, .14); overflow: hidden; min-width: 0; }
 .dr-slot.red { border-right: 0; border-left: 1px solid rgba(255, 255, 255, .14); }
-.dr-slot .art { position: absolute; inset: 0; background-size: cover; background-position: center 20%; opacity: .9; }
+.dr-slot .art { position: absolute; inset: 0; background-size: cover; background-position: center 18%; }
 .dr-slot .art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(10, 18, 60, .95) 8%, transparent 60%); }
 .dr-slot .glyph { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -62%); width: 58px; height: 58px; color: rgba(255, 255, 255, .55); }
 .dr-slot .glyph svg { width: 100%; height: 100%; fill: currentColor; }
@@ -611,3 +611,52 @@ input:focus, select:focus { border-color: var(--teal); outline: none; }
   .dr-slot .pn { font-size: .78rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---- Trang chủ: khu "Central" kiểu FC ---- */
+.central { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 470px); gap: 3rem; align-items: start; margin: .8rem 0 2.2rem; }
+.c-left { max-width: 700px; padding-left: clamp(0px, 4vw, 4.5rem); }
+.c-date { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(2rem, 4.4vw, 3.3rem); text-transform: uppercase; line-height: 1; letter-spacing: .01em; }
+.c-next { color: var(--text); opacity: .85; margin-top: 1.1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line-2); font-size: 1.05rem; }
+.c-event { display: flex; align-items: center; gap: 2.2rem; padding: 2.4rem 1.2rem 2rem; }
+.c-ico { width: 96px; height: 96px; flex: none; color: #f1f3f7; }
+.c-ico svg { width: 100%; height: 100%; }
+.c-title { font-family: var(--display); font-stretch: 125%; font-weight: 800; text-transform: uppercase; font-size: clamp(1.25rem, 2.4vw, 1.9rem); line-height: 1.15; }
+.c-title .vs { font-size: .7em; color: var(--muted); }
+.c-adv { margin: .2rem 0 1.6rem 0; }
+.c-actions { display: flex; flex-direction: column; }
+.c-row { position: relative; display: flex; align-items: center; gap: 1.6rem; text-align: left; background: transparent; border: 1.5px solid transparent; border-bottom-color: var(--line-2); padding: 1.05rem 1.6rem; color: rgba(241, 243, 247, .82); font-size: 1.08rem; cursor: pointer; }
+.c-row .c-ri { width: 30px; height: 30px; display: grid; place-items: center; flex: none; color: #f1f3f7; }
+.c-row .c-ri svg { width: 100%; height: 100%; fill: currentColor; }
+.c-row:hover, .c-row.sel { border: 1.5px solid var(--teal); border-radius: 6px; background: linear-gradient(180deg, #171a2b, #10131f); color: #fff; font-weight: 700; }
+.c-row.sel::after, .c-row:hover::after { content: ''; position: absolute; left: 20%; right: 0; bottom: -2px; height: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .85), transparent); }
+.c-right { display: flex; flex-direction: column; align-items: center; gap: .8rem; }
+.social { position: relative; width: 100%; aspect-ratio: 4 / 5; max-height: 600px; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255, 255, 255, .12); background: linear-gradient(160deg, hsl(var(--h) 45% 32%), hsl(calc(var(--h) + 30) 40% 12%)); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8); }
+.social .s-img { position: absolute; inset: 0; background-size: cover; background-position: center 15%; opacity: .55; mix-blend-mode: luminosity; }
+.social .s-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 10, 18, .65) 0%, transparent 28%, transparent 50%, rgba(8, 10, 18, .95) 82%); }
+.social .s-head { position: absolute; top: 1rem; left: 1rem; right: 5rem; display: flex; align-items: center; gap: .7rem; }
+.social .s-av { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, .92); display: grid; place-items: center; flex: none; }
+.social .s-av .badge { width: 36px; height: 36px; }
+.social .s-head b { display: block; font-size: 1.05rem; }
+.social .s-head small { color: rgba(255, 255, 255, .8); font-size: .85rem; }
+.social .ck { color: var(--sky); font-size: .85rem; }
+.social .s-visual { position: absolute; inset: 16% 0 30%; display: grid; place-items: center; }
+.social .s-face { height: 100%; max-width: 80%; object-fit: contain; filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .6)); border-radius: 12px; }
+.social .s-logo .badge-hero, .social .s-logo .lg-xl { width: 190px; height: 190px; filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .55)); }
+.social .s-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 1rem 1.2rem 1.1rem; }
+.social .s-cap p { margin: 0 0 .8rem; font-size: 1.08rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.social .s-eng { display: flex; align-items: center; gap: 1.4rem; font-size: 1.05rem; font-weight: 600; }
+.social .new-flag { z-index: 2; }
+.dots { display: flex; align-items: center; gap: .55rem; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+.dots i.on { width: 11px; height: 11px; background: #fff; }
+.dots button { background: rgba(255, 255, 255, .12); border: 1.5px solid rgba(255, 255, 255, .5); border-radius: 50%; width: 26px; height: 26px; color: #fff; cursor: pointer; line-height: 1; }
+@media (max-width: 1000px) {
+  .central { grid-template-columns: 1fr; gap: 1.5rem; }
+  .c-left { padding-left: 0; }
+  .c-right { max-width: 460px; width: 100%; justify-self: center; }
+}
+@media (max-width: 520px) {
+  .c-event { gap: 1rem; padding: 1.4rem 0; }
+  .c-ico { width: 60px; height: 60px; }
+  .c-row { padding: .9rem 1rem; gap: 1rem; font-size: .98rem; }
+}

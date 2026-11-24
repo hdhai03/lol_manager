@@ -7,7 +7,7 @@ import {
 } from './sim.js';
 import { ROLES, esc, logistic } from './util.js';
 import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon } from './ui.js';
-import { champImg } from './data.js';
+import { champImg, champArt } from './data.js';
 const roleIconSvg = (r) => roleIcon(r);
 
 let overlay = null;
@@ -125,7 +125,7 @@ function renderDraft() {
       const mine = s === ms;
       const cls = [s === 'R' ? 'red' : '', r === firstEmpty ? 'active' : '', mine && c ? 'swappable' : '', mine && swapSel === r ? 'swap-sel' : ''].join(' ');
       return `<div class="dr-slot ${cls}" ${mine && c ? `data-swap="${r}"` : ''}>
-        ${c ? `<div class="art" style="background-image:url('${champImg(c)}')"></div>` : `<div class="glyph">${roleIconSvg(r)}</div>`}
+        ${c ? `<div class="art" style="background-image:url('${champArt(c)}')"></div>` : `<div class="glyph">${roleIconSvg(r)}</div>`}
         <span class="rl">${t('roleS.' + r)}</span>${c && mine ? `<span class="ft">${Math.round(champFit(p, c, r))}</span>` : ''}
         <span class="cn">${c ? esc(cname(c)) : ''}</span><span class="pn">${p ? esc(p.ign) : '—'}</span></div>`;
     }).join('');

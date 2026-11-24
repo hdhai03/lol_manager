@@ -264,6 +264,19 @@ async function main() {
     }
   }
 
+  // ảnh dọc (loading art) cho màn cấm/chọn, chuyển sang WebP cho nhẹ
+  mkdirSync(ASSETS + 'loading', { recursive: true });
+  for (const id of Object.keys(champions)) {
+    const f = `${ASSETS}loading/${id}.webp`;
+    if (existsSync(f)) continue;
+    const tmp = f + '.jpg';
+    try {
+      execFileSync('curl', ['-s', '-f', '-m', '30', '-o', tmp, `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg`]);
+      execFileSync('convert', [tmp, '-resize', '240x', '-strip', '-quality', '80', f]);
+    } catch { console.warn('  thiếu loading art', id); }
+    try { execFileSync('rm', ['-f', tmp]); } catch { /* */ }
+  }
+
   const patchLabel = `${Math.floor(latest / 100)}.${latest % 100}`;
   writeFileSync(OUT + 'leagues.json', JSON.stringify(LEAGUES.map(({ like, roster, ...l }) => ({ ...l, source: roster })), null, 1));
   writeFileSync(OUT + 'teams.json', JSON.stringify(teams));
