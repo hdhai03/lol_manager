@@ -349,21 +349,17 @@ function renderGame() {
       <div class="mono sm">RM</div>
       <div class="sect">${t('nav.' + view.tab)}</div>
       <nav class="tabs">${TABS.map((x) => `<button class="${view.tab === x ? 'on' : ''}" data-tab="${x}">${t('nav.' + x)}</button>`).join('')}</nav>
+      <div class="tn-ctl">
+        <button class="btn sm primary tn-act" data-act="${pa.act}" title="Enter">${pa.label}</button>
+        ${pa.act === 'advance' ? `<button class="btn sm ghost tn-act" data-act="simnext" title="F">${t('btn.simNext')}</button>` : ''}
+        <button class="icon-btn" data-act="save" title="${t('top.save')} (S)" aria-label="${t('top.save')}"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 2v5h8V5H7zm5 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg></button>
+        <button class="icon-btn" data-act="menu" title="${t('nav.menu')} (Esc)" aria-label="${t('nav.menu')}"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+        ${langSwitch()}</div>
       <div class="club">${badge(ut.id, 'md')}<div><div class="nm">${esc(ut.name)}</div>
-        <div class="prog" title="${t('phase.' + S.phase)}">${PHASES.map((_, i) => `<i class="${i <= phaseIdx ? 'on' : ''}"></i>`).join('')}</div></div></div>
+        <div class="club-sub">${date.toLocaleDateString(getLang(), { day: '2-digit', month: '2-digit' })} · <b class="${ut.budget < 0 ? 'neg' : ''}">${money(ut.budget)}</b></div>
+        <div class="prog" title="${t('season', { y: S.season })} · ${t('phase.' + S.phase)}">${PHASES.map((_, i) => `<i class="${i <= phaseIdx ? 'on' : ''}"></i>`).join('')}</div></div></div>
     </header>
     <main class="content ${entering ? 'enter' : ''}" id="content"></main>
-    <footer class="hintbar">
-      <div class="hints">
-        <button class="hint main" data-act="${pa.act}"><kbd class="wide">↵</kbd>${pa.label}</button>
-        ${pa.act === 'advance' ? `<button class="hint" data-act="simnext"><kbd>F</kbd><span class="lbl-long">${t('btn.simNext')}</span></button>` : ''}
-        <button class="hint" data-act="save"><kbd>S</kbd><span class="lbl-long">${t('top.save')}</span></button>
-        <button class="hint" data-act="prevtab"><kbd>Q</kbd></button><button class="hint" data-act="nexttab"><kbd>E</kbd><span class="lbl-long">${t('hint.tabs')}</span></button>
-        <button class="hint" data-act="menu"><kbd class="wide">Esc</kbd><span class="lbl-long">${t('nav.menu')}</span></button>
-      </div>
-      <div class="hb-right"><span>${t('season', { y: S.season })} · ${t('phase.' + S.phase)}</span><span>${date.toLocaleDateString(getLang(), { day: '2-digit', month: '2-digit' })}</span>
-        <b class="${ut.budget < 0 ? 'neg' : ''}">${money(ut.budget)}</b>${langSwitch()}</div>
-    </footer>
   </div>`;
   const r = app();
   bindLang(r);
