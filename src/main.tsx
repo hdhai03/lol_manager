@@ -1,6 +1,7 @@
 import './styles/style.css';
 import './styles/game.css';
 import './styles/broadcast.css';
+import './styles/match.css';
 import './styles/tailwind.css';
 import { createRoot } from 'react-dom/client';
 import { loadData, setOnAssets } from './engine/data';
