@@ -316,3 +316,24 @@ input[type=search], input[type=number], input:not([type]), select {
   .stats-mini { grid-template-columns: 1fr 1fr; }
   .tb-actions { flex-wrap: wrap; }
 }
+
+/* ---- Logo & mini face ---- */
+.badge.logo { background: transparent; border: 0; padding: 2px; text-shadow: none; }
+.badge.logo img, .lg-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.badge.logo.on-light, .lg-logo.on-light { background: #e9edf5; border-radius: 22%; padding: 3px; }
+.lg-logo { display: inline-grid; place-items: center; flex: none; }
+.lg-xs { width: 18px; height: 18px; }
+.lg-sm { width: 24px; height: 24px; }
+.lg-md { width: 36px; height: 36px; }
+.lg-lg { width: 48px; height: 48px; }
+.lg-logo.on-light.lg-xs { padding: 1px; }
+.face { flex: none; display: inline-grid; place-items: center; overflow: hidden; border-radius: 50%; background: linear-gradient(180deg, #24304a, #141b2b); border: 1px solid var(--line); color: var(--muted); font-weight: 800; }
+.face img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.face-xs { width: 24px; height: 24px; font-size: .55rem; }
+.face-sm { width: 34px; height: 34px; font-size: .65rem; }
+.face-md { width: 44px; height: 44px; font-size: .75rem; }
+.face-lg { width: 64px; height: 64px; font-size: .9rem; }
+.face-xl { width: 88px; height: 88px; font-size: 1.1rem; border: 2px solid var(--gold); }
+.chip.row { display: inline-flex; }
+.chip.on .lg-logo:not(.on-light) { filter: drop-shadow(0 0 1px rgba(0, 0, 0, .6)); }
+.league-card .row b { font-size: 1.6rem; }

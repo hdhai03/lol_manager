@@ -1,4 +1,4 @@
-import { DB, champImg, itemImg } from './data.js';
+import { DB, champImg, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo } from './data.js';
 import { t, cname, iname, getLang, setLang } from './i18n.js';
 import {
   S, setState, newGame, team, player, userTeam, teamPlayers, teamSalary, teamOvr, autoLineup, lineupPlayers,
@@ -19,7 +19,21 @@ export function badge(teamId, size = 'md') {
   const tm = S ? S.teams[teamId] : null;
   const src = tm || DB.teams[teamId] || { short: '?', name: teamId };
   const h = tm ? tm.hue : [...(src.name || '?')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 0);
+  const logo = teamLogo(teamId);
+  if (logo) return `<span class="badge badge-${size} logo ${isDarkLogo(logo) ? 'on-light' : ''}" title="${esc(src.name || src.display)}"><img src="${logo}" alt="${esc(src.short || '')}" loading="lazy"></span>`;
   return `<span class="badge badge-${size}" style="--h:${h}" title="${esc(src.name)}">${esc(src.short || '?')}</span>`;
+}
+export function leagueBadge(id, size = 'sm') {
+  const src = leagueLogo(id === 'INTL' ? 'WORLDS' : id);
+  if (!src) return '';
+  return `<span class="lg-logo lg-${size} ${isDarkLogo(src) ? 'on-light' : ''}" title="${esc(id)}"><img src="${src}" alt="${esc(id)}" loading="lazy"></span>`;
+}
+// mini face tuyển thủ; không có ảnh thì dùng chữ cái đầu
+export function face(p, size = 'md') {
+  if (!p) return `<span class="face face-${size} none"></span>`;
+  const src = playerFace(p.id);
+  if (src) return `<span class="face face-${size}"><img src="${src}" alt="${esc(p.ign)}" loading="lazy"></span>`;
+  return `<span class="face face-${size} none">${esc((p.ign || '?').slice(0, 2).toUpperCase())}</span>`;
 }
 export const champIcon = (id, size = 32, extra = '') => id
   ? `<img class="champ" loading="lazy" src="${champImg(id)}" width="${size}" height="${size}" alt="${esc(cname(id))}" title="${esc(cname(id))}" ${extra}>`
@@ -163,7 +177,7 @@ function renderNew() {
   if (!lg) {
     body = `<h1>${t('new.chooseLeague')}</h1><div class="grid cards">${leagues.map((L) => {
       const n = Object.values(DB.teams).filter((x) => x.league === L.id).length;
-      return `<button class="league-card" data-lg="${L.id}"><b>${L.id}</b><span>${esc(L.name)}</span><span class="muted small">${esc(L.region)} · ${t('new.teams', { n })}</span>
+      return `<button class="league-card" data-lg="${L.id}"><div class="row gap">${leagueBadge(L.id, 'lg')}<b>${L.id}</b></div><span>${esc(L.name)}</span><span class="muted small">${esc(L.region)} · ${t('new.teams', { n })}</span>
         <div class="bar"><i style="width:${L.strength * 100}%"></i></div></button>`;
     }).join('')}</div>`;
   } else {
@@ -171,7 +185,7 @@ function renderNew() {
     const sel = view.newTeam || ids[0];
     view.newTeam = sel;
     const pv = previewTeam(sel);
-    body = `<button class="btn ghost" data-backlg>${t('menu.back')}</button><h1>${t('new.chooseTeam')} — ${lg}</h1>
+    body = `<button class="btn ghost" data-backlg>← ${t('new.chooseLeague')}</button><h1 class="row gap">${leagueBadge(lg, 'md')} ${t('new.chooseTeam')} — ${lg}</h1>
     <div class="new-layout">
       <div class="team-pick">${ids.map((id) => {
         const p = previewTeam(id);
@@ -185,7 +199,7 @@ function renderNew() {
           <div><span>${t('new.salary')}</span><b>${money(pv.salary)}</b></div>
           <div><span>${t('new.difficulty')}</span><b>${t('diff.' + difficulty(pv.ovr, lg))}</b></div>
         </div>
-        <table class="tbl"><tbody>${pv.ps.map((p) => `<tr><td>${roleTag(p.role)}</td><td><b>${esc(p.ign)}</b> <span class="muted small">${esc(p.name || '')}</span></td><td>${(p.pool || []).slice(0, 3).map((c) => champIcon(c.c, 22)).join('')}</td><td>${ovrTag(p.ovr)}</td></tr>`).join('')}</tbody></table>
+        <table class="tbl"><tbody>${pv.ps.map((p) => `<tr><td>${face({ id: p.link, ign: p.ign }, 'sm')}</td><td>${roleTag(p.role)}</td><td><b>${esc(p.ign)}</b> <span class="muted small">${esc(p.name || '')}</span></td><td>${(p.pool || []).slice(0, 3).map((c) => champIcon(c.c, 22)).join('')}</td><td>${ovrTag(p.ovr)}</td></tr>`).join('')}</tbody></table>
         <label class="field">${t('new.manager')}<input id="mgr" maxlength="24" placeholder="${t('new.managerPh')}" value="${esc(view.mgr || '')}"></label>
         <button class="btn primary big" data-start>${t('new.start')}</button>
       </div>
@@ -239,7 +253,7 @@ function renderGame() {
   app().innerHTML = `
   <div class="game">
     <header class="topbar">
-      <div class="row gap tb-team">${badge(ut.id)}<div><b>${esc(ut.name)}</b><div class="muted small">${esc(S.manager)} · ${ut.league}</div></div></div>
+      <div class="row gap tb-team">${badge(ut.id)}<div><b>${esc(ut.name)}</b><div class="muted small row gap">${leagueBadge(ut.league, 'xs')} ${esc(S.manager)} · ${ut.league}</div></div></div>
       <div class="tb-info"><div><span class="muted small">${t('season', { y: S.season })}</span><b>${t('phase.' + S.phase)}</b></div>
         <div><span class="muted small">${date.toLocaleDateString(getLang(), { day: '2-digit', month: '2-digit' })}</span><b class="${ut.budget < 0 ? 'neg' : ''}">${money(ut.budget)}</b></div></div>
       <div class="row gap tb-actions">${langSwitch()}<button class="btn ghost" data-act="save">💾 ${t('top.save')}</button><button class="btn ghost" data-act="menu">☰</button>${action}</div>
@@ -331,7 +345,7 @@ function dashboard(c) {
         <div><span class="muted small">${t('dash.standing')} (${lg})</span><b>${myRank ? '#' + myRank : '—'}</b></div>
         <div><span class="muted small">${t('dash.board')}</span><b class="small">${t(S.goal || 'goal.playoffs')}</b></div>
       </div>
-      <div class="card"><h3>${lg} ${t('phase.' + split)}</h3>${standingsTable(st, ut.id, true)}</div>
+      <div class="card"><h3 class="row gap">${leagueBadge(lg, 'sm')} ${lg} ${t('phase.' + split)}</h3>${standingsTable(st, ut.id, true)}</div>
       <div class="card"><h3>${t('dash.lastResults')}</h3>${recent.length ? recent.map(resultRow).join('') : '<p class="muted">—</p>'}</div>
       ${ut.trophies.length ? `<div class="card"><h3>${t('dash.trophies')}</h3>${ut.trophies.map((x) => `<div>🏆 ${esc(x)}</div>`).join('')}</div>` : ''}
     </div>
@@ -359,7 +373,7 @@ function standingsTable(st, hl, compact = false) {
 
 // ---------- Đội hình ----------
 function playerRow(p, extra = '', showTeam = false) {
-  return `<div class="list-row prow" data-player="${esc(p.id)}">${roleTag(p.role)}
+  return `<div class="list-row prow" data-player="${esc(p.id)}">${face(p, 'sm')}${roleTag(p.role)}
     <div class="grow"><b>${esc(p.ign)}</b> ${p.rookie ? `<em class="tagx">${t('p.rookie')}</em>` : ''} <span class="muted small">${esc(p.name)}</span>
     <div class="muted small">${showTeam ? (p.teamId ? esc(S.teams[p.teamId].short) + ' · ' : t('p.freeAgent') + ' · ') : ''}${t('age')} ${p.age} · ${flag(p.country)}</div></div>
     <div class="pool-mini">${p.pool.slice(0, 3).map((x) => champIcon(x.c, 24)).join('')}</div>
@@ -386,7 +400,7 @@ function roster(c) {
   <div class="lineup">${lp.map(({ role, p }) => `
     <div class="slot card ${p ? '' : 'empty'}" data-slot="${role}" ${p ? `data-player="${esc(p.id)}"` : ''}>
       <div class="slot-role">${roleTag(role)}</div>
-      ${p ? `<div class="slot-ign">${esc(p.ign)}</div>${p.role !== role ? `<div class="warn small">${t('roster.offRole')}</div>` : ''}
+      ${p ? `${face(p, 'lg')}<div class="slot-ign">${esc(p.ign)}</div>${p.role !== role ? `<div class="warn small">${t('roster.offRole')}</div>` : ''}
       <div class="slot-ovr">${ovrTag(p.ovr)} ${formArrow(p.form)}</div><div class="pool-mini">${p.pool.slice(0, 3).map((x) => champIcon(x.c, 26)).join('')}</div>`
     : `<div class="muted">${t('roster.empty')}</div>`}
     </div>`).join('')}</div>
@@ -428,10 +442,10 @@ export function playerModal(pid) {
     actions = `<button class="btn primary" data-buy>${p.teamId ? t('p.buy') : t('p.sign')}</button>`;
   }
   const m = modal(`
-    <div class="pm-head">${p.teamId ? badge(p.teamId, 'lg') : '<span class="badge badge-lg" style="--h:0">FA</span>'}
+    <div class="pm-head">${face(p, 'xl')}
       <div class="grow"><h2>${esc(p.ign)} ${listed ? `<em class="tagx">${t('p.listed')}</em>` : ''}</h2>
       <div class="muted">${esc(p.name)} ${p.native ? '· ' + esc(p.native) : ''}</div>
-      <div class="muted small">${roleTag(p.role)} ${p.teamId ? esc(S.teams[p.teamId].name) : t('p.freeAgent')} · ${t('age')} ${p.age} · ${esc(p.country)}</div></div>
+      <div class="muted small row gap">${roleTag(p.role)} ${p.teamId ? badge(p.teamId, 'sm') + ' ' + esc(S.teams[p.teamId].name) : t('p.freeAgent')} · ${t('age')} ${p.age} · ${esc(p.country)}</div></div>
       <div class="pm-ovr">${ovrTag(p.ovr)}<span class="muted small">${t('pot')} ${p.potential}</span></div></div>
     <div class="two">
       <div>${ATTRS.map((a) => `<div class="attr"><span>${t('attr.' + a)}</span><div class="bar"><i style="width:${p.stats[a]}%"></i></div><b>${p.stats[a]}</b></div>`).join('')}
@@ -518,9 +532,9 @@ function standingsTab(c) {
   const comps = Object.values(S.comps).filter((x) => x.id.startsWith(y + '-') && (x.league === lg || (lg === 'INTL' && x.league === 'INTL')));
   const tabs = [...DB.leagues.map((l) => l.id), 'INTL'];
   c.innerHTML = `<h1>${t('st.title')} — ${t('season', { y })}</h1>
-    <div class="chips">${tabs.map((x) => `<button class="chip ${x === lg ? 'on' : ''}" data-lg="${x}">${x === 'INTL' ? 'MSI / Worlds' : x}</button>`).join('')}</div>
+    <div class="chips">${tabs.map((x) => `<button class="chip row gap ${x === lg ? 'on' : ''}" data-lg="${x}">${leagueBadge(x, 'xs')}${x === 'INTL' ? 'MSI / Worlds' : x}</button>`).join('')}</div>
     ${comps.length ? comps.map((comp) => {
-      const title = compTitle(comp);
+      const title = `${leagueBadge(comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league, 'sm')} ${compTitle(comp)}`;
       if (comp.type === 'league') return `<div class="card"><h3>${title}</h3>${standingsTable(standings(comp), S.userTeam)}</div>`;
       if (comp.type === 'groups') return `<div class="card"><h3>${title}</h3><div class="groups">${comp.groups.map((_, gi) => `<div><h4>${t('st.group', { g: 'ABCD'[gi] })}</h4>${standingsTable(standings(comp, gi), S.userTeam, true)}</div>`).join('')}</div></div>`;
       return `<div class="card"><h3>${title} — ${t('st.bracket')}</h3>${bracketHtml(comp)}</div>`;

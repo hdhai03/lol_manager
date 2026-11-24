@@ -38,6 +38,16 @@ Script tải lại toàn bộ dữ liệu vào thư mục `data/`. Kết quả t
 
 > Meta lấy từ trận đấu **chuyên nghiệp** chứ không lấy từ op.gg, vì op.gg không có API công khai và điều khoản của họ cấm thu thập dữ liệu tự động. Với game quản lý đội pro, meta thi đấu chuyên nghiệp cũng sát thực tế hơn meta xếp hạng.
 
+## Logo & ảnh tuyển thủ
+
+```bash
+node scripts/fetch-images.mjs
+```
+
+Script tải logo 7 giải, MSI và CKTG, logo 62 đội và ảnh chân dung của tuyển thủ (326/332 người có ảnh, ai thiếu sẽ hiện chữ cái đầu) từ Leaguepedia. Ảnh được thu nhỏ, chuyển sang WebP và lưu trong `assets/`. Đường dẫn ảnh nằm trong `data/images.json`. Logo quá tối sẽ tự được đặt trên nền sáng.
+
+> Logo đội/giải và ảnh tuyển thủ thuộc bản quyền của các đội, Riot Games và nhiếp ảnh gia. Chỉ dùng cho dự án fan phi thương mại; nếu phát hành rộng, hãy cân nhắc bỏ thư mục `assets/team`, `assets/player`, `assets/league`. Game vẫn chạy bình thường khi thiếu chúng.
+
 ## Kiểm thử
 
 ```bash

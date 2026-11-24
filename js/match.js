@@ -6,7 +6,7 @@ import {
   DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, simulateGame, recordGame, simSeries, compTraits,
 } from './sim.js';
 import { ROLES, esc, logistic } from './util.js';
-import { badge, champIcon, roleTag, ovrTag, compTitle } from './ui.js';
+import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge } from './ui.js';
 
 let overlay = null;
 let match = null;
@@ -46,7 +46,7 @@ export function openMatchDay(m, done) {
 function header() {
   const comp = S.comps[match.comp];
   return `<div class="md-head">
-    <div class="muted small">${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })}</div>
+    <div class="muted small row center gap">${leagueBadge(comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league, 'xs')} ${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })}</div>
     <div class="md-score">${badge(match.a, 'lg')}<span class="md-sname">${esc(S.teams[match.a].name)}</span>
       <b>${match.winsA} - ${match.winsB}</b>
       <span class="md-sname">${esc(S.teams[match.b].name)}</span>${badge(match.b, 'lg')}</div>
@@ -57,7 +57,7 @@ function preMatch() {
   const A = S.teams[match.a], B = S.teams[match.b];
   const pA = logistic((teamOvr(A) - teamOvr(B)) / 4.2);
   const mine = match.a === me() ? pA : 1 - pA;
-  const line = (tm) => lineupPlayers(tm).map(({ role, p }) => `<div class="list-row">${roleTag(role)}<b class="grow">${p ? esc(p.ign) : '—'}</b>
+  const line = (tm) => lineupPlayers(tm).map(({ role, p }) => `<div class="list-row">${face(p, 'sm')}${roleTag(role)}<b class="grow">${p ? esc(p.ign) : '—'}</b>
     <span class="pool-mini">${p ? p.pool.slice(0, 3).map((x) => champIcon(x.c, 22)).join('') : ''}</span>${p ? ovrTag(p.ovr) : ''}</div>`).join('');
   root().innerHTML = `<div class="md-inner">${header()}
     <div class="md-game muted">${t('m.game', { n: match.games.length + 1 })}</div>
@@ -118,7 +118,7 @@ function renderDraft() {
         const sel = s === mySide() && myTurn && type === 'pick' && r === drole && !c;
         return `<div class="d-slot ${sel ? 'sel' : ''} ${activeSlot && !c ? 'act' : ''}" ${s === mySide() && !c ? `data-role="${r}"` : ''}>
           ${c ? champIcon(c, 44) : `<span class="champ empty" style="width:44px;height:44px"></span>`}
-          <div class="grow">${roleTag(r)} <b>${line[r] ? esc(line[r].ign) : '—'}</b><div class="small muted">${c ? esc(cname(c)) + ` · ${t('m.fit')} ${Math.round(champFit(line[r], c, r))}` : ''}</div></div></div>`;
+          ${face(line[r], 'sm')}<div class="grow">${roleTag(r)} <b>${line[r] ? esc(line[r].ign) : '—'}</b><div class="small muted">${c ? esc(cname(c)) + ` · ${t('m.fit')} ${Math.round(champFit(line[r], c, r))}` : ''}</div></div></div>`;
       }).join('')}
       <div class="small muted">${t('m.tanks')}: ${tr.tanks} · ${t('m.apShare')}: ${Math.round(tr.apShare * 100)}%</div>
     </div>`;
@@ -196,7 +196,7 @@ function liveGame(d) {
     return t('ev.' + e.type, p);
   };
 
-  const picksCol = (s) => ROLES.map((r) => `<div class="lv-p">${champIcon(g.picks[s][r], 34)}<span>${ign(s, r)}</span></div>`).join('');
+  const picksCol = (s) => ROLES.map((r) => `<div class="lv-p">${champIcon(g.picks[s][r], 34)}${face(S.players[pmap[s + r]?.pid], 'xs')}<span>${ign(s, r)}</span></div>`).join('');
 
   root().innerHTML = `<div class="md-inner live">${header()}
     <div class="lv-top">
@@ -271,7 +271,7 @@ function postGame(g) {
   const won = g.winnerId === me();
   const row = (x) => {
     const p = S.players[x.pid];
-    return `<tr class="${g.mvp === x.pid ? 'mvp' : ''}"><td>${champIcon(x.champ, 28)}</td><td>${roleTag(x.role)} <b>${p ? esc(p.ign) : '?'}</b>${g.mvp === x.pid ? ` <em class="tagx">${t('m.mvp')}</em>` : ''}</td>
+    return `<tr class="${g.mvp === x.pid ? 'mvp' : ''}"><td>${champIcon(x.champ, 28)}</td><td class="row gap">${face(p, 'xs')}${roleTag(x.role)} <b>${p ? esc(p.ign) : '?'}</b>${g.mvp === x.pid ? ` <em class="tagx">${t('m.mvp')}</em>` : ''}</td>
       <td>${x.k}/${x.d}/${x.a}</td><td>${x.cs}</td><td>${(x.gold / 1000).toFixed(1)}k</td><td>${(x.dmg / 1000).toFixed(1)}k</td></tr>`;
   };
   const table = (s) => `<table class="tbl sb"><thead><tr><th></th><th>${badge(s === 'B' ? g.blue : g.red, 'sm')} ${esc(S.teams[s === 'B' ? g.blue : g.red].short)} ${g.winner === s ? '🏆' : ''}</th><th>KDA</th><th>CS</th><th>${t('p.gpm').split('/')[0]}</th><th>DMG</th></tr></thead>
