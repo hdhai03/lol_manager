@@ -108,9 +108,26 @@ export function aiChoose(d, sideTeam) {
 export function applyDraftAction(d, champ, role) {
   const [side, type] = DRAFT_ORDER[d.step];
   if (type === 'ban') d.bans[side].push(champ);
-  else d.picks[side][role] = champ;
+  else {
+    // chọn theo lượt: nếu không chỉ định vị trí, xếp tướng vào vị trí trống hợp nhất (đổi lại được sau)
+    if (!role || d.picks[side][role]) role = bestOpenRole(d, side, champ);
+    d.picks[side][role] = champ;
+  }
   d.log.push({ side, type, champ, role });
   d.step++;
+}
+
+export function bestOpenRole(d, side, champ) {
+  const line = lineupMap(side === 'B' ? d.blue : d.red);
+  const roles = openRoles(d, side);
+  return roles.sort((a, b) => champFit(line[b], champ, b) - champFit(line[a], champ, a))[0];
+}
+
+// đổi tướng giữa 2 vị trí của cùng một đội
+export function swapPicks(d, side, r1, r2) {
+  const p = d.picks[side];
+  [p[r1], p[r2]] = [p[r2], p[r1]];
+  for (const r of [r1, r2]) if (!p[r]) delete p[r];
 }
 
 export function autoDraft(blueId, redId) {

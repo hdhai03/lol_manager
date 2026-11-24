@@ -3,10 +3,12 @@ import { DB } from './data.js';
 import { t, cname } from './i18n.js';
 import { S, teamOvr, lineupPlayers, addNews, fillLineup } from './state.js';
 import {
-  DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, simulateGame, recordGame, simSeries, compTraits,
+  DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, swapPicks, simulateGame, recordGame, simSeries, compTraits,
 } from './sim.js';
 import { ROLES, esc, logistic } from './util.js';
-import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge } from './ui.js';
+import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon } from './ui.js';
+import { champImg } from './data.js';
+const roleIconSvg = (r) => roleIcon(r);
 
 let overlay = null;
 let match = null;
@@ -80,97 +82,122 @@ function preMatch() {
 }
 
 // ---------------- Cấm / chọn ----------------
-let draft = null, dsel = null, drole = null, dfilter = 'all', dq = '';
+// Chọn theo lượt; tướng được xếp tạm vào vị trí hợp nhất, người chơi đổi tướng giữa các tuyển thủ bất cứ lúc nào.
+let draft = null, dsel = null, dfilter = 'all', dq = '', swapSel = null;
 
 function draftScreen() {
   const { blue, red } = sides();
   draft = newDraft(blue, red);
-  dsel = null; drole = null; dfilter = 'all'; dq = '';
+  dsel = null; dfilter = 'all'; dq = ''; swapSel = null;
   renderDraft();
 }
 
 function mySide() { return draft.blue === me() ? 'B' : 'R'; }
+const lineOf = (tid) => Object.fromEntries(lineupPlayers(S.teams[tid]).map(({ role, p }) => [role, p]));
 
 function renderDraft() {
   const done = draft.step >= DRAFT_ORDER.length;
   const [side, type] = done ? [null, null] : DRAFT_ORDER[draft.step];
-  const myTurn = !done && side === mySide();
+  const ms = mySide();
+  const myTurn = !done && side === ms;
   const taken = draftTaken(draft);
-  const myLine = Object.fromEntries(lineupPlayers(S.teams[me()]).map(({ role, p }) => [role, p]));
-  const myOpen = openRoles(draft, mySide());
-  if (myTurn && type === 'pick' && (!drole || !myOpen.includes(drole))) drole = myOpen[0];
+  const myLine = lineOf(me());
+  const comp = S.comps[match.comp];
   let champs = DB.champList.filter((c) => dfilter === 'all' || c.roles.includes(dfilter));
   if (dq) champs = champs.filter((c) => (c.name + ' ' + c.nameVi).toLowerCase().includes(dq.toLowerCase()));
-  const fitRole = type === 'pick' ? drole : null;
-  const tierOrder = { S: 0, A: 1, B: 2, C: 3, D: 4 };
-  champs.sort((a, b) => (fitRole ? champFit(myLine[fitRole], b.id, fitRole) - champFit(myLine[fitRole], a.id, fitRole) : tierOrder[a.tier] - tierOrder[b.tier] || b.presence - a.presence));
+  const myOpen = openRoles(draft, ms);
+  const bestFit = (cid) => Math.round(Math.max(...myOpen.map((r) => champFit(myLine[r], cid, r)), 0));
+  const lgId = comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league;
 
-  const sideCol = (s) => {
-    const tid = s === 'B' ? draft.blue : draft.red;
-    const line = Object.fromEntries(lineupPlayers(S.teams[tid]).map(({ role, p }) => [role, p]));
-    const tr = compTraits(Object.values(draft.picks[s]));
-    const activeSlot = !done && side === s && type === 'pick';
-    return `<div class="d-side ${s === 'B' ? 'blue' : 'red'}">
-      <div class="d-team">${badge(tid, 'sm')} <b>${esc(S.teams[tid].short)}</b> <span class="muted small">${s === 'B' ? t('m.blue') : t('m.red')}</span></div>
-      <div class="d-bans">${[0, 1, 2, 3, 4].map((i) => `<span class="d-ban">${draft.bans[s][i] ? champIcon(draft.bans[s][i], 30) : ''}</span>`).join('')}</div>
-      ${ROLES.map((r) => {
-        const c = draft.picks[s][r];
-        const sel = s === mySide() && myTurn && type === 'pick' && r === drole && !c;
-        return `<div class="d-slot ${sel ? 'sel' : ''} ${activeSlot && !c ? 'act' : ''}" ${s === mySide() && !c ? `data-role="${r}"` : ''}>
-          ${c ? champIcon(c, 44) : `<span class="champ empty" style="width:44px;height:44px"></span>`}
-          ${face(line[r], 'sm')}<div class="grow">${roleTag(r)} <b>${line[r] ? esc(line[r].ign) : '—'}</b><div class="small muted">${c ? esc(cname(c)) + ` · ${t('m.fit')} ${Math.round(champFit(line[r], c, r))}` : ''}</div></div></div>`;
-      }).join('')}
-      <div class="small muted">${t('m.tanks')}: ${tr.tanks} · ${t('m.apShare')}: ${Math.round(tr.apShare * 100)}%</div>
-    </div>`;
+  const bans = (s) => {
+    const next = !done && side === s && type === 'ban' ? draft.bans[s].length : -1;
+    const arr = [0, 1, 2, 3, 4].map((i) => `<div class="dr-ban ${i === next ? 'next' : ''}">${draft.bans[s][i] ? `<img src="${champImg(draft.bans[s][i])}" alt="${esc(cname(draft.bans[s][i]))}" title="${esc(cname(draft.bans[s][i]))}">` : ''}</div>`);
+    return s === 'B' ? arr.join('') : arr.reverse().join('');
   };
+  const slots = (s) => {
+    const tid = s === 'B' ? draft.blue : draft.red;
+    const line = lineOf(tid);
+    const firstEmpty = !done && side === s && type === 'pick' ? ROLES.find((r) => !draft.picks[s][r]) : null;
+    const order = s === 'B' ? [...ROLES].reverse() : ROLES;
+    return order.map((r) => {
+      const c = draft.picks[s][r];
+      const p = line[r];
+      const mine = s === ms;
+      const cls = [s === 'R' ? 'red' : '', r === firstEmpty ? 'active' : '', mine && c ? 'swappable' : '', mine && swapSel === r ? 'swap-sel' : ''].join(' ');
+      return `<div class="dr-slot ${cls}" ${mine && c ? `data-swap="${r}"` : ''}>
+        ${c ? `<div class="art" style="background-image:url('${champImg(c)}')"></div>` : `<div class="glyph">${roleIconSvg(r)}</div>`}
+        <span class="rl">${t('roleS.' + r)}</span>${c && mine ? `<span class="ft">${Math.round(champFit(p, c, r))}</span>` : ''}
+        <span class="cn">${c ? esc(cname(c)) : ''}</span><span class="pn">${p ? esc(p.ign) : '—'}</span></div>`;
+    }).join('');
+  };
+  const wins = (tid) => {
+    const n = tid === match.a ? match.winsA : match.winsB;
+    return `<span class="wins">${Array.from({ length: Math.ceil(match.bo / 2) }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+  };
+  const status = done ? t('dr.done') : myTurn ? `${t(type === 'ban' ? 'dr.bans' : 'dr.picks')} · <b>${t('dr.yourTurn')}</b>` : t('dr.waiting');
+  const trB = compTraits(Object.values(draft.picks.B)), trR = compTraits(Object.values(draft.picks.R));
+  const tr = ms === 'B' ? trB : trR;
 
-  root().innerHTML = `<div class="md-inner draft">${header()}
-    <div class="d-turn ${myTurn ? 'mine' : ''}">${done ? '' : myTurn ? t('m.yourTurn', { action: t(type === 'ban' ? 'm.banA' : 'm.pickA') }) : t('m.aiTurn', { action: t(type === 'ban' ? 'm.ban' : 'm.pick') })}
-      <span class="muted small">(${draft.step + (done ? 0 : 1)}/20)</span></div>
-    <div class="d-grid">
-      ${sideCol('B')}
-      <div class="d-center">
-        <div class="filters"><input type="search" placeholder="${t('meta.search')}" value="${esc(dq)}" data-q>
-          <div class="chips">${['all', ...ROLES].map((r) => `<button class="chip sm ${dfilter === r ? 'on' : ''}" data-f="${r}">${r === 'all' ? t('meta.allRoles') : t('roleS.' + r)}</button>`).join('')}</div></div>
-        <div class="d-champs">${champs.map((c) => {
+  root().innerHTML = `<div class="draft">
+    <div class="dr-top"><button data-leave>‹ ${t('dr.leave')}</button><span>${esc(compTitle(comp))}</span><span></span></div>
+    <div class="dr-mid">
+      <div class="dr-panel">
+        <div class="dr-ph"><h3>${t('dr.champions')}</h3>
+          <div class="dr-roles">${['all', ...ROLES].map((r) => `<button class="${dfilter === r ? 'on' : ''}" data-f="${r}">${r === 'all' ? t('tr.all') : t('roleS.' + r)}</button>`).join('')}</div>
+          <label class="dr-search">⌕<input type="search" placeholder="${t('meta.search')}" value="${esc(dq)}" data-q></label></div>
+        <div class="dr-grid">${champs.map((c) => {
           const dis = taken.has(c.id);
-          const fit = fitRole ? Math.round(champFit(myLine[fitRole], c.id, fitRole)) : null;
-          return `<button class="d-champ ${dis ? 'dis' : ''} ${dsel === c.id ? 'on' : ''}" ${dis || !myTurn ? 'disabled' : ''} data-c="${c.id}">
-            ${champIcon(c.id, 52)}<span class="tier t-${c.tier}">${c.tier}</span>${fit !== null && !dis ? `<span class="fit">${fit}</span>` : ''}<em>${esc(cname(c.id))}</em></button>`;
+          return `<button class="dr-c ${dis ? 'dis' : ''} ${dsel === c.id ? 'on' : ''}" ${dis || !myTurn ? 'disabled' : ''} data-c="${c.id}">
+            <img loading="lazy" src="${champImg(c.id)}" alt="">${['S', 'A'].includes(c.tier) ? `<span class="hx">${c.tier}</span>` : ''}
+            ${myTurn && type === 'pick' && !dis ? `<span class="fit">${bestFit(c.id)}</span>` : ''}<em>${esc(cname(c.id))}</em></button>`;
         }).join('')}</div>
-        <div class="row center gap">${done ? `<button class="btn primary big" data-start>${t('m.startGame')}</button>`
-          : myTurn ? `<button class="btn primary big" data-confirm ${dsel ? '' : 'disabled'}>${t('m.confirm')} ${dsel ? '· ' + esc(cname(dsel)) + (type === 'pick' ? ` → ${t('roleS.' + drole)}` : '') : ''}</button>` : ''}</div>
+        <div class="dr-foot"><span class="msg">${done ? t('dr.swapHint') : myTurn ? (dsel ? esc(cname(dsel)) : t(type === 'ban' ? 'dr.selectBan' : 'dr.selectPick')) : t('dr.waiting')}
+          <br><span class="dr-comp">${t('m.tanks')}: ${tr.tanks} · ${t('m.apShare')}: ${Math.round(tr.apShare * 100)}% · ${t('dr.swapHint')}</span></span>
+          ${done ? `<button class="btn primary big" data-start>${t('m.startGame')}</button>`
+            : `<button class="btn ${myTurn && dsel ? 'act' : ''}" data-confirm ${myTurn && dsel ? '' : 'disabled'}>${t(type === 'ban' ? 'dr.ban' : 'dr.pick')}</button>`}</div>
       </div>
-      ${sideCol('R')}
+      <div class="dr-banrow"><div class="dr-bans l">${bans('B')}</div><div class="dr-bans r">${bans('R')}</div></div>
+    </div>
+    <div class="dr-progress"><i style="width:${(draft.step / DRAFT_ORDER.length) * 100}%"></i></div>
+    <div class="dr-bar">
+      ${slots('B')}
+      <div class="dr-center">
+        <div class="t1">${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })} · ${t('dr.game', { n: match.games.length + 1 })}</div>
+        <div class="t2">${draft.blue === me() ? t('dr.firstPick') : '&nbsp;'}</div>
+        <div class="tms">${badge(draft.blue, 'lg')}${leagueBadge(lgId, 'sm')}${badge(draft.red, 'lg')}</div>
+        <div class="tms">${wins(draft.blue)}<span class="t3">PATCH ${esc(DB.meta.proPatch)}</span>${wins(draft.red)}</div>
+        <div class="t3">${status}</div>
+      </div>
+      ${slots('R')}
     </div></div>`;
 
   const r = root();
-  r.querySelectorAll('[data-c]').forEach((b) => b.onclick = () => {
-    dsel = b.dataset.c;
-    if (type === 'pick') {
-      const c = DB.champions[dsel];
-      if (!c.roles.includes(drole)) { const alt = c.roles.find((x) => myOpen.includes(x)); if (alt) drole = alt; }
-    }
+  r.querySelector('[data-leave]').onclick = () => preMatch();
+  r.querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { dsel = b.dataset.c; renderDraft(); });
+  r.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => { dfilter = b.dataset.f; renderDraft(); });
+  r.querySelectorAll('[data-swap]').forEach((el) => el.onclick = () => {
+    const role = el.dataset.swap;
+    if (!swapSel) swapSel = role;
+    else if (swapSel === role) swapSel = null;
+    else { swapPicks(draft, ms, swapSel, role); swapSel = null; }
     renderDraft();
   });
-  r.querySelectorAll('[data-role]').forEach((b) => b.onclick = () => { drole = b.dataset.role; renderDraft(); });
-  r.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => { dfilter = b.dataset.f; renderDraft(); });
   const qi = r.querySelector('[data-q]');
   qi.oninput = () => { dq = qi.value; renderDraft(); const n = root().querySelector('[data-q]'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
   r.querySelector('[data-confirm]')?.addEventListener('click', () => {
     if (!dsel) return;
-    applyDraftAction(draft, dsel, type === 'pick' ? drole : null);
+    applyDraftAction(draft, dsel, null);
     dsel = null;
     renderDraft();
   });
   r.querySelector('[data-start]')?.addEventListener('click', () => liveGame(draft));
   if (!done && !myTurn) {
     setTimeout(() => {
-      if (!overlay || draft.step >= DRAFT_ORDER.length || DRAFT_ORDER[draft.step][0] === mySide()) return;
+      if (!overlay || !draft || draft.step >= DRAFT_ORDER.length || DRAFT_ORDER[draft.step][0] === mySide()) return;
       const ch = aiChoose(draft);
       applyDraftAction(draft, ch.champ, ch.role);
       renderDraft();
-    }, 450);
+    }, 550);
   }
 }
 
@@ -209,7 +236,7 @@ function liveGame(d) {
       <div class="lv-picks blue">${picksCol('B')}</div>
       <div class="lv-center">
         <div class="card"><div class="small muted">${t('m.gold')}</div><svg id="gold" viewBox="0 0 300 80" preserveAspectRatio="none"><line x1="0" y1="40" x2="300" y2="40" class="axis"/><polyline id="gl" points="" /></svg><div class="small center" id="gd">0</div></div>
-        <div class="card feed" id="feed"></div>
+        <div class="card feed-live" id="feed"></div>
       </div>
       <div class="lv-picks red">${picksCol('R')}</div>
     </div>

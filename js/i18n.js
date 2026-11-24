@@ -486,6 +486,48 @@ const en = {
 
 
 
+
+Object.assign(vi, {
+  'menu.metaTitle': 'Meta chuyên nghiệp', 'menu.new2': 'Mới', 'menu.metaBody': 'Những tướng được cấm/chọn nhiều nhất trong {games} trận đấu chuyên nghiệp gần nhất.',
+  'nav.dashboard': 'Trang chủ', 'nav.roster': 'Đội hình',
+  'btn.training': 'Tập luyện', 'btn.advance': 'Ngày tiếp', 'btn.simNext': 'Tới trận kế', 'btn.play': 'Thi đấu', 'btn.manage': 'Quản lý',
+  'hint.tabs': 'Chuyển mục',
+  'dash.yourTeam': 'Đội của bạn', 'dash.money': 'Ngân sách hiện có', 'dash.calendar': 'Lịch thi đấu',
+  'dash.record': '#{rank} · {w}T {l}B', 'dash.nextIn': 'Trận tiếp theo sau {n} ngày', 'dash.today': 'Hôm nay có trận đấu!',
+  'dash.expiringLine': 'Hợp đồng của {player} sắp hết hạn', 'dash.news': 'Tin tức',
+  'cal.match': 'Trận', 'cal.win': 'Thắng', 'cal.loss': 'Thua',
+  'fin.net': 'Chênh lệch / năm', 'fin.contracts': 'Hợp đồng',
+  'feed.esports': 'Rift Esports', 'feed.transfers': 'Rift Chuyển nhượng', 'feed.board': 'Ban lãnh đạo', 'feed.today': 'hôm nay', 'feed.daysAgo': '{n} ngày trước',
+  'roster.starter': 'Chính', 'roster.sub': 'Dự bị', 'roster.hint': 'Chọn tuyển thủ để xem chi tiết và đổi vị trí',
+  'p.summary': 'Tổng quan chỉ số', 'p.dev': 'Phát triển', 'p.plan': 'Giáo án đội', 'p.progress': 'Tiến độ',
+  'new.star': 'Ngôi sao', 'new.coach': 'HLV trưởng', 'new.powerRank': 'Xếp hạng', 'new.players': 'Tuyển thủ', 'new.finance': 'Ổn định tài chính', 'new.youth': 'Tài năng trẻ',
+  'lvl.high': 'Cao', 'lvl.medium': 'Trung bình', 'lvl.low': 'Thấp',
+  'tr.players': '{n} TUYỂN THỦ · {p}/{pages}', 'tr.offer': 'Đề nghị', 'min': 'phút',
+  'dr.leave': 'Rời cấm/chọn', 'dr.champions': 'Tướng', 'dr.ban': 'Cấm', 'dr.pick': 'Chọn', 'dr.selectBan': 'Chọn một tướng để cấm', 'dr.selectPick': 'Chọn một tướng',
+  'dr.waiting': 'Đối thủ đang chọn…', 'dr.yourTurn': 'Lượt của bạn', 'dr.bans': 'Cấm', 'dr.picks': 'Chọn', 'dr.firstPick': 'Chọn trước',
+  'dr.swapHint': 'Bấm 2 tuyển thủ bên bạn để đổi tướng cho nhau', 'dr.done': 'Cấm/chọn hoàn tất — đổi tướng nếu cần rồi bắt đầu', 'dr.game': 'Ván {n}',
+});
+Object.assign(en, {
+  'menu.metaTitle': 'Pro meta', 'menu.new2': 'New', 'menu.metaBody': 'The most picked and banned champions across the latest {games} pro games.',
+  'nav.dashboard': 'Home', 'nav.roster': 'Squad',
+  'btn.training': 'Training', 'btn.advance': 'Advance day', 'btn.simNext': 'Sim to match', 'btn.play': 'Play', 'btn.manage': 'Manage',
+  'hint.tabs': 'Switch tab',
+  'dash.yourTeam': 'Your team', 'dash.money': 'Available money', 'dash.calendar': 'Calendar',
+  'dash.record': '#{rank} · {w}W {l}L', 'dash.nextIn': 'Next match in {n} days', 'dash.today': 'Match day today!',
+  'dash.expiringLine': "{player}'s contract is about to expire", 'dash.news': 'News',
+  'cal.match': 'Match', 'cal.win': 'Win', 'cal.loss': 'Loss',
+  'fin.net': 'Net / year', 'fin.contracts': 'Contracts',
+  'feed.esports': 'Rift Esports', 'feed.transfers': 'Rift Transfers', 'feed.board': 'The Board', 'feed.today': 'today', 'feed.daysAgo': '{n}d ago',
+  'roster.starter': 'Starter', 'roster.sub': 'Sub', 'roster.hint': 'Select a player to see details and change roles',
+  'p.summary': 'Summary', 'p.dev': 'Development', 'p.plan': 'Team plan', 'p.progress': 'Progress',
+  'new.star': 'Star player', 'new.coach': 'Head coach', 'new.powerRank': 'Power rank', 'new.players': 'Players', 'new.finance': 'Financial stability', 'new.youth': 'Youth talent',
+  'lvl.high': 'High', 'lvl.medium': 'Medium', 'lvl.low': 'Low',
+  'tr.players': '{n} PLAYERS · {p}/{pages}', 'tr.offer': 'Offer', 'min': 'min',
+  'dr.leave': 'Leave the draft', 'dr.champions': 'Champions', 'dr.ban': 'Ban', 'dr.pick': 'Pick', 'dr.selectBan': 'Select a champion to ban', 'dr.selectPick': 'Select a champion',
+  'dr.waiting': 'Opponent is choosing…', 'dr.yourTurn': 'Your turn', 'dr.bans': 'Bans', 'dr.picks': 'Picks', 'dr.firstPick': 'First pick',
+  'dr.swapHint': 'Click two of your players to swap their champions', 'dr.done': 'Draft complete — swap champions if needed, then start', 'dr.game': 'Game {n}',
+});
+
 export const DICTS = { vi, en };
 let lang = 'vi';
 try { lang = localStorage.getItem('lolm_lang') || 'vi'; } catch { /* */ }
