@@ -859,3 +859,55 @@ body > .bg-art { z-index: 0; }
 
 .matchday { isolation: isolate; }
 .matchday .bg-art { z-index: -1; }
+
+/* ---- Xem trận: bản đồ trực tiếp ---- */
+.lv-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.lv-side { display: flex; flex-direction: column; gap: .5rem; }
+.lv-pl { display: flex; align-items: center; gap: .7rem; background: rgba(24, 27, 44, .78); backdrop-filter: blur(14px); border-radius: 12px; padding: .45rem .7rem .45rem .45rem; transition: opacity .3s, filter .3s; }
+.lv-pl.blue { box-shadow: inset 3px 0 0 var(--blue); }
+.lv-pl.red { box-shadow: inset -3px 0 0 var(--red); flex-direction: row-reverse; text-align: right; padding: .45rem .45rem .45rem .7rem; }
+.lv-pl .champ { border-radius: 8px; }
+.lv-pl b { display: block; font-size: .95rem; }
+.lv-pl small { color: var(--muted); font-size: .76rem; }
+.lv-pl .kda { font-family: var(--display); font-weight: 600; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.lv-pl.dead { opacity: .45; filter: grayscale(1); }
+.gd { font-weight: 600; min-width: 80px; text-align: center; }
+.map-wrap { position: relative; width: 100%; aspect-ratio: 1; max-width: 560px; justify-self: center; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .08); --tt: .8s; }
+.rift { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rift .lane { fill: none; stroke: rgba(214, 200, 160, .28); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
+.rift .river { fill: none; stroke: rgba(70, 140, 190, .45); stroke-width: 7; stroke-linecap: round; }
+.rift .edge { stroke: rgba(0, 0, 0, .35); stroke-width: 10; }
+.rift .jg circle { fill: rgba(10, 30, 22, .55); stroke: rgba(120, 180, 140, .08); stroke-width: .5; }
+.rift .pit { fill: rgba(0, 0, 0, .45); stroke: rgba(255, 255, 255, .25); stroke-width: .4; }
+.rift .pit-t { font-size: 3.2px; text-anchor: middle; }
+.rift .base { stroke-width: .8; }
+.rift .base-B { fill: rgba(76, 141, 246, .35); stroke: #6ea4ff; }
+.rift .base-R { fill: rgba(242, 107, 107, .35); stroke: #ff8c8c; }
+.rift .tw { stroke-width: .35; stroke: rgba(255, 255, 255, .8); transition: opacity .6s, transform .6s; }
+.rift .tw-B { fill: #4c8df6; }
+.rift .tw-R { fill: #f26b6b; }
+.rift .tw.down { opacity: .12; }
+.tk { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; transition: left var(--tt) cubic-bezier(.45, 0, .2, 1), top var(--tt) cubic-bezier(.45, 0, .2, 1), opacity .3s, filter .3s; z-index: 2; }
+.tk .champ { width: 100%; height: 100%; border-radius: 50%; display: block; }
+.tk-B { box-shadow: 0 0 0 2px #6ea4ff, 0 4px 10px rgba(0, 0, 0, .6); }
+.tk-R { box-shadow: 0 0 0 2px #ff8c8c, 0 4px 10px rgba(0, 0, 0, .6); }
+.tk i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: .8rem; color: #fff; text-shadow: 0 1px 3px #000; }
+.tk.dead { filter: grayscale(1) brightness(.6); opacity: .7; z-index: 1; }
+.fx { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.boom { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; animation: boom 1.3s ease-out forwards; }
+.boom.b { background: radial-gradient(circle, rgba(160, 200, 255, .95), rgba(76, 141, 246, 0) 70%); }
+.boom.r { background: radial-gradient(circle, rgba(255, 190, 190, .95), rgba(242, 107, 107, 0) 70%); }
+@keyframes boom { from { transform: scale(.4); opacity: 1; } to { transform: scale(5); opacity: 0; } }
+.banner { position: absolute; left: 50%; top: 9%; transform: translate(-50%, -10px); z-index: 4; padding: .55rem 1.4rem; font-family: var(--display); font-weight: 700; font-size: clamp(.8rem, 1.6vw, 1.05rem); letter-spacing: .02em; white-space: nowrap; opacity: 0; transition: opacity .25s, transform .35s cubic-bezier(.16, 1, .3, 1); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); pointer-events: none; }
+.banner.show { opacity: 1; transform: translate(-50%, 0); }
+.banner.b { background: linear-gradient(90deg, #1f4fb8, #4c8df6); }
+.banner.r { background: linear-gradient(90deg, #b0303a, #f26b6b); }
+.lv-under { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1rem; }
+.lv-under .card { margin: 0; }
+.lv-under .feed-live { max-height: 180px; }
+@media (max-width: 1000px) {
+  .lv-stage { grid-template-columns: 1fr 1fr; }
+  .map-wrap { grid-column: 1 / -1; grid-row: 1; }
+  .lv-under { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) { .tk { width: 22px; height: 22px; margin: -11px 0 0 -11px; } .lv-pl small { display: none; } }
