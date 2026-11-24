@@ -131,7 +131,7 @@ export interface GameState {
   msiDirect?: string[]; worldsQ?: { byLeague: Record<string, string[]>; slots: Record<string, number>; extra: string[] }; worldsSwiss?: string[];
   pendingSwap?: { up: string; down: string } | null;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
-  inboxSeen?: number;
+  inboxSeen?: number; goal?: string;
 }
 
 // ---------- cấm/chọn & kết quả ván ----------

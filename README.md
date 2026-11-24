@@ -23,7 +23,7 @@ Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt
 
 ## Chạy game
 
-Dự án dùng **Vite + TypeScript**. Cần Node.js 20 trở lên.
+Dự án dùng **Vite + TypeScript + React + Tailwind**; engine là TypeScript thuần, tách khỏi giao diện. Cần Node.js 20 trở lên.
 
 ```bash
 npm install
@@ -71,6 +71,7 @@ Lệnh này gộp toàn bộ ảnh thành một file `data/assets-pack.json` (kh
 ```bash
 npm run typecheck    # kiểm tra kiểu TypeScript (engine ở chế độ strict)
 npm test             # Vitest: một ván, cân bằng 300 ván, trọn một mùa giải + sang mùa mới
+npm run test:balance # cân bằng quy mô lớn: 2000 ván ngẫu nhiên (BALANCE_N=5000 để tăng)
 npm run stats -- 400 # thống kê cân bằng engine: thời lượng, mạng, trụ, CS/sát thương/vàng theo vị trí, tỉ lệ thắng theo chênh OVR
 ```
 
@@ -79,7 +80,7 @@ npm run stats -- 400 # thống kê cân bằng engine: thời lượng, mạng, 
 ```
 index.html               trang chính (Vite)
 public/data, public/assets   dữ liệu tĩnh và ảnh (copy nguyên vào bản build)
-src/main.js              khởi động
+src/main.tsx             khởi động (nạp dữ liệu rồi dựng React)
 src/engine/              engine TypeScript thuần, không phụ thuộc giao diện
   index.ts               API công khai: mọi hàm nhận GameState (createGame, advanceDay, simulateGame, simSeason...)
   types.ts               kiểu dữ liệu: Player, Team, Match, Comp, Draft, GameResult, GameState...
@@ -88,8 +89,14 @@ src/engine/              engine TypeScript thuần, không phụ thuộc giao di
   formats.ts             thể thức 2026: vòng tròn, Swiss, mẫu nhánh đấu, First Stand/MSI/CKTG
   season.ts              ngày thi đấu, phát thưởng, chuyển nhượng, mùa mới
   attrs.ts, gpr.ts, awards.ts, academy.ts, state.ts, data.ts, util.ts
-src/ui/                  giao diện (sẽ chuyển sang React + Tailwind ở các bước tiếp theo)
-src/styles/style.css
+  simtasks.ts            qua ngày / tới trận kế / mùa mới (dùng chung luồng chính và Worker)
+src/worker/sim.worker.ts giả lập chạy trong Web Worker (lỗi thì tự chạy ở luồng chính)
+src/ui/                  giao diện React
+  App.tsx, store.ts      màn hình, trạng thái giao diện, vẽ lại
+  screens/               menu, tạo sự nghiệp, khung game (thanh 6 mục + trang con)
+  pages/                 Trang chủ, Thông báo, Đội hình, Chuyển nhượng, Academy, Văn phòng
+  match/                 ngày thi đấu: đối đầu, cấm/chọn, xem trận (2D/3D), tổng kết ván
+src/styles/              game.css (giao diện game), style.css (màn thi đấu + thành phần cũ), Tailwind
 tests/                   Vitest
 scripts/                 lấy dữ liệu (Leaguepedia, Data Dragon), làm sạch logo, đóng gói ảnh, thống kê cân bằng
 ```

@@ -1,6 +1,9 @@
-import { DB } from '../engine/data';
+import { DB } from './engine/data';
 
-const vi = {
+export type Lang = 'vi' | 'en';
+type Dict = Record<string, string>;
+
+const vi: Dict = {
   'app.title': 'Rift Manager',
   'app.tagline': 'Giả lập HLV Liên Minh Huyền Thoại chuyên nghiệp',
   'app.beta': 'BETA',
@@ -242,7 +245,7 @@ const vi = {
   'err.data': 'Không tải được dữ liệu game. Hãy chạy game qua một web server (xem README).',
 };
 
-const en = {
+const en: Dict = {
   'app.title': 'Rift Manager',
   'app.tagline': 'Professional League of Legends coach simulator',
   'app.beta': 'BETA',
@@ -831,28 +834,28 @@ Object.assign(en, {
   'news.academyJoin': '{player} joins the {team} academy.', 'news.promotedYouth': '{team} promote {player} from the academy.', 'fin.academy': 'Academy scouting fee',
 });
 
-export const DICTS = { vi, en };
-let lang = 'vi';
-try { lang = localStorage.getItem('lolm_lang') || 'vi'; } catch { /* */ }
+export const DICTS: Record<Lang, Dict> = { vi, en };
+let lang: Lang = 'vi';
+try { lang = (localStorage.getItem('lolm_lang') as Lang) || 'vi'; } catch { /* */ }
 if (!DICTS[lang]) lang = 'vi';
 
-export const getLang = () => lang;
-export function setLang(l) {
-  lang = DICTS[l] ? l : 'vi';
+export const getLang = (): Lang => lang;
+export function setLang(l: string): void {
+  lang = l === 'en' ? 'en' : 'vi';
   try { localStorage.setItem('lolm_lang', lang); } catch { /* */ }
   document.documentElement.lang = lang;
 }
-export function t(key, params) {
+export function t(key: string, params?: Record<string, unknown>): string {
   let s = DICTS[lang][key] ?? DICTS.vi[key] ?? key;
-  if (params) s = s.replace(/\{(\w+)\}/g, (_, k) => (params[k] ?? `{${k}}`));
+  if (params) s = s.replace(/\{(\w+)\}/g, (_, k: string) => String(params[k] ?? `{${k}}`));
   return s;
 }
-export function cname(id) {
-  const c = DB.champions[id];
+export function cname(id: string | undefined | null): string {
+  const c = id ? DB.champions[id] : undefined;
   if (!c) return id || '?';
   return lang === 'vi' ? c.nameVi : c.name;
 }
-export function iname(id) {
+export function iname(id: string): string {
   const it = DB.items[id];
   if (!it) return id;
   return lang === 'vi' ? it.nameVi : it.name;

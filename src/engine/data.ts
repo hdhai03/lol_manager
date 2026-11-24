@@ -14,7 +14,11 @@ declare global {
 type RawData = Pick<Db, 'leagues' | 'teams' | 'players' | 'champions' | 'items' | 'meta'> & { images?: Db['images'] | null };
 
 /** điền DB từ dữ liệu thô (dùng chung cho trình duyệt, test và Web Worker) */
+let RAW: RawData | null = null;
+/** dữ liệu thô đã nạp (gửi cho Web Worker) */
+export const rawData = (): RawData | null => RAW;
 export function initDb(raw: RawData): Db {
+  RAW = { leagues: raw.leagues, teams: raw.teams, players: raw.players, champions: raw.champions, items: raw.items, meta: raw.meta, images: raw.images ?? null };
   Object.assign(DB, raw);
   DB.images = raw.images ?? { leagues: {}, teams: {}, players: {}, dark: [] };
   DB.darkLogos = new Set(DB.images.dark || []);
