@@ -1,0 +1,51 @@
+[
+ {
+  "id": "LCK",
+  "name": "LoL Champions Korea",
+  "region": "Korea",
+  "strength": 1,
+  "source": "LCK/2026 Season/Rounds 3-4"
+ },
+ {
+  "id": "LPL",
+  "name": "Tencent LoL Pro League",
+  "region": "China",
+  "strength": 0.97,
+  "source": "LPL/2026 Season/Split 3"
+ },
+ {
+  "id": "LEC",
+  "name": "LoL EMEA Championship",
+  "region": "EMEA",
+  "strength": 0.86,
+  "source": "LEC/2026 Season/Summer Season"
+ },
+ {
+  "id": "LCS",
+  "name": "League of Legends Championship Series",
+  "region": "North America",
+  "strength": 0.8,
+  "source": "LCS/2026 Season/Summer Season"
+ },
+ {
+  "id": "LCP",
+  "name": "League of Legends Championship Pacific",
+  "region": "Asia Pacific",
+  "strength": 0.82,
+  "source": "LCP/2026 Season/Split 3"
+ },
+ {
+  "id": "CBLOL",
+  "name": "Circuit Brazilian League of Legends",
+  "region": "Brazil",
+  "strength": 0.74,
+  "source": "CBLOL/2026 Season/Split 2"
+ },
+ {
+  "id": "VCS",
+  "name": "Vietnam Championship Series",
+  "region": "Vietnam",
+  "strength": 0.76,
+  "source": "VCS/2026 Season/Summer Season"
+ }
+]
