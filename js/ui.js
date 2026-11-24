@@ -1,4 +1,4 @@
-import { DB, champImg, champArt, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
+import { DB, champImg, champArt, champTile, champSplash, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
 import { t, cname, iname, getLang, setLang } from './i18n.js';
 import {
   S, setState, newGame, userTeam, teamPlayers, teamSalary, teamOvr, autoLineup, lineupPlayers,
@@ -58,7 +58,7 @@ export function face(p, size = 'md', extra = '') {
 }
 export const faceSrc = (p) => (p && playerFace(p.id) ? asset(playerFace(p.id)) : null);
 export const champIcon = (id, size = 32, extra = '') => id
-  ? `<img class="champ" loading="lazy" src="${champImg(id)}" width="${size}" height="${size}" alt="${esc(cname(id))}" title="${esc(cname(id))}" ${extra}>`
+  ? `<img class="champ" loading="lazy" src="${size >= 44 ? champTile(id) : champImg(id)}" width="${size}" height="${size}" alt="${esc(cname(id))}" title="${esc(cname(id))}" ${extra}>`
   : `<span class="champ empty" style="width:${size}px;height:${size}px"></span>`;
 export const roleTag = (r) => `<span class="role role-${r}" title="${t('role.' + r)}">${t('roleS.' + r)}</span>`;
 export const vClass = (v) => (v >= 88 ? 's' : v >= 80 ? 'a' : v >= 70 ? 'b' : v >= 60 ? 'c' : 'd');
@@ -116,6 +116,16 @@ function bindLang(root) {
 export const compTitle = (c) => (c.league === 'INTL' ? t('phase.' + c.phase) : `${c.name} ${t('phase.' + c.phase)}`);
 const compLogoId = (c) => (c.league === 'INTL' ? (c.phase === 'msi' ? 'MSI' : 'WORLDS') : c.league);
 
+// ảnh nền: splash mờ của tướng tủ ngôi sao đội người chơi (hoặc tướng meta)
+function featuredChamp() {
+  if (S && userTeam()) {
+    const star = teamPlayers(userTeam()).sort((a, b) => b.ovr - a.ovr)[0];
+    if (star && star.pool[0]) return star.pool[0].c;
+  }
+  return DB.champList.filter((c) => c.tier === 'S').sort((a, b) => b.presence - a.presence)[0].id;
+}
+export const bgArt = (id) => `<div class="bg-art" aria-hidden="true"><i style="background-image:url('${champSplash(id || featuredChamp())}')"></i></div>`;
+
 // ---------------- Router ----------------
 export function render() {
   document.title = `${t('app.title')} — ${t('app.tagline')}`;
@@ -132,7 +142,7 @@ function renderMenu() {
   const saves = listSaves();
   const m = DB.meta;
   const topChamps = DB.champList.filter((c) => c.tier === 'S').sort((a, b) => b.presence - a.presence).slice(0, 10);
-  app().innerHTML = `
+  app().innerHTML = `${bgArt()}
   <div class="menu-screen">
     <div class="menu-top">${langSwitch()}</div>
     <div>
@@ -320,8 +330,10 @@ function renderGame() {
   const pa = primaryAction();
   const date = seasonDate(S.day - (S.seasonStartDay || 0));
   const phaseIdx = PHASES.indexOf(S.phase);
+  const entering = view.lastTab !== view.tab;
+  view.lastTab = view.tab;
   app().innerHTML = `
-  <div class="game">
+  <div class="game">${bgArt()}
     <header class="topnav">
       <div class="mono sm">RM</div>
       <div class="sect">${t('nav.' + view.tab)}</div>
@@ -329,7 +341,7 @@ function renderGame() {
       <div class="club">${badge(ut.id, 'md')}<div><div class="nm">${esc(ut.name)}</div>
         <div class="prog" title="${t('phase.' + S.phase)}">${PHASES.map((_, i) => `<i class="${i <= phaseIdx ? 'on' : ''}"></i>`).join('')}</div></div></div>
     </header>
-    <main class="content" id="content"></main>
+    <main class="content ${entering ? 'enter' : ''}" id="content"></main>
     <footer class="hintbar">
       <div class="hints">
         <button class="hint main" data-act="${pa.act}"><kbd class="wide">↵</kbd>${pa.label}</button>
@@ -456,7 +468,7 @@ function socialCard(n) {
   const tm = Object.values(S.teams).find((x) => x.name === p.team || x.name === p.to) || (n.key === 'news.welcome' ? userTeam() : null);
   const pl = p.player && Object.values(S.players).find((x) => x.ign === p.player);
   const metaChamps = DB.champList.filter((c) => c.tier === 'S');
-  const art = champArt(metaChamps[hash(text) % metaChamps.length].id);
+  const art = champSplash(metaChamps[hash(text) % metaChamps.length].id);
   const hueTeam = tm || (pl && pl.teamId && S.teams[pl.teamId]) || userTeam();
   let visual;
   const fs = faceSrc(pl);
@@ -679,7 +691,8 @@ function playerDetail(p) {
       <div class="pd-top"><span class="o">${p.ovr}</span><span class="sep">|</span><span>${t('roleS.' + p.role)}</span></div>
       <div class="pd-real">${esc(p.name || '')} ${p.native ? '· ' + esc(p.native) : ''}</div>
       <div class="pd-name">${cc(p.country)} ${esc(p.ign)} ${listed ? `<em class="tagx">${t('p.listed')}</em>` : ''}</div></div>
-      <div class="center">${face(p, 'xl')}<div style="margin-top:.4rem">${p.teamId ? badge(p.teamId, 'md') : `<span class="tagx">${t('p.freeAgent')}</span>`}</div></div></div>
+      <div class="pd-photo">${faceSrc(p) ? `<img src="${faceSrc(p)}" alt="${esc(p.ign)}">` : `<span class="ini">${esc(p.ign.slice(0, 2).toUpperCase())}</span>`}
+        <span class="pd-club">${p.teamId ? badge(p.teamId, 'md') : `<span class="tagx">${t('p.freeAgent')}</span>`}</span></div></div>
     <div class="pd-meta">
       <div><span>${t('pot')}</span><b class="o">${p.ovr} - ${p.potential}</b></div>
       <div><span>${t('age')}</span><b>${p.age}</b></div>

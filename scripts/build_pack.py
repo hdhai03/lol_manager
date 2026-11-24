@@ -1,35 +1,47 @@
-"""Gói ảnh trong assets/ thành các file data/pack-<thư mục>.json (đường dẫn -> data URI WebP).
+"""Gói ảnh trong assets/ thành các file nhị phân data/bin/<nhóm>-<n>.bin + chỉ mục data/bin/index.json.
 
-Dùng khi deploy lên nơi giới hạn số file (vd. Claude Artifact). Game dùng gói khi trang đặt
-window.RIFT_PACK = true; nếu không sẽ đọc từng file ảnh như bình thường.
+Dùng khi deploy lên nơi giới hạn số file (vd. Claude Artifact): trình duyệt tải vài file lớn,
+cắt ra từng ảnh (Blob) theo chỉ mục. Ảnh giữ nguyên chất lượng gốc, không nén lại.
+Game dùng gói khi trang đặt window.RIFT_PACK = true; nếu không sẽ đọc từng file ảnh như bình thường.
 Chạy: python3 scripts/build_pack.py
 """
-import base64
-import io
 import json
 import os
 
-from PIL import Image
-
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# chiều rộng tối đa (px) — đủ nét cho màn hình độ phân giải cao
-SIZES = {"champion": 120, "item": 64, "league": 256, "team": 192, "player": 320, "loading": 240}
+OUT = os.path.join(ROOT, "data", "bin")
+CHUNK = 14 * 1024 * 1024  # mỗi file < 15MB
+GROUPS = ["league", "team", "champion", "item", "tile", "player", "loading", "splash"]
+MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg"}
 
-for folder, size in SIZES.items():
-    d = os.path.join(ROOT, "assets", folder)
+os.makedirs(OUT, exist_ok=True)
+for f in os.listdir(OUT):
+    if f.endswith((".bin", ".json")):
+        os.remove(os.path.join(OUT, f))
+
+index = {}
+for g in GROUPS:
+    d = os.path.join(ROOT, "assets", g)
     if not os.path.isdir(d):
         continue
-    pack = {}
+    chunks, cur, files = [], bytearray(), {}
     for name in sorted(os.listdir(d)):
-        if not name.lower().endswith((".png", ".webp", ".jpg")):
+        ext = os.path.splitext(name)[1].lower()
+        if ext not in MIME:
             continue
-        im = Image.open(os.path.join(d, name)).convert("RGBA")
-        if im.width > size:
-            im = im.resize((size, round(im.height * size / im.width)), Image.LANCZOS)
-        buf = io.BytesIO()
-        im.save(buf, "WEBP", quality=84, method=6)
-        pack[f"assets/{folder}/{name}"] = "data:image/webp;base64," + base64.b64encode(buf.getvalue()).decode()
-    out = os.path.join(ROOT, "data", f"pack-{folder}.json")
-    with open(out, "w") as f:
-        json.dump(pack, f, separators=(",", ":"))
-    print(f"{folder}: {len(pack)} ảnh, {os.path.getsize(out) // 1024} KB")
+        data = open(os.path.join(d, name), "rb").read()
+        if cur and len(cur) + len(data) > CHUNK:
+            chunks.append(cur)
+            cur = bytearray()
+        files[f"assets/{g}/{name}"] = [len(chunks), len(cur), len(data), MIME[ext]]
+        cur += data
+    if cur:
+        chunks.append(cur)
+    for i, c in enumerate(chunks):
+        with open(os.path.join(OUT, f"{g}-{i}.bin"), "wb") as fh:
+            fh.write(c)
+    index[g] = {"chunks": len(chunks), "bytes": sum(len(c) for c in chunks), "files": files}
+    print(f"{g}: {len(files)} ảnh, {len(chunks)} khối, {sum(len(c) for c in chunks) // 1024} KB")
+
+with open(os.path.join(OUT, "index.json"), "w") as fh:
+    json.dump(index, fh, separators=(",", ":"))

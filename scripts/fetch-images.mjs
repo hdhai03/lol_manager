@@ -74,7 +74,7 @@ function download(url, file, size) {
     // chuẩn hoá: WebP vuông/khung cố định, nền trong suốt, nhẹ
     // logo: khung vuông, căn giữa; ảnh tuyển thủ: giữ tỉ lệ gốc (UI tự cắt)
     const args = size.portrait
-      ? [tmp, '-resize', `${size.w}x`, '-strip', '-quality', '86', file]
+      ? [tmp, '-resize', `${size.w}x>`, '-strip', '-quality', '86', file]
       : [tmp, '-resize', `${size}x${size}`, '-background', 'none', '-gravity', 'center', '-extent', `${size}x${size}`, '-strip', '-quality', '88', file];
     execFileSync('convert', args);
     execFileSync('rm', ['-f', tmp]);
@@ -102,11 +102,11 @@ async function main() {
     MSI: ['Mid-Season Invitationallogo square.png', 'Mid-Season Invitational 2026.png'],
     WORLDS: ['World Championshiplogo square.png', 'Worlds 2026.png'],
   };
-  const lt = await thumbs(Object.values(leagueFiles).flat(), 256);
+  const lt = await thumbs(Object.values(leagueFiles).flat(), 512);
   for (const [id, files] of Object.entries(leagueFiles)) {
     const f = files.find((x) => lt[x]);
     const path = `assets/league/${id}.webp`;
-    if (f && download(lt[f], ROOT + path, 256)) images.leagues[id] = path;
+    if (f && download(lt[f], ROOT + path, 512)) images.leagues[id] = path;
     else console.warn('Không có logo giải', id);
   }
   console.log('Logo giải:', Object.keys(images.leagues).length);
@@ -118,11 +118,11 @@ async function main() {
     const part = names.slice(i, i + 40).map((n) => `'${esc(n)}'`).join(',');
     for (const r of await cargo('Teams', 'Name,Image', `Name IN (${part})`)) teamImg[r.Name] = r.Image;
   }
-  const tt = await thumbs(names.flatMap((n) => [`${n}logo square.png`, teamImg[n]]), 256);
+  const tt = await thumbs(names.flatMap((n) => [`${n}logo square.png`, teamImg[n]]), 512);
   for (const n of names) {
     const f = [`${n}logo square.png`, teamImg[n]].find((x) => x && tt[x]);
     const path = `assets/team/${slug(n)}.webp`;
-    if (f && download(tt[f], ROOT + path, 256)) images.teams[n] = path;
+    if (f && download(tt[f], ROOT + path, 512)) images.teams[n] = path;
     else console.warn('Không có logo đội', n);
   }
   console.log('Logo đội:', Object.keys(images.teams).length, '/', names.length);
@@ -141,13 +141,13 @@ async function main() {
   };
   const best = {};
   for (const [l, fs] of Object.entries(cand)) best[l] = fs.sort((a, b) => rank(b) - rank(a)).slice(0, 3);
-  const pt = await thumbs(Object.values(best).flat(), 360);
+  const pt = await thumbs(Object.values(best).flat(), 960);
   let ok = 0;
   for (const l of links) {
     const f = (best[l] || []).find((x) => pt[x]);
     if (!f) continue;
     const path = `assets/player/${slug(l)}.webp`;
-    if (download(pt[f], ROOT + path, { portrait: true, w: 320 })) { images.players[l] = path; ok++; }
+    if (download(pt[f], ROOT + path, { portrait: true, w: 960 })) { images.players[l] = path; ok++; }
   }
   console.log('Ảnh tuyển thủ:', ok, '/', links.length);
 

@@ -272,9 +272,24 @@ async function main() {
     const tmp = f + '.jpg';
     try {
       execFileSync('curl', ['-s', '-f', '-m', '30', '-o', tmp, `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg`]);
-      execFileSync('convert', [tmp, '-resize', '240x', '-strip', '-quality', '80', f]);
+      execFileSync('convert', [tmp, '-strip', '-quality', '86', f]);
     } catch { console.warn('  thiếu loading art', id); }
     try { execFileSync('rm', ['-f', tmp]); } catch { /* */ }
+  }
+  // ảnh độ phân giải cao: tile vuông 380px (icon lớn) và splash 1215px (ảnh nền, thẻ tin, cấm/chọn)
+  for (const [dir, url, q] of [['tile', (id) => `https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/${id}_0.jpg`, '86'], ['splash', (id) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_0.jpg`, '78']]) {
+    mkdirSync(ASSETS + dir, { recursive: true });
+    for (const id of Object.keys(champions)) {
+      const f = `${ASSETS}${dir}/${id}.webp`;
+      if (existsSync(f)) continue;
+      const tmp = f + '.jpg';
+      try {
+        try { execFileSync('curl', ['-s', '-f', '-m', '60', '-o', tmp, url(id)]); }
+        catch { execFileSync('curl', ['-s', '-f', '-m', '60', '-o', tmp, url(id === 'Fiddlesticks' ? 'FiddleSticks' : id)]); }
+        execFileSync('convert', [tmp, '-strip', '-quality', q, f]);
+      } catch { console.warn(`  thiếu ${dir}`, id); }
+      try { execFileSync('rm', ['-f', tmp]); } catch { /* */ }
+    }
   }
 
   const patchLabel = `${Math.floor(latest / 100)}.${latest % 100}`;

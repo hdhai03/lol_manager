@@ -1,3 +1,4 @@
 scripts/.cache/
 data/assets-pack.json
 data/pack-*.json
+data/bin/

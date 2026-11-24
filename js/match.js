@@ -6,8 +6,8 @@ import {
   DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, swapPicks, simulateGame, recordGame, simSeries, compTraits,
 } from './sim.js';
 import { ROLES, esc, logistic } from './util.js';
-import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon } from './ui.js';
-import { champImg, champArt } from './data.js';
+import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon, bgArt } from './ui.js';
+import { champImg, champArt, champTile } from './data.js';
 const roleIconSvg = (r) => roleIcon(r);
 
 let overlay = null;
@@ -47,7 +47,7 @@ export function openMatchDay(m, done) {
 
 function header() {
   const comp = S.comps[match.comp];
-  return `<div class="md-head">
+  return `${bgArt()}<div class="md-head">
     <div class="muted small row center gap">${leagueBadge(comp.league === 'INTL' ? (comp.phase === 'msi' ? 'MSI' : 'WORLDS') : comp.league, 'xs')} ${esc(compTitle(comp))} · ${t('m.bo', { n: match.bo })}</div>
     <div class="md-score">${badge(match.a, 'lg')}<span class="md-sname">${esc(S.teams[match.a].name)}</span>
       <b>${match.winsA} - ${match.winsB}</b>
@@ -148,7 +148,7 @@ function renderDraft() {
         <div class="dr-grid">${champs.map((c) => {
           const dis = taken.has(c.id);
           return `<button class="dr-c ${dis ? 'dis' : ''} ${dsel === c.id ? 'on' : ''}" ${dis || !myTurn ? 'disabled' : ''} data-c="${c.id}">
-            <img loading="lazy" src="${champImg(c.id)}" alt="">${['S', 'A'].includes(c.tier) ? `<span class="hx">${c.tier}</span>` : ''}
+            <img loading="lazy" src="${champTile(c.id)}" alt="">${['S', 'A'].includes(c.tier) ? `<span class="hx">${c.tier}</span>` : ''}
             ${myTurn && type === 'pick' && !dis ? `<span class="fit">${bestFit(c.id)}</span>` : ''}<em>${esc(cname(c.id))}</em></button>`;
         }).join('')}</div>
         <div class="dr-foot"><span class="msg">${done ? t('dr.swapHint') : myTurn ? (dsel ? esc(cname(dsel)) : t(type === 'ban' ? 'dr.selectBan' : 'dr.selectPick')) : t('dr.waiting')}
