@@ -86,7 +86,8 @@ export function teamOvr(t) {
 }
 
 export function addNews(key, params = {}, important = false) {
-  S.news.unshift({ key, params, day: S.day, season: S.season, important });
+  S.newsSeq = (S.newsSeq || 0) + 1;
+  S.news.unshift({ id: S.newsSeq, key, params, day: S.day, season: S.season, important });
   if (S.news.length > 120) S.news.length = 120;
 }
 

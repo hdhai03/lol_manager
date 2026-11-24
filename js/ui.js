@@ -11,6 +11,7 @@ import {
 import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from './util.js';
 import { gprTable, leagueStrength, ensureGpr } from './gpr.js';
 import { AWARD_KEYS } from './awards.js';
+import { SERVERS, SERVER_OF, ladder as soloLadder, tierOf, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange, inviteToAcademy, promoteFromAcademy, releaseFromAcademy } from './academy.js';
 import { PHASE_WINDOW } from './formats.js';
 import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from './attrs.js';
 import { openMatchDay } from './match.js';
@@ -323,7 +324,14 @@ export function startGameUI() {
 }
 
 // ---------------- Khung game ----------------
-const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance'];
+// 6 mục chính; mỗi mục có các trang con
+const GROUPS = {
+  dashboard: ['dashboard'], inbox: ['inbox'], squad: ['roster', 'tactics'], transfers: ['transfers'],
+  academy: ['training', 'youth', 'ladder'], office: ['schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance'],
+};
+const TABS = Object.keys(GROUPS);
+const groupOf = (leaf) => TABS.find((g) => GROUPS[g].includes(leaf)) || 'dashboard';
+const unreadCount = () => S.news.filter((n) => (n.id || 0) > (S.inboxSeen || 0)).length;
 
 function newsText(n) {
   const p = {};
@@ -344,31 +352,34 @@ function renderGame() {
   const phaseIdx = PHASES.indexOf(S.phase);
   const entering = view.lastTab !== view.tab;
   view.lastTab = view.tab;
+  const grp = groupOf(view.tab);
+  (view.lastSub ??= {})[grp] = view.tab;
+  if (view.tab === 'inbox' && (S.inboxSeen || 0) < (S.newsSeq || 0)) { view.inboxPrev = S.inboxSeen || 0; S.inboxSeen = S.newsSeq || 0; }
+  const unread = unreadCount();
   app().innerHTML = `
   <div class="game">${bgArt()}
     <header class="topnav">
       <div class="mono sm">RM</div>
-      <div class="sect">${t('nav.' + view.tab)}</div>
-      <nav class="tabs">${TABS.map((x) => `<button class="${view.tab === x ? 'on' : ''}" data-tab="${x}">${t('nav.' + x)}</button>`).join('')}</nav>
+      <div class="sect">${t('nav.' + grp)}</div>
+      <nav class="tabs">${TABS.map((x) => `<button class="${grp === x ? 'on' : ''}" data-grp="${x}">${t('nav.' + x)}${x === 'inbox' && unread ? `<span class="nav-badge">${unread > 99 ? '99+' : unread}</span>` : ''}</button>`).join('')}</nav>
       <div class="tn-ctl">
-        <button class="btn sm primary tn-act" data-act="${pa.act}" title="Enter">${pa.label}</button>
-        ${pa.act === 'advance' ? `<button class="btn sm ghost tn-act" data-act="simnext" title="F">${t('btn.simNext')}</button>` : ''}
         <button class="icon-btn" data-act="save" title="${t('top.save')} (S)" aria-label="${t('top.save')}"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 2v5h8V5H7zm5 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg></button>
         <button class="icon-btn" data-act="menu" title="${t('nav.menu')} (Esc)" aria-label="${t('nav.menu')}"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
         ${langSwitch()}</div>
       <div class="club">${badge(ut.id, 'md')}<div><div class="nm">${esc(ut.name)}</div>
-        <div class="club-sub">${date.toLocaleDateString(getLang(), { day: '2-digit', month: '2-digit' })} · <b class="${ut.budget < 0 ? 'neg' : ''}">${money(ut.budget)}</b></div>
         <div class="prog" title="${t('season', { y: S.season })} · ${t('phase.' + S.phase)}">${PHASES.map((_, i) => `<i class="${i <= phaseIdx ? 'on' : ''}"></i>`).join('')}</div></div></div>
     </header>
+    ${GROUPS[grp].length > 1 ? `<nav class="subtabs">${GROUPS[grp].map((x) => `<button class="${view.tab === x ? 'on' : ''}" data-tab="${x}">${t('nav.' + x)}</button>`).join('')}</nav>` : ''}
     <main class="content ${entering ? 'enter' : ''}" id="content"></main>
   </div>`;
   const r = app();
   bindLang(r);
-  r.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
+  r.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tab; render(); });
+  r.querySelectorAll('[data-grp]').forEach((b) => b.onclick = () => { const g = b.dataset.grp; view.tab = view.lastSub?.[g] || GROUPS[g][0]; render(); });
   r.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
   const c = r.querySelector('#content');
   markTasks(view.tab);
-  ({ dashboard, roster, tactics, schedule, standingsTab, power, records, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
+  ({ dashboard, inbox, roster, tactics, schedule, standingsTab, power, records, transfers, metaTab, world, finance, training, youth, ladder })[tabFn(view.tab)](c);
 }
 // ---------- Chiến thuật ----------
 function tactics(c) {
@@ -427,11 +438,12 @@ async function topAction(a) {
     view.tab = 'dashboard';
     render();
   } else if (a === 'prevtab' || a === 'nexttab') {
-    const i = TABS.indexOf(view.tab) + (a === 'nexttab' ? 1 : -1);
-    view.tab = TABS[(i + TABS.length) % TABS.length];
+    const i = TABS.indexOf(groupOf(view.tab)) + (a === 'nexttab' ? 1 : -1);
+    const g = TABS[(i + TABS.length) % TABS.length];
+    view.tab = view.lastSub?.[g] || GROUPS[g][0];
     render();
   } else if (a === 'training') {
-    view.tab = 'roster';
+    view.tab = 'training';
     render();
   }
 }
@@ -447,7 +459,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------- Việc cần làm trong ngày (thay đổi theo từng ngày, làm xong thì biến mất) ----------
-const TASK_TAB = { training: 'roster', squad: 'roster', rest: 'roster', scout: 'transfers', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
+const TASK_TAB = { training: 'training', squad: 'roster', rest: 'roster', scout: 'youth', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
 function todayTasks() {
   const ut = userTeam();
   if (!S.tasks || S.tasks.day !== S.day) {
@@ -983,6 +995,126 @@ function schedule(c) {
   c.querySelectorAll('[data-tab-go]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tabGo; render(); });
   c.querySelectorAll('[data-act=match]').forEach((b) => b.onclick = () => topAction('match'));
   c.querySelector('.sch-day.today')?.scrollIntoView({ block: 'nearest' });
+}
+
+// ---------- Thông báo ----------
+const NEWS_CAT = (k) => (/userWin|userLoss|splitStart|kickoff|fstStart|springStart|summerStart|msiStart|worldsStart/.test(k) ? 'match'
+  : /offer|transfer|signedFA|contract|release|sold|bought/.test(k) ? 'transfer'
+    : /academy|promotedYouth/.test(k) ? 'academy'
+      : /qualified|Champ|awards|promoted|promoFail/.test(k) ? 'event' : 'general');
+function inbox(c) {
+  const f = view.filters;
+  f.inCat ??= 'all';
+  const ut = userTeam();
+  // thông báo trạng thái (tính trực tiếp)
+  const live = [];
+  for (const p of teamPlayers(ut)) {
+    if ((p.cond ?? 100) < 60) live.push({ cat: 'player', text: t('in.tired', { player: esc(p.ign), n: Math.round(p.cond) }), tab: 'roster' });
+    if ((p.morale ?? 70) < 45) live.push({ cat: 'player', text: t('in.morale', { player: esc(p.ign) }), tab: 'roster' });
+    if (p.contractUntil <= S.season && !(S.renewed || []).includes(p.id)) live.push({ cat: 'player', text: t('in.contract', { player: esc(p.ign) }), tab: 'roster' });
+  }
+  const nm = nextUserMatch();
+  if (nm) {
+    const opp = nm.a === ut.id ? nm.b : nm.a;
+    const d = nm.day - S.day;
+    live.push({ cat: 'match', text: d <= 0 ? t('in.matchToday', { opp: esc(S.teams[opp].name), comp: esc(compTitle(S.comps[nm.comp])) }) : t('in.matchIn', { n: d, opp: esc(S.teams[opp].name), comp: esc(compTitle(S.comps[nm.comp])) }), tab: 'schedule' });
+  }
+  const mine = new Set(ut.roster);
+  for (const sv of [SERVER_OF[ut.league]].filter(Boolean)) {
+    soloLadder(sv).slice(0, 10).forEach((a, i) => { if (a.pid && mine.has(a.pid)) live.push({ cat: 'player', text: t('in.soloq', { player: esc(S.players[a.pid].ign), rank: i + 1, server: sv }), tab: 'ladder' }); });
+  }
+  const cats = ['all', 'player', 'match', 'transfer', 'event', 'academy', 'general'];
+  const items = S.news.map((n) => ({ n, cat: NEWS_CAT(n.key) }));
+  const show = (cat) => f.inCat === 'all' || f.inCat === cat;
+  const prev = view.inboxPrev ?? S.inboxSeen ?? 0;
+  c.innerHTML = `<div class="inbox">
+    <div class="seg">${cats.map((k) => `<button class="chip ${f.inCat === k ? 'on' : ''}" data-incat="${k}">${t('in.cat.' + k)}</button>`).join('')}</div>
+    <div class="card in-list">
+      ${live.filter((x) => show(x.cat)).map((x) => `<button class="in-row live" data-tab-go="${x.tab}"><span class="in-cat">${t('in.cat.' + x.cat)}</span><span class="in-txt">${x.text}</span><span class="in-when">${t('in.now')}</span></button>`).join('')}
+      ${items.filter((x) => show(x.cat)).map(({ n, cat }) => `<div class="in-row ${(n.id || 0) > prev ? 'unread' : ''}"><span class="in-cat">${t('in.cat.' + cat)}</span><span class="in-txt">${esc(newsText(n))}</span><span class="in-when">${n.season !== S.season ? n.season : S.day - n.day <= 0 ? t('feed.today') : t('feed.daysAgo', { n: S.day - n.day })}</span></div>`).join('') || ''}
+      ${!live.length && !items.length ? `<p class="muted">${t('in.empty')}</p>` : ''}
+    </div></div>`;
+  c.querySelectorAll('[data-incat]').forEach((b) => b.onclick = () => { f.inCat = b.dataset.incat; inbox(c); });
+  c.querySelectorAll('[data-tab-go]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tabGo; render(); });
+}
+
+// ---------- Academy: tập luyện ----------
+function training(c) {
+  const ut = userTeam();
+  const ac = ensureAcademy();
+  const ps = [...teamPlayers(ut), ...academyPlayers()];
+  const row = (p) => {
+    const d = p.ovr - (p.ovrStart ?? p.ovr);
+    return `<tr data-player="${esc(p.id)}"><td>${roleTag(p.role)}</td><td><div class="sq-name">${face(p, 'sm')}${esc(p.ign)}${p.academyOf ? ` <em class="tagx">${t('ac.tag')}</em>` : ''}</div></td><td>${p.age}</td>
+      <td><b class="v-${vClass(p.ovr)}">${p.ovr}</b></td><td>${p.potential}</td><td class="${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">${d > 0 ? '+' : ''}${d}</td>
+      <td><span class="cond-mini ${(p.cond ?? 100) < 60 ? 'low' : ''}"><i style="width:${Math.round(p.cond ?? 100)}%"></i></span></td></tr>`;
+  };
+  c.innerHTML = `<div class="ac-grid">
+    <div class="card"><h3>${t('ac.plan')}</h3><p class="muted small">${t('ac.planHint')}</p>
+      <div class="seg">${Object.keys(ATTR_GROUPS).map((g) => `<button class="chip ${S.training === g ? 'on' : ''}" data-train="${g}">${t('train.' + g)}</button>`).join('')}</div>
+      <p class="muted small">${ATTR_GROUPS[S.training].map((a) => t('attr.' + a)).join(' · ')}</p>
+      <h3 style="margin-top:1.2rem">${t('ac.intensity')}</h3>
+      <div class="seg">${['light', 'normal', 'hard'].map((k) => `<button class="chip ${ac.intensity === k ? 'on' : ''}" data-int="${k}">${t('ac.int.' + k)}</button>`).join('')}</div>
+      <p class="muted small">${t('ac.intHint.' + ac.intensity)}</p></div>
+    <div class="card scroll-x"><h3>${t('ac.progress')}</h3><table class="tbl sq-table"><thead><tr><th>${t('role')}</th><th>${t('name')}</th><th>${t('age')}</th><th>OVR</th><th>${t('pot')}</th><th>${t('ac.change')}</th><th>${t('p.cond')}</th></tr></thead><tbody>${ps.map(row).join('')}</tbody></table></div>
+  </div>`;
+  c.querySelectorAll('[data-train]').forEach((b) => b.onclick = () => { S.training = b.dataset.train; S.trainingSetDay = S.day; training(c); });
+  c.querySelectorAll('[data-int]').forEach((b) => b.onclick = () => { ac.intensity = b.dataset.int; S.trainingSetDay = S.day; training(c); });
+  bindPlayerLinks(c);
+}
+
+// ---------- Academy: tuyển trạch trẻ ----------
+function youth(c) {
+  const ut = userTeam();
+  const ac = ensureAcademy();
+  const sv = ac.focus;
+  const am = soloLadder(sv).map((a, i) => ({ a, rank: i + 1 })).filter(({ a }) => !a.pid && a.pr && a.pr.age <= 19);
+  const acad = academyPlayers();
+  c.innerHTML = `<div class="ac-grid">
+    <div class="card"><h3>${t('ac.mine', { n: acad.length, max: ACADEMY_MAX })}</h3>
+      ${acad.length ? acad.map((p) => `<div class="list-row" data-player="${esc(p.id)}">${face(p, 'sm')}${roleTag(p.role)}<div class="grow"><b>${esc(p.ign)}</b><div class="muted small">${t('age')} ${p.age} · OVR ${p.ovr} · ${t('pot')} ${p.potential}</div></div>
+        <button class="btn sm primary" data-promote="${esc(p.id)}">${t('ac.promote')}</button><button class="btn sm ghost" data-arel="${esc(p.id)}">${t('ac.release')}</button></div>`).join('') : `<p class="muted small">${t('ac.emptyAcad')}</p>`}
+      <p class="muted small">${t('ac.promoteHint')}</p></div>
+    <div class="card"><div class="row between wrap gap"><h3>${t('ac.scout')}</h3><div class="seg">${SERVERS.map((x) => `<button class="chip ${x === sv ? 'on' : ''}" data-focus="${x}">${x}</button>`).join('')}</div></div>
+      <p class="muted small">${t('ac.scoutHint', { server: sv, days: ac.days[sv] || 0 })}</p>
+      <div class="scroll-x"><table class="tbl sq-table"><thead><tr><th>#</th><th>${t('ac.account')}</th><th>${t('role')}</th><th>${t('age')}</th><th>${t('ac.rank')}</th><th>${t('ac.estPot')}</th><th>${t('ac.cost')}</th><th></th></tr></thead><tbody>
+      ${am.slice(0, 25).map(({ a, rank }) => { const [lo, hi] = potRange(sv, a); return `<tr><td>${rank}</td><td><b>${esc(a.name)}</b><div class="pool-mini">${Object.keys(a.ch).slice(0, 3).map((ch) => champIcon(ch, 20)).join('')}</div></td><td>${roleTag(a.pr.role)}</td><td>${a.pr.age}</td>
+        <td><span class="tier t-${tierOf(a.lp)}">${t('tier.' + tierOf(a.lp))}</span><div class="muted small">${a.lp} LP</div></td><td><b>${lo}-${hi}</b></td><td>${money(inviteCost(a))}</td>
+        <td><button class="btn sm" data-invite="${a.id}">${t('ac.invite')}</button></td></tr>`; }).join('')}</tbody></table></div></div>
+  </div>`;
+  c.querySelectorAll('[data-focus]').forEach((b) => b.onclick = () => { ac.focus = b.dataset.focus; youth(c); });
+  c.querySelectorAll('[data-invite]').forEach((b) => b.onclick = () => {
+    const r = inviteToAcademy(sv, b.dataset.invite);
+    toast(r.ok ? t('ac.joined', { player: r.p.ign }) : t('ac.err.' + r.why), r.ok ? 'ok' : 'err');
+    youth(c);
+  });
+  c.querySelectorAll('[data-promote]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); toast(promoteFromAcademy(b.dataset.promote) ? t('ac.promoted') : t('ac.err.roster'), 'ok'); youth(c); });
+  c.querySelectorAll('[data-arel]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); releaseFromAcademy(b.dataset.arel); youth(c); });
+  bindPlayerLinks(c);
+  void ut;
+}
+
+// ---------- Academy: bảng Thách đấu các máy chủ ----------
+function ladder(c) {
+  const f = view.filters;
+  ensureSoloq();
+  f.lsv ??= SERVER_OF[userTeam().league] || 'KR';
+  const list = soloLadder(f.lsv).slice(0, 50);
+  c.innerHTML = `<div class="card"><div class="row between wrap gap"><h3>${t('ac.ladder', { server: f.lsv })}</h3>
+      <div class="seg">${SERVERS.map((x) => `<button class="chip ${x === f.lsv ? 'on' : ''}" data-lsv="${x}">${x}</button>`).join('')}</div></div>
+    <p class="muted small">${t('ac.ladderHint')}</p>
+    <div class="scroll-x"><table class="tbl sq-table ladder-t"><thead><tr><th>#</th><th>${t('ac.account')}</th><th>${t('role')}</th><th>${t('ac.tierH')}</th><th>LP</th><th>${t('ac.wl')}</th><th>${t('st.wr')}</th><th>${t('ac.champs')}</th></tr></thead><tbody>
+    ${list.map((a, i) => {
+      const p = a.pid ? S.players[a.pid] : null;
+      const tag = p ? (p.teamId ? S.teams[p.teamId].short : p.academyOf ? t('ac.tag') : t('p.freeAgent')) : '';
+      const g = a.w + a.l;
+      return `<tr class="${p && (p.teamId === S.userTeam || p.academyOf === S.userTeam) ? 'me' : ''}" ${p ? `data-player="${esc(p.id)}"` : ''}><td>${i + 1}</td>
+        <td>${p ? `<b>${tag ? `<span class="muted">${esc(tag)}</span> ` : ''}${esc(p.ign)}</b>` : `<b>${esc(a.name)}</b> <span class="muted small">${t('ac.amateur')}</span>`}</td>
+        <td>${roleTag(p ? p.role : a.pr.role)}</td><td><span class="tier t-${tierOf(a.lp)}">${t('tier.' + tierOf(a.lp))}</span></td><td><b>${a.lp}</b></td>
+        <td>${a.w}-${a.l}</td><td>${g ? pct(a.w / g) : '–'}</td><td><div class="pool-mini">${Object.keys(a.ch).slice(0, 4).map((ch) => champIcon(ch, 22)).join('')}</div></td></tr>`;
+    }).join('')}</tbody></table></div></div>`;
+  c.querySelectorAll('[data-lsv]').forEach((b) => b.onclick = () => { f.lsv = b.dataset.lsv; ladder(c); });
+  bindPlayerLinks(c);
 }
 
 // ---------- Kỷ lục & Vinh danh ----------

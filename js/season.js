@@ -6,6 +6,7 @@ import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, p
 
 import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr.js';
 import { closeEvent, resetEventStats } from './awards.js';
+import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy.js';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats.js';
 export { PHASES, standings, compOrder, runnerUp };
 // tiền thưởng (nghìn USD) theo hạng 1 / 2 / 3-4 / 5-8
@@ -20,6 +21,7 @@ export const leagueTeams = (lg) => Object.values(S.teams).filter((t) => t.league
 const PHASE_NEWS = { kickoff: 'news.kickoff', fst: 'news.fstStart', spring: 'news.springStart', msi: 'news.msiStart', summer: 'news.summerStart', worlds: 'news.worldsStart', offseason: 'news.offseason' };
 export function startPhase(phase) {
   ensureGpr();
+  ensureSoloq();
   S.phase = phase;
   S.phaseComps = [];
   (S.phaseStart ??= {})[phase] = S.day;
@@ -90,6 +92,11 @@ function finishComp(c) {
 }
 
 function dailyTick() {
+  // xếp hạng đơn & học viện
+  const playing = new Set(matchesOnDay(S.day).flatMap((m) => [m.a, m.b]));
+  soloqDay(playing);
+  academyDay();
+  const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
   // tập luyện & phát triển
   for (const p of Object.values(S.players)) {
     if (p.retired) continue;
@@ -97,12 +104,12 @@ function dailyTick() {
     // hồi thể lực mỗi ngày
     p.cond = clamp((p.cond ?? 100) + 9 + (p.stats.stamina - 60) / 10, 20, 100);
     const gap = p.potential - p.ovr;
-    if (p.age <= 25 && gap > 0 && rand() < 0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) {
+    if (p.age <= 25 && gap > 0 && rand() < (0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) * (isUser ? intensity : 1)) {
       // giáo án theo nhóm: chỉ số trong nhóm được ưu tiên, aggression không luyện được
       const grp = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
       const a = pick(grp.filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] + 1, 30, 99);
-      if (isUser && rand() < 0.15) p.cond = clamp(p.cond - 4, 20, 100); // tập nặng hơi mệt
+      if (isUser && rand() < 0.15 * intensity) p.cond = clamp(p.cond - 4, 20, 100); // tập nặng hơi mệt
     } else if (p.age >= 28 && rand() < 0.02 * (p.age - 26)) {
       const a = pick(['dodge', 'accuracy', 'stamina', 'farm', pick(ATTRS)].filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] - 1, 30, 99);
@@ -222,7 +229,7 @@ export function startNewSeason() {
   for (const c of Object.values(S.comps)) for (const m of c.matches) m.games = m.games.map((g) => ({ winner: g.winner, dur: g.dur }));
   for (const id of Object.keys(S.players)) {
     const p = S.players[id];
-    if (!p.teamId && (p.retired || (p.rookie && p.ovr < 62 && p.age > 19))) { delete S.players[id]; }
+    if (!p.teamId && !p.academyOf && (p.retired || (p.rookie && p.ovr < 62 && p.age > 19))) { delete S.players[id]; }
   }
   S.freeAgents = S.freeAgents.filter((id) => S.players[id]);
   S.news = S.news.slice(0, 60);
@@ -237,6 +244,8 @@ export function startNewSeason() {
   S.phaseStart = {};
   gprNewSeason();
   resetEventStats();
+  soloqNewSeason();
+  for (const p of Object.values(S.players)) p.ovrStart = p.ovr;
   addFinance('fin.sponsorDeal', 0, {});
   startPhase('kickoff');
 }

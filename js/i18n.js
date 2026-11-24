@@ -786,6 +786,51 @@ Object.assign(en, {
   'news.awards': '{title}: event MVP {mvp} ({mvpTeam}), Finals MVP {fmvp}.',
 });
 
+Object.assign(vi, {
+  'nav.dashboard': 'Trang chủ', 'nav.inbox': 'Thông báo', 'nav.squad': 'Đội hình', 'nav.roster': 'Đội hình', 'nav.tactics': 'Chiến thuật', 'nav.transfers': 'Chuyển nhượng',
+  'nav.academy': 'Academy', 'nav.training': 'Tập luyện', 'nav.youth': 'Tuyển trạch trẻ', 'nav.ladder': 'Thách đấu', 'nav.office': 'Văn phòng',
+  'in.cat.all': 'Tất cả', 'in.cat.player': 'Tuyển thủ', 'in.cat.match': 'Lịch thi đấu', 'in.cat.transfer': 'Chuyển nhượng', 'in.cat.event': 'Giải đấu', 'in.cat.academy': 'Academy', 'in.cat.general': 'Chung',
+  'in.now': 'Hiện tại', 'in.empty': 'Chưa có thông báo nào.', 'in.tired': '{player} đang mệt (thể lực {n}). Cân nhắc giảm cường độ tập.', 'in.morale': 'Tinh thần của {player} đang xuống thấp.',
+  'in.contract': 'Hợp đồng của {player} hết hạn cuối mùa này.', 'in.matchToday': 'Hôm nay thi đấu với {opp} ({comp}).', 'in.matchIn': 'Còn {n} ngày nữa gặp {opp} ({comp}).',
+  'in.soloq': '{player} đang đứng hạng {rank} máy chủ {server}.',
+  'ac.tag': 'Academy', 'ac.plan': 'Giáo án tập luyện', 'ac.planHint': 'Nhóm chỉ số được ưu tiên phát triển cho cả đội chính và học viện.', 'ac.intensity': 'Cường độ',
+  'ac.int.light': 'Nhẹ', 'ac.int.normal': 'Bình thường', 'ac.int.hard': 'Nặng',
+  'ac.intHint.light': 'Tiến bộ chậm hơn, hồi thể lực tốt.', 'ac.intHint.normal': 'Cân bằng giữa tiến bộ và thể lực.', 'ac.intHint.hard': 'Tiến bộ nhanh, nhưng tuyển thủ mệt hơn trước trận.',
+  'ac.progress': 'Tiến bộ trong mùa', 'ac.change': 'Thay đổi',
+  'ac.mine': 'Học viện của bạn ({n}/{max})', 'ac.emptyAcad': 'Chưa có tài năng nào. Tìm trên bảng Thách đấu bên cạnh.', 'ac.promote': 'Lên đội chính', 'ac.release': 'Chia tay',
+  'ac.promoteHint': 'Tuyển thủ học viện tập luyện nhanh hơn và vẫn leo rank. Đội chính tối đa 10 người.',
+  'ac.scout': 'Tuyển trạch trên máy chủ', 'ac.scoutHint': 'Đang tập trung tuyển trạch máy chủ {server} ({days} ngày). Theo dõi càng lâu, ước lượng tiềm năng càng chính xác.',
+  'ac.account': 'Tài khoản', 'ac.rank': 'Rank', 'ac.estPot': 'Tiềm năng (ước lượng)', 'ac.cost': 'Chi phí', 'ac.invite': 'Mời vào Academy',
+  'ac.joined': '{player} gia nhập Academy!', 'ac.err.full': 'Academy đã đủ người.', 'ac.err.money': 'Không đủ ngân sách.', 'ac.err.gone': 'Tài khoản này không còn khả dụng.',
+  'ac.promoted': 'Đã đôn lên đội chính.', 'ac.err.roster': 'Đội chính đã đủ 10 người.',
+  'ac.ladder': 'Bảng Thách đấu · máy chủ {server}', 'ac.ladderHint': 'Tuyển thủ chuyên nghiệp vẫn leo rank mỗi ngày (ít hơn vào ngày thi đấu); leo tốt giúp phong độ nhích lên, cày quá nhiều thì mệt.',
+  'ac.tierH': 'Bậc', 'ac.wl': 'Thắng-Thua', 'ac.champs': 'Tướng hay chơi', 'ac.amateur': 'nghiệp dư',
+  'tier.challenger': 'Thách Đấu', 'tier.grandmaster': 'Đại Cao Thủ', 'tier.master': 'Cao Thủ', 'tier.diamond': 'Kim Cương',
+  'news.academyJoin': '{player} gia nhập học viện của {team}.', 'news.promotedYouth': '{team} đôn {player} từ học viện lên đội chính.', 'fin.academy': 'Phí tuyển trạch học viện',
+});
+Object.assign(en, {
+  'nav.dashboard': 'Home', 'nav.inbox': 'Inbox', 'nav.squad': 'Squad', 'nav.roster': 'Squad', 'nav.tactics': 'Tactics', 'nav.transfers': 'Transfers',
+  'nav.academy': 'Academy', 'nav.training': 'Training', 'nav.youth': 'Youth scouting', 'nav.ladder': 'Challenger', 'nav.office': 'Office',
+  'in.cat.all': 'All', 'in.cat.player': 'Players', 'in.cat.match': 'Schedule', 'in.cat.transfer': 'Transfers', 'in.cat.event': 'Events', 'in.cat.academy': 'Academy', 'in.cat.general': 'General',
+  'in.now': 'Now', 'in.empty': 'No messages yet.', 'in.tired': '{player} is tired (condition {n}). Consider lighter training.', 'in.morale': "{player}'s morale is low.",
+  'in.contract': "{player}'s contract expires at the end of this season.", 'in.matchToday': 'Match today against {opp} ({comp}).', 'in.matchIn': '{n} days until {opp} ({comp}).',
+  'in.soloq': '{player} is rank {rank} on the {server} server.',
+  'ac.tag': 'Academy', 'ac.plan': 'Training plan', 'ac.planHint': 'The attribute group prioritised for the main roster and the academy.', 'ac.intensity': 'Intensity',
+  'ac.int.light': 'Light', 'ac.int.normal': 'Normal', 'ac.int.hard': 'Hard',
+  'ac.intHint.light': 'Slower growth, better recovery.', 'ac.intHint.normal': 'Balanced growth and condition.', 'ac.intHint.hard': 'Faster growth, but players are more tired before matches.',
+  'ac.progress': 'Progress this season', 'ac.change': 'Change',
+  'ac.mine': 'Your academy ({n}/{max})', 'ac.emptyAcad': 'No prospects yet. Find them on the Challenger ladder.', 'ac.promote': 'Promote', 'ac.release': 'Release',
+  'ac.promoteHint': 'Academy players train faster and keep climbing solo queue. Main roster holds up to 10.',
+  'ac.scout': 'Scouting server', 'ac.scoutHint': 'Focused on the {server} server ({days} days). The longer you watch, the more accurate the potential estimate.',
+  'ac.account': 'Account', 'ac.rank': 'Rank', 'ac.estPot': 'Potential (est.)', 'ac.cost': 'Cost', 'ac.invite': 'Invite to academy',
+  'ac.joined': '{player} joins the academy!', 'ac.err.full': 'Academy is full.', 'ac.err.money': 'Not enough budget.', 'ac.err.gone': 'This account is no longer available.',
+  'ac.promoted': 'Promoted to the main roster.', 'ac.err.roster': 'Main roster already has 10 players.',
+  'ac.ladder': 'Challenger ladder · {server} server', 'ac.ladderHint': 'Pros keep playing ranked every day (less on match days); climbing lifts form a little, grinding too much tires them.',
+  'ac.tierH': 'Tier', 'ac.wl': 'W-L', 'ac.champs': 'Most played', 'ac.amateur': 'amateur',
+  'tier.challenger': 'Challenger', 'tier.grandmaster': 'Grandmaster', 'tier.master': 'Master', 'tier.diamond': 'Diamond',
+  'news.academyJoin': '{player} joins the {team} academy.', 'news.promotedYouth': '{team} promote {player} from the academy.', 'fin.academy': 'Academy scouting fee',
+});
+
 export const DICTS = { vi, en };
 let lang = 'vi';
 try { lang = localStorage.getItem('lolm_lang') || 'vi'; } catch { /* */ }
