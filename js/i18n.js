@@ -690,6 +690,41 @@ Object.assign(en, {
   'dr.fearless': 'Hard Fearless', 'dr.fearlessN': '{n} champions used', 'dr.fearlessUsed': 'Used in an earlier game (Fearless)',
 });
 
+Object.assign(vi, {
+  'nav.power': 'BXH sức mạnh',
+  'sch.allRegions': 'Các khu vực', 'sch.intl': 'Quốc tế', 'sch.todayBtn': 'Hôm nay', 'sch.allLeagues': 'Tất cả giải', 'sch.nLeagues': '{n} giải',
+  'sch.spoilers': 'Hiện kết quả', 'sch.loadEarlier': 'Xem các ngày trước', 'sch.loadMore': 'Xem thêm',
+  'sch.nextStage': 'Lịch các giai đoạn sau sẽ được công bố khi giai đoạn hiện tại kết thúc.', 'sch.none': 'Không có trận nào', 'sch.noneHint': 'Thử bật thêm giải trong bộ lọc.',
+  'gpr.title': 'Bảng xếp hạng sức mạnh toàn cầu', 'gpr.powered': 'Mô phỏng theo Global Power Rankings của LoL Esports', 'gpr.viewFull': 'Xem bảng đầy đủ',
+  'gpr.current': 'Hiện tại', 'gpr.after': 'Sau {phase}', 'gpr.updated': 'Cập nhật', 'gpr.allLeagues': 'Tất cả giải',
+  'gpr.score': 'Điểm', 'gpr.wl': 'Thắng / Thua', 'gpr.intl': 'Giải quốc tế', 'gpr.pts': '{n} điểm',
+  'gpr.what': 'BXH sức mạnh là gì?', 'gpr.whatText': 'Xếp hạng sức mạnh của mọi đội hạng 1 trên thế giới, tính từ kết quả các loạt đấu và sức mạnh khu vực.',
+  'gpr.teamPerf': 'Phong độ đội', 'gpr.regional': 'Điểm sức mạnh khu vực',
+  'gpr.f.context': 'Bối cảnh trận', 'gpr.fd.context': 'Playoffs CKTG > vòng bảng quốc nội > Play-In',
+  'gpr.f.recent': 'Phong độ gần đây', 'gpr.fd.recent': 'Trận càng mới càng có trọng số; mùa mới điểm hồi về mức khu vực',
+  'gpr.f.exec': 'Mức độ áp đảo', 'gpr.fd.exec': 'Thắng 2-0, 3-0 được cộng nhiều hơn thắng sát nút',
+  'gpr.f.opp': 'Sức mạnh đối thủ', 'gpr.fd.opp': 'Thắng đội mạnh hơn được nhiều điểm hơn (chênh lệch điểm)',
+  'gpr.f.intl': 'Dựa trên kết quả quốc tế', 'gpr.fd.intl': 'Thắng/thua trước khu vực khác làm điểm khu vực tăng/giảm',
+  'gpr.formula': 'Điểm = 80% Elo của đội + 20% điểm sức mạnh khu vực. Điểm khu vực ban đầu lấy theo bảng GPR thật cuối mùa 2026.',
+});
+Object.assign(en, {
+  'nav.power': 'Power Rankings',
+  'sch.allRegions': 'All regions', 'sch.intl': 'International', 'sch.todayBtn': 'Today', 'sch.allLeagues': 'All leagues', 'sch.nLeagues': '{n} leagues',
+  'sch.spoilers': 'Show results', 'sch.loadEarlier': 'Load earlier', 'sch.loadMore': 'Load more',
+  'sch.nextStage': 'Later stages are scheduled once the current stage finishes.', 'sch.none': 'No matches', 'sch.noneHint': 'Try enabling more leagues in the filter.',
+  'gpr.title': 'Global Power Rankings', 'gpr.powered': 'Modelled on the LoL Esports Global Power Rankings', 'gpr.viewFull': 'View full rankings',
+  'gpr.current': 'Current', 'gpr.after': 'After {phase}', 'gpr.updated': 'Updated', 'gpr.allLeagues': 'All leagues',
+  'gpr.score': 'Score', 'gpr.wl': 'W / L', 'gpr.intl': 'International events', 'gpr.pts': '{n} pts',
+  'gpr.what': 'What are the Power Rankings?', 'gpr.whatText': 'A ranking of every tier-1 team in the world, built from series results and regional strength.',
+  'gpr.teamPerf': 'Team performance', 'gpr.regional': 'Regional strength score',
+  'gpr.f.context': 'Context of play', 'gpr.fd.context': 'Worlds playoffs > domestic regular season > play-ins',
+  'gpr.f.recent': 'Recent performance', 'gpr.fd.recent': 'Latest matches matter more; scores regress toward the region each new season',
+  'gpr.f.exec': 'Dominance', 'gpr.fd.exec': '2-0 and 3-0 wins earn more than close series',
+  'gpr.f.opp': 'Strength of opponent', 'gpr.fd.opp': 'Beating stronger teams earns more (difference in power score)',
+  'gpr.f.intl': 'Driven by international results', 'gpr.fd.intl': 'Wins and losses against other regions move the regional score',
+  'gpr.formula': 'Score = 80% team Elo + 20% regional strength. Regional scores start from the real end-of-2026 GPR values.',
+});
+
 export const DICTS = { vi, en };
 let lang = 'vi';
 try { lang = localStorage.getItem('lolm_lang') || 'vi'; } catch { /* */ }

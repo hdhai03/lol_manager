@@ -9,6 +9,8 @@ import {
   startNewSeason, makeOffer, acceptOffer, releasePlayer, renewCost, renewContract, askingPrice, seasonDate, setAutoSave, progressComps,
 } from './season.js';
 import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from './util.js';
+import { gprTable, leagueStrength, ensureGpr } from './gpr.js';
+import { PHASE_WINDOW } from './formats.js';
 import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from './attrs.js';
 import { openMatchDay } from './match.js';
 
@@ -306,6 +308,7 @@ function renderNew() {
 
 export function startGameUI() {
   setAutoSave(() => saveGame('auto'));
+  ensureGpr();
   // save cũ (thể thức Split 1/2): bắt đầu lại mùa hiện tại theo thể thức 2026
   if (S && !PHASES.includes(S.phase)) {
     for (const id of Object.keys(S.comps)) if (id.startsWith(`${S.season}-`)) delete S.comps[id];
@@ -319,7 +322,7 @@ export function startGameUI() {
 }
 
 // ---------------- Khung game ----------------
-const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'meta', 'world', 'finance'];
+const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'power', 'meta', 'world', 'finance'];
 
 function newsText(n) {
   const p = {};
@@ -367,7 +370,7 @@ function renderGame() {
   r.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
   r.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
   const c = r.querySelector('#content');
-  ({ dashboard, roster, tactics, schedule, standingsTab, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
+  ({ dashboard, roster, tactics, schedule, standingsTab, power, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
 }
 // ---------- Chiến thuật ----------
 function tactics(c) {
@@ -587,7 +590,7 @@ function dashboard(c) {
   // Đội của bạn
   const lp = lineupPlayers(ut);
   const teamPanel = `${pHead(t('dash.yourTeam'), stars(teamOvr(ut)))}
-    <div class="yt-row">${badge(ut.id, 'sm')}<b>${esc(ut.short)}</b><span class="muted small">OVR</span>${ovrTag(teamOvr(ut))}<button class="btn sm" data-tab-go="roster">${t('btn.manage')}</button></div>
+    <div class="yt-row">${badge(ut.id, 'sm')}<b>${esc(ut.short)}</b><span class="muted small">OVR</span>${ovrTag(teamOvr(ut))}<span class="muted small" title="${t('gpr.title')}">GPR</span><b class="gpr-rank">#${gprTable().find((r) => r.team === ut.id)?.rank ?? '-'}</b><button class="btn sm" data-tab-go="roster">${t('btn.manage')}</button></div>
     <div class="yt-players">${lp.map(({ role, p }) => {
       const fs = faceSrc(p);
       return `<div class="yt-p" ${p ? `data-player="${esc(p.id)}"` : ''}>${fs ? `<img src="${fs}" alt="">` : `<span class="ini">${p ? esc(p.ign.slice(0, 2).toUpperCase()) : '—'}</span>`}
@@ -845,20 +848,138 @@ function roster(c) {
   if (sel) bindDetail(c.querySelector('#detail'), sel, render);
 }
 
-// ---------- Lịch thi đấu ----------
+// ---------- Lịch thi đấu chung (kiểu trang lịch LoL Esports) ----------
+// giờ phát sóng quen thuộc của từng giải (giờ Việt Nam)
+const SLOT = { LCK: ['15:00', '17:30'], LPL: ['16:00', '18:00', '20:00'], LEC: ['23:00', '01:00'], LCS: ['05:00', '07:00'], LCP: ['14:00', '16:30'], CBLOL: ['04:00', '06:00'], VCS: ['17:00', '19:00'], INTL: ['14:00', '17:00', '20:00', '23:00'] };
+const slotKey = (tm) => { const h = +tm.slice(0, 2); return (h < 9 ? h + 24 : h) * 60 + +tm.slice(3); };
+const PHASE_KIND = { kickoff: 'region', fst: 'intl', spring: 'region', msi: 'intl', summer: 'region', worlds: 'intl', offseason: 'off' };
+const fmtD = (d, o) => d.toLocaleDateString(getLang(), { timeZone: 'UTC', ...o });
+const relDay = (abs) => seasonDate(abs - (S.seasonStartDay || 0));
+
 function schedule(c) {
-  const only = view.filters.schMine !== false;
-  const ms = allPhaseMatches().filter((m) => !only || m.a === S.userTeam || m.b === S.userTeam).sort((a, b) => a.day - b.day);
-  const byDay = {};
-  for (const m of ms) (byDay[m.day] ??= []).push(m);
-  c.innerHTML = `<div class="row between wrap"><h1>${t('phase.' + S.phase)}</h1>
-    <label class="row gap small"><input type="checkbox" data-mine ${only ? 'checked' : ''}> ${t('sch.onlyMine')}</label></div>
-    ${Object.entries(byDay).map(([d, list]) => `<div class="card">${pHead(`${seasonDate(d - (S.seasonStartDay || 0)).toLocaleDateString(getLang(), { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC' })} · ${t('sch.day', { d: d - (S.seasonStartDay || 0) + 1 })}`, +d === S.day ? `<em class="tagx">${t('sch.today')}</em>` : '')}
-      ${list.map((m) => `<div class="list-row match-row ${m.a === S.userTeam || m.b === S.userTeam ? 'me' : ''}"><span class="w60">${leagueBadge(compLogoId(S.comps[m.comp]), 'sm')}</span>
-        <span class="tm right">${esc(S.teams[m.a].short)} ${badge(m.a, 'sm')}</span>
-        <b class="score">${m.done ? `${m.winsA} - ${m.winsB}` : t('m.bo', { n: m.bo })}</b>
-        <span class="tm">${badge(m.b, 'sm')} ${esc(S.teams[m.b].short)}</span></div>`).join('')}</div>`).join('') || `<p class="muted">${t('dash.noMatch')}</p>`}`;
-  c.querySelector('[data-mine]').onchange = (e) => { view.filters.schMine = e.target.checked; render(); };
+  const f = view.filters;
+  f.schLeagues ??= null; // null = tất cả
+  f.schBack ??= 1; f.schFwd ??= 5;
+  const all = Object.values(S.comps).filter((x) => x.id.startsWith(`${S.season}-`));
+  const lgOf = (comp) => (comp.league === 'INTL' ? 'INTL' : comp.league);
+  const shown = (comp) => !f.schLeagues || f.schLeagues.includes(lgOf(comp));
+  let ms = all.flatMap((comp) => comp.matches.map((m) => ({ m, comp }))).filter(({ comp, m }) => shown(comp) && (!f.schMine || m.a === S.userTeam || m.b === S.userTeam));
+  // giờ thi đấu trong ngày
+  const perDay = {};
+  for (const x of ms) (perDay[`${x.m.day}|${lgOf(x.comp)}`] ??= []).push(x);
+  for (const [k, list] of Object.entries(perDay)) {
+    const sl = SLOT[k.split('|')[1]] || SLOT.INTL;
+    list.forEach((x, i) => { x.time = sl[i % sl.length]; });
+  }
+  const days = [...new Set(ms.map((x) => x.m.day))].sort((a, b) => a - b);
+  const anchor = f.schDay ?? S.day;
+  let ai = days.findIndex((d) => d >= anchor);
+  if (ai < 0) ai = days.length - 1;
+  const from = Math.max(0, ai - f.schBack), to = Math.min(days.length, ai + f.schFwd);
+  const win = days.slice(from, to);
+  // thành tích trong giai đoạn vòng tròn (W-L dưới tên đội)
+  const recCache = {};
+  const rec = (comp, tid) => {
+    if (comp.type === 'bracket') return '';
+    recCache[comp.id] ??= Object.fromEntries((comp.type === 'swiss' ? comp.teams.map((t) => ({ team: t, w: comp.rec[t][0], l: comp.rec[t][1] })) : standings(comp)).map((r) => [r.team, `${r.w}-${r.l}`]));
+    return recCache[comp.id][tid] || '';
+  };
+  const spoil = f.schSpoil !== false;
+  const row = ({ m, comp, time }) => {
+    const mine = m.a === S.userTeam || m.b === S.userTeam;
+    const score = m.done ? (spoil ? `<b class="${m.winner === m.a ? 'w' : ''}">${m.winsA}</b><i>-</i><b class="${m.winner === m.b ? 'w' : ''}">${m.winsB}</b>` : '<span class="eye">◉</span>') : '<span class="vs">VS</span>';
+    const team = (tid, side) => `<div class="sm-team ${side} ${m.done && spoil && m.winner !== tid ? 'lost' : ''}">${side === 'r' ? badge(tid, 'md') : ''}<span><b>${esc(S.teams[tid].short)}</b><small>${rec(comp, tid)}</small></span>${side === 'l' ? badge(tid, 'md') : ''}</div>`;
+    const live = !m.done && m.day === S.day;
+    return `<div class="sm-row ${mine ? 'me' : ''} ${live ? 'live' : ''}">
+      <div class="sm-main"><span class="sm-time">${live ? `<em class="tagx">${t('sch.today')}</em>` : time}</span>${team(m.a, 'l')}<div class="sm-score">${score}</div>${team(m.b, 'r')}
+        <span class="sm-act">${mine && live ? `<button class="btn sm primary" data-act="match">${t('btn.play')}</button>` : ''}</span></div>
+      <div class="sm-foot">${leagueBadge(compLogoId(comp), 'xs')}<span class="sf-t">${esc(comp.name)} • ${esc(t('stage.' + comp.stage))}${m.node && !/^P\d$/.test(m.node) ? ` · ${esc(m.node)}` : ''}${m.swiss ? ` · ${m.swiss}` : ''}</span><b>Bo${m.bo}</b></div></div>`;
+  };
+  const leagues = [...DB.leagues.map((l) => l.id), 'INTL'];
+  const head = relDay(anchor);
+  const phases = PHASES.filter((p) => p !== 'offseason');
+  const curI = PHASES.indexOf(S.phase);
+  const gpr = gprTable().slice(0, 5);
+  c.innerHTML = `<div class="sch">
+    <aside class="sch-side card">${phases.map((p, i) => { const [[m1, d1], [m2, d2]] = PHASE_WINDOW[p];
+      return `<div class="sp-item ${i === curI ? 'on' : i < curI ? 'past' : ''}"><small>${t(PHASE_KIND[p] === 'intl' ? 'sch.intl' : 'sch.allRegions')}</small><b>${t('phase.' + p)}</b>
+        <span>${fmtD(new Date(Date.UTC(S.season, m1, d1)), { day: '2-digit', month: '2-digit' })} - ${fmtD(new Date(Date.UTC(S.season, m2, d2)), { day: '2-digit', month: '2-digit' })}</span></div>`; }).join('')}</aside>
+    <section class="sch-main">
+      <div class="sch-top"><div class="sch-date"><small>${fmtD(head, { weekday: 'long' })}</small><b>${fmtD(head, { day: 'numeric', month: 'short' })}</b></div>
+        <div class="sch-nav"><button class="btn sm ghost" data-sday="-1" aria-label="prev">‹</button><button class="btn sm" data-stoday>${t('sch.todayBtn')}</button><button class="btn sm ghost" data-sday="1" aria-label="next">›</button></div>
+        <div class="sch-filters"><details class="lg-pick"><summary class="btn sm">${f.schLeagues ? t('sch.nLeagues', { n: f.schLeagues.length }) : t('sch.allLeagues')}</summary>
+          <div class="lg-menu">${leagues.map((lg) => `<label><input type="checkbox" data-lgf="${lg}" ${!f.schLeagues || f.schLeagues.includes(lg) ? 'checked' : ''}>${leagueBadge(lg === 'INTL' ? 'WORLDS' : lg, 'xs')} ${lg === 'INTL' ? t('sch.intl') : lg}</label>`).join('')}
+          <button class="btn sm ghost" data-lgall>${t('sch.allLeagues')}</button></div></details>
+          <label class="tg"><input type="checkbox" data-mine ${f.schMine ? 'checked' : ''}> ${t('sch.onlyMine')}</label>
+          <label class="tg"><input type="checkbox" data-spoil ${spoil ? 'checked' : ''}> ${t('sch.spoilers')}</label></div></div>
+      ${from > 0 ? `<button class="btn ghost wide" data-more="back">${t('sch.loadEarlier')}</button>` : ''}
+      ${win.map((d) => {
+        const list = ms.filter((x) => x.m.day === d).sort((a, b) => slotKey(a.time) - slotKey(b.time));
+        return `<div class="card sch-day ${d === S.day ? 'today' : ''}"><div class="sd-h"><b>${fmtD(relDay(d), { weekday: 'long', day: 'numeric', month: 'short' })}</b>${d === S.day ? `<em class="tagx">${t('sch.today')}</em>` : ''}</div>${list.map(row).join('')}</div>`;
+      }).join('') || `<div class="card"><b>${t('sch.none')}</b><p class="muted small">${t('sch.noneHint')}</p></div>`}
+      ${to < days.length ? `<button class="btn ghost wide" data-more="fwd">${t('sch.loadMore')}</button>` : `<p class="muted small center">${t('sch.nextStage')}</p>`}
+    </section>
+    <aside class="sch-right">
+      <div class="card"><div class="p-head"><h3>${t('gpr.title')}</h3></div><div class="muted small" style="margin:-.4rem 0 .5rem">${t('gpr.powered')}</div>
+        ${gpr.map((r) => `<div class="gr-mini ${r.team === S.userTeam ? 'me' : ''}"><b>${r.rank}</b>${badge(r.team, 'sm')}<span>${esc(S.teams[r.team].short)}</span><small>${r.score}</small></div>`).join('')}
+        <button class="link-btn" data-tab-go="power">${t('gpr.viewFull')} ›</button></div>
+      <div class="card"><div class="p-head"><h3>${t('dash.news')}</h3></div>${S.news.slice(0, 4).map((n) => `<div class="nw-mini">${esc(newsText(n))}</div>`).join('')}</div>
+    </aside></div>`;
+  const re = () => schedule(c);
+  c.querySelectorAll('[data-sday]').forEach((b) => b.onclick = () => {
+    const i = Math.max(0, Math.min(days.length - 1, ai + +b.dataset.sday));
+    f.schDay = days[i]; f.schBack = 1; f.schFwd = 5; re();
+  });
+  c.querySelector('[data-stoday]').onclick = () => { f.schDay = null; f.schBack = 1; f.schFwd = 5; re(); };
+  c.querySelectorAll('[data-more]').forEach((b) => b.onclick = () => { if (b.dataset.more === 'back') f.schBack += 4; else f.schFwd += 4; re(); });
+  c.querySelector('[data-mine]').onchange = (e) => { f.schMine = e.target.checked; re(); };
+  c.querySelector('[data-spoil]').onchange = (e) => { f.schSpoil = e.target.checked; re(); };
+  c.querySelectorAll('[data-lgf]').forEach((b) => b.onchange = () => {
+    const on = [...c.querySelectorAll('[data-lgf]')].filter((x) => x.checked).map((x) => x.dataset.lgf);
+    f.schLeagues = on.length === leagues.length ? null : on;
+    re(); c.querySelector('.lg-pick').open = true;
+  });
+  c.querySelector('[data-lgall]').onclick = () => { f.schLeagues = null; re(); };
+  c.querySelectorAll('[data-tab-go]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tabGo; render(); });
+  c.querySelectorAll('[data-act=match]').forEach((b) => b.onclick = () => topAction('match'));
+  c.querySelector('.sch-day.today')?.scrollIntoView({ block: 'nearest' });
+}
+
+// ---------- Bảng xếp hạng sức mạnh toàn cầu ----------
+const ordn = (n) => (getLang() === 'vi' ? `#${n}` : `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`);
+function power(c) {
+  const f = view.filters;
+  const g = S.gpr;
+  const snaps = g.snaps.map((sn, i) => ({ i, sn })).filter((x) => x.sn.season === S.season);
+  const sel = f.gprSnap ?? null;
+  const rows = gprTable(sel).filter((r) => !f.gprLeague || r.league === f.gprLeague);
+  const lgs = leagueStrength();
+  const ev = (key, place) => `<span class="gp-ev ${place === 1 ? 'gold' : place === 2 ? 'silver' : place === 3 ? 'bronze' : ''} ${place ? '' : 'none'}">${leagueBadge(key, 'xs') || `<i>${key === 'FST' ? 'FS' : key[0]}</i>`}<b>${place ? ordn(place) : '-'}</b></span>`;
+  const label = sel == null ? t('gpr.current') : t('gpr.after', { phase: t('phase.' + g.snaps[sel].phase) });
+  const upd = sel == null ? relDay(S.day) : relDay(g.snaps[sel].day);
+  c.innerHTML = `<div class="gpr-hero"><h1>${t('gpr.title')}</h1><p>${t('gpr.powered')}</p><span class="gp-season">${S.season}</span></div>
+  <div class="gpr-grid">
+    <div class="card gpr-main">
+      <div class="gp-head"><div><select data-snap><option value="">${t('gpr.current')}</option>${snaps.map((x) => `<option value="${x.i}" ${sel === x.i ? 'selected' : ''}>${t('gpr.after', { phase: t('phase.' + x.sn.phase) })}</option>`).join('')}</select>
+          <div class="muted small">${t('gpr.updated')}: ${fmtD(upd, { day: '2-digit', month: '2-digit', year: 'numeric' })} · ${esc(label)}</div></div>
+        <select data-glg><option value="">${t('gpr.allLeagues')}</option>${DB.leagues.map((l) => `<option ${f.gprLeague === l.id ? 'selected' : ''}>${l.id}</option>`).join('')}</select></div>
+      <div class="scroll-x"><table class="tbl gpr-t"><thead><tr><th>#</th><th>${t('team')}</th><th>${t('gpr.score')}</th><th>${t('gpr.wl')}</th><th>${t('gpr.intl')}</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr class="${r.team === S.userTeam ? 'me' : ''}"><td class="gp-rank"><b>${r.rank}</b>${r.delta ? `<span class="${r.delta > 0 ? 'up' : 'down'}">${r.delta > 0 ? '▲' : '▼'}${Math.abs(r.delta)}</span>` : ''}</td>
+        <td><div class="gp-team">${badge(r.team, 'md')}<span><b>${esc(S.teams[r.team].short)}</b><small>${r.league}</small></span></div></td>
+        <td class="gp-score">${t('gpr.pts', { n: r.score })}</td>
+        <td>${r.wl[0]}-${r.wl[1]} <span class="muted">(${(r.wl[0] / Math.max(1, r.wl[0] + r.wl[1])).toFixed(3).replace(/^0/, '')})</span></td>
+        <td><div class="gp-evs">${ev('FST', r.intl.fst)}${ev('MSI', r.intl.msi)}${ev('WORLDS', r.intl.worlds)}</div></td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+    <aside class="card gpr-side"><h3>${t('gpr.what')}</h3><p class="muted small">${t('gpr.whatText')}</p>
+      <div class="gp-box"><h4>${t('gpr.teamPerf')}</h4>
+        ${['context', 'recent', 'exec', 'opp'].map((k) => `<div class="gp-f"><b>${t('gpr.f.' + k)}</b><span>${t('gpr.fd.' + k)}</span></div>`).join('')}</div>
+      <div class="gp-box"><h4>${t('gpr.regional')}</h4>${lgs.map((x) => `<div class="gp-lg">${leagueBadge(x.lg, 'xs')}<b>${x.lg}:</b> ${x.v}</div>`).join('')}
+        <div class="gp-f"><b>${t('gpr.f.intl')}</b><span>${t('gpr.fd.intl')}</span></div></div>
+      <p class="muted small">${t('gpr.formula')}</p></aside>
+  </div>`;
+  c.querySelector('[data-snap]').onchange = (e) => { f.gprSnap = e.target.value === '' ? null : +e.target.value; power(c); };
+  c.querySelector('[data-glg]').onchange = (e) => { f.gprLeague = e.target.value || null; power(c); };
 }
 
 // ---------- Bảng xếp hạng ----------

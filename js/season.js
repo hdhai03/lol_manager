@@ -4,6 +4,7 @@ import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, t
 import { simSeries } from './sim.js';
 import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
 
+import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr.js';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats.js';
 export { PHASES, standings, compOrder, runnerUp };
 // tiền thưởng (nghìn USD) theo hạng 1 / 2 / 3-4 / 5-8
@@ -17,6 +18,7 @@ export const leagueTeams = (lg) => Object.values(S.teams).filter((t) => t.league
 
 const PHASE_NEWS = { kickoff: 'news.kickoff', fst: 'news.fstStart', spring: 'news.springStart', msi: 'news.msiStart', summer: 'news.summerStart', worlds: 'news.worldsStart', offseason: 'news.offseason' };
 export function startPhase(phase) {
+  ensureGpr();
   S.phase = phase;
   S.phaseComps = [];
   (S.phaseStart ??= {})[phase] = S.day;
@@ -140,6 +142,7 @@ function endPhase() {
     S.finance.unshift({ key: 'fin.sponsor', amount: Math.round(S.dailyIncome), day: S.day, season: y });
     S.dailyCost = 0; S.dailyIncome = 0;
   }
+  gprSnapshot(S.phase);
   autoSaveHook && autoSaveHook();
 }
 
@@ -229,6 +232,7 @@ export function startNewSeason() {
   S.season++;
   S.day++;
   S.phaseStart = {};
+  gprNewSeason();
   addFinance('fin.sponsorDeal', 0, {});
   startPhase('kickoff');
 }
@@ -335,9 +339,9 @@ export function seasonDate(day) {
   const [ph, d0] = starts[0] || ['kickoff', S.seasonStartDay || 0];
   const [[m1, d1], [m2, d2], len] = PHASE_WINDOW[ph] || PHASE_WINDOW.kickoff;
   const from = Date.UTC(S.season, m1, d1), to = Date.UTC(S.season, m2, d2);
-  const t = Math.min(to, from + ((abs - d0) / len) * (to - from));
-  const d = new Date(t);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
+  // mỗi ngày thi đấu cách nhau ít nhất 1 ngày lịch (không bao giờ trùng ngày)
+  const span = (to - from) / 864e5;
+  const off = Math.round((abs - d0) * Math.max(1, span / len));
+  return new Date(from + off * 864e5);
 }
 export { clamp };

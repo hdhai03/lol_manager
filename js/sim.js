@@ -4,6 +4,7 @@ import { S, lineupPlayers, fillLineup } from './state.js';
 import { ROLES, rand, clamp, logistic, gauss } from './util.js';
 import { runGame } from './engine.js';
 import { aiTactics, drainCondition } from './attrs.js';
+import { gprOnSeries } from './gpr.js';
 
 // Thứ tự cấm/chọn chuẩn giải chuyên nghiệp
 export const DRAFT_ORDER = [
@@ -215,5 +216,6 @@ export function recordGame(match, g, detailed) {
     match.done = true;
     match.winner = match.winsA > match.winsB ? match.a : match.b;
     delete match.fearless;
+    gprOnSeries(match);
   }
 }

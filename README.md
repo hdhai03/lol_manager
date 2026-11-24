@@ -9,6 +9,8 @@ Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt
 - **15 chỉ số chi tiết, chia 4 nhóm**: Kỹ thuật (last-hit, độ chính xác chiêu, né chiêu, vị trí đứng), Tư duy (nhận thức bản đồ, phán đoán, độ hổ báo, kiên nhẫn, sáng tạo), Tinh thần (tập trung, bản lĩnh, thể lực bền) và Đồng đội (phối hợp, chỉ huy, thích nghi). Chỉ số được suy ra từ số liệu thật của từng tuyển thủ (CS/phút, KDA, sát thương, tầm nhìn, tỉ lệ thắng, độ rộng tướng tủ, tuổi, kinh nghiệm), và OVR được tính theo trọng số riêng của từng vị trí. Ngoài ra còn có đặc điểm (vua đường, tay to lúc khó, mắt thần, nóng nảy, dễ tilt...), thể lực và tinh thần.
 - **Chiến thuật**: nhịp độ, ưu tiên mục tiêu, lối chơi (giao tranh tổng / bắt lẻ / đẩy lẻ), mục tiêu giao tranh, hướng đi rừng và chỉ đạo riêng cho từng tuyển thủ.
 - **Mô phỏng trong trận (`js/engine.js`)**: trận đấu không được định trước kết quả. Mỗi nhịp 15 giây, 10 AI tuyển thủ tự farm, đổi máu, gank, roam, tranh Rồng/Bọ/Sứ Giả/Baron, công/thủ trụ, đẩy lẻ, bắt lẻ và giao tranh tổng. Chỉ số không cộng thẳng vào sát thương mà quyết định hành vi: trúng/né chiêu, có phát hiện gank hay không, đọc được giao tranh thắng/thua, rút lui đúng lúc, outplay, cướp mục tiêu... Màn xem trận phát lại đúng các khung hình này, kèm bình luận viên giải thích từng pha.
+- **BXH sức mạnh toàn cầu** (`js/gpr.js`, mô phỏng Global Power Rankings của LoL Esports): điểm = 80% Elo đội + 20% điểm sức mạnh khu vực; hệ số K theo bối cảnh (Play-In < vòng bảng < playoffs, quốc tế nặng hơn), thắng đậm được cộng thêm, kết quả liên khu vực làm điểm khu vực thay đổi. Điểm khu vực khởi điểm lấy theo bảng GPR thật cuối 2026. Có ảnh chụp sau mỗi giai đoạn (mũi tên lên/xuống hạng), thắng-thua và thành tích First Stand/MSI/CKTG.
+- **Lịch thi đấu chung** kiểu trang lịch LoL Esports: mốc mùa giải bên trái, các ngày thi đấu của mọi giải, giờ phát sóng, lọc theo giải, ẩn/hiện kết quả, BXH sức mạnh và tin tức bên phải.
 - **Tướng tủ thật**: lấy từ những tướng mỗi tuyển thủ đã chơi trong năm 2026.
 - **Meta tướng chuyên nghiệp**: xếp hạng S/A/B/C/D theo tỉ lệ có mặt, cấm/chọn và tỉ lệ thắng ở các patch gần nhất. Trang bị pro được tính từ các trận thật.
 - **Thể thức giải đấu 2026 thật** (`js/formats.js`, theo Leaguepedia): LCK Cup (bảng Baron/Elder, Super Week) → Vòng 1-2 → Road to MSI → Vòng 3-4 Legend/Rise → Play-In waterfall → Playoffs; LPL Ascend/Nirvana, Knight's Road, Regional Finals theo điểm hệ thống; LEC Versus/Spring/Summer; LCS Lock-In (Swiss)/Spring/Summer; LCP Split 1-2 và Split 3 Swiss; CBLOL Cup/Split 1/Split 2; VCS Spring/Summer kèm trận thăng hạng LCP. Giải quốc tế: First Stand (8 đội), MSI (Play-In 4 đội + Bracket 8 đội loại kép), CKTG 19 đội (Play-In → Swiss 16 đội → tứ kết). Phân suất MSI/CKTG đúng như 2026, kể cả suất đặc cách và suất thêm từ MSI. Mọi loạt Bo3/Bo5 dùng Hard Fearless Draft.
@@ -82,6 +84,7 @@ js/i18n.js          bản dịch Việt / Anh
 js/data.js          tải dữ liệu
 js/state.js         trạng thái game, lưu/tải
 js/formats.js       thể thức 2026: vòng tròn nhiều bảng, Swiss, mẫu nhánh đấu, First Stand/MSI/CKTG
+js/gpr.js           BXH sức mạnh toàn cầu (Elo đội + điểm khu vực)
 js/season.js        ngày thi đấu, phát thưởng, chuyển nhượng, mùa mới
 js/attrs.js         hệ chỉ số chi tiết, đặc điểm, thể lực, chiến thuật
 js/engine.js        mô phỏng trong trận theo nhịp 15 giây
