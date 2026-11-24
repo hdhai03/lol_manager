@@ -1,5 +1,6 @@
 import { DB } from './data.js';
 import { ROLES, ATTRS, computeOvr, randInt, pick, clamp, hue } from './util.js';
+import { deriveAttrs, defaultTactics, migratePlayer } from './attrs.js';
 
 export const SAVE_VERSION = 1;
 export let S = null; // trạng thái game hiện tại
@@ -11,9 +12,9 @@ export function newGame({ teamId, manager }) {
     players[p.link] = {
       id: p.link, ign: p.ign, name: p.name || '', native: p.native || '', country: p.country || '',
       age: p.age || 21, role: p.role, teamId: p.team,
-      stats: { ...p.stats }, ovr: p.ovr, potential: p.potential, pool: p.pool || [],
+      stats: deriveAttrs(p), ovr: p.ovr, potential: p.potential, pool: p.pool || [],
       salary: p.salary, value: p.value, contractUntil: 2027 + randInt(0, 2),
-      form: 0, morale: 70, record: p.record, realGames: p.games,
+      form: 0, morale: 70, cond: 100, record: p.record, realGames: p.games,
       season: blankStats(), career: blankStats(), rookie: false,
     };
   }
@@ -28,9 +29,10 @@ export function newGame({ teamId, manager }) {
   const s = {
     version: SAVE_VERSION, manager, userTeam: teamId, season: 2027, phase: null, day: 0,
     teams, players, comps: {}, phaseComps: [], news: [], history: [], finance: [],
-    training: 'laning', freeAgents: [], created: Date.now(), userMatchesPlayed: 0,
+    training: 'tech', tactics: defaultTactics(), freeAgents: [], created: Date.now(), userMatchesPlayed: 0,
   };
   S = s;
+  for (const p of Object.values(players)) { const o = p.ovr; p.ovr = computeOvr(p); p.potential = Math.max(p.potential + p.ovr - o, p.ovr); }
   for (const t of Object.values(teams)) {
     autoLineup(t);
     t.sponsor = Math.round(teamSalary(t) * (t.id === teamId ? 1.0 : 1.1) + 200);
@@ -107,11 +109,12 @@ export function makeRookie(league, role) {
   const lg = DB.leagueById[league] || { strength: 0.8 };
   const base = 50 + lg.strength * 14 + randInt(-4, 4);
   const stats = {};
-  for (const a of ATTRS) stats[a] = clamp(base + randInt(-6, 6), 35, 85);
+  for (const a of ATTRS) stats[a] = clamp(base + randInt(-7, 7), 35, 85);
+  stats.aggression = randInt(40, 90);
   const p = {
     id: 'rk_' + ign, ign, name: '', native: '', country: COUNTRY_BY_LEAGUE[league] || '', age: randInt(17, 19), role,
     teamId: null, stats, ovr: 0, potential: 0, pool: [], salary: 0, value: 0, contractUntil: S.season + 2,
-    form: 0, morale: 70, record: null, realGames: 0, season: blankStats(), career: blankStats(), rookie: true, homeLeague: league,
+    form: 0, morale: 70, cond: 100, record: null, realGames: 0, season: blankStats(), career: blankStats(), rookie: true, homeLeague: league,
   };
   p.ovr = computeOvr(p);
   p.potential = clamp(p.ovr + randInt(6, 26), p.ovr, 97);
@@ -155,6 +158,7 @@ export function loadSave(slot) {
   if (!raw) return false;
   const d = JSON.parse(raw);
   S = d.state;
+  migrateState();
   return true;
 }
 export function deleteSave(slot) { try { localStorage.removeItem(KEY + slot); } catch { /* */ } }
@@ -163,4 +167,12 @@ export function importSave(text) {
   const d = JSON.parse(text);
   if (!d.state || !d.state.teams || !d.state.players) throw new Error('invalid');
   S = d.state;
+  migrateState();
+}
+
+// save cũ (6 chỉ số) → hệ 15 chỉ số + chiến thuật
+export function migrateState() {
+  for (const p of Object.values(S.players)) migratePlayer(p);
+  S.tactics ??= defaultTactics();
+  if (!['tech', 'mind', 'mental', 'team'].includes(S.training)) S.training = 'tech';
 }

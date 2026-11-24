@@ -6,6 +6,7 @@ import {
   DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, swapPicks, simulateGame, recordGame, simSeries, compTraits,
 } from './sim.js';
 import { ROLES, esc, logistic, clamp } from './util.js';
+import { TICK, MIR, BLUE_TOWERS, BASE, PIT } from './engine.js';
 import { badge, champIcon, roleTag, ovrTag, compTitle, face, leagueBadge, roleIcon, bgArt } from './ui.js';
 import { champImg, champArt, champTile, itemImg, mapImg } from './data.js';
 import { loadThree, webglOk, createArena } from './arena3d.js';
@@ -25,6 +26,7 @@ function root() {
   return overlay;
 }
 function close() {
+  liveGen++;
   stopArena();
   overlay?.remove();
   overlay = null;
@@ -206,26 +208,11 @@ function renderDraft() {
 // ---------------- Xem trận trực tiếp ----------------
 let timer = null;
 let quickMode = false;
+let liveGen = 0;
 let arena = null;
 const stopArena = () => { if (arena) { arena.dispose(); arena = null; } };
 
-// ----- Bản đồ thu nhỏ (toạ độ 0..100; phe Xanh góc dưới-trái, phe Đỏ góc trên-phải) -----
-const MIR = ([x, y]) => [100 - x, 100 - y];
-const BLUE_TOWERS = {
-  top: [[8, 27], [10, 50], [9, 70]], mid: [[41, 59], [33, 67], [25, 75]], bot: [[73, 92], [50, 90], [30, 91]], nexus: [[14, 84], [16, 86]],
-};
-const TOWER_ORDER = [['bot', 0], ['top', 0], ['mid', 0], ['mid', 1], ['bot', 1], ['top', 1], ['mid', 2], ['bot', 2], ['top', 2], ['nexus', 0], ['nexus', 1]];
-const BASE = { B: [9, 91], R: [91, 9] };
-const PIT = { dragon: [67, 69], baron: [33, 31] };
-const LANE_OF = { Top: 'top', Jungle: 'jg', Mid: 'mid', Bot: 'bot', Support: 'bot' };
-// điểm giao tranh trên mỗi đường theo "độ đẩy" t (0 = trụ nhà Xanh, 1 = trụ nhà Đỏ)
-function lanePoint(lane, tt) {
-  if (lane === 'top') return tt < .5 ? [9, 70 - tt * 2 * 60] : [9 + (tt - .5) * 2 * 61, 10];
-  if (lane === 'bot') return tt < .5 ? [30 + tt * 2 * 60, 91] : [90, 91 - (tt - .5) * 2 * 61];
-  return [25 + tt * 50, 75 - tt * 50];
-}
-const jit = (p, r = 3) => [p[0] + (Math.random() - .5) * r * 2, p[1] + (Math.random() - .5) * r * 2];
-const near = (p, side, d = 4) => [p[0] + (side === 'B' ? -d : d), p[1] + (side === 'B' ? d : -d)];
+// ----- Bản đồ thu nhỏ (toạ độ 0..100; phe Xanh góc dưới-trái, phe Đỏ góc trên-phải) — dùng chung với engine.js -----
 
 function mapSvg() {
   const tw = (side) => Object.entries(BLUE_TOWERS).flatMap(([lane, arr]) => arr.map((pt, i) => {
@@ -246,17 +233,19 @@ function mapSvg() {
 }
 
 function liveGame(d, opts = {}) {
-  const g = simulateGame(d);
+  // engine mô phỏng toàn bộ ván (nhịp 15 giây) rồi phát lại từng khung hình
+  const g = simulateGame(d, { record: true, series: match.games.length });
+  const F = g.frames;
+  const gen = ++liveGen; // mỗi ván một "thế hệ": hẹn giờ của ván cũ không được chạy tiếp
+  const alive = () => gen === liveGen && overlay && r.isConnected && r.querySelector('#clock');
   const pmap = Object.fromEntries(g.players.map((x) => [x.side + x.role, x]));
   const tShort = (s) => esc(S.teams[s === 'B' ? g.blue : g.red].short);
   const ign = (s, r) => { const x = pmap[s + r]; return x && S.players[x.pid] ? esc(S.players[x.pid].ign) : '?'; };
-  let minute = 0, evIdx = 0;
-  const live = { kills: { B: 0, R: 0 }, towers: { B: 0, R: 0 }, drakes: { B: 0, R: 0 }, barons: { B: 0, R: 0 }, dk: { B: [], R: [] }, nextDr: 5, nextBa: 20 };
+  let tick = 0, evIdx = 0;
+  const live = { kills: { B: 0, R: 0 }, towers: { B: 0, R: 0 }, barons: { B: 0, R: 0 }, dk: { B: [], R: [] }, nextDr: 300, nextBa: 1200 };
   const kfeed = [];
-  const feed = [];
-  const tok = {}; // trạng thái từng tướng trên bản đồ
-  for (const sd of ['B', 'R']) for (const r of ROLES) tok[sd + r] = { pos: BASE[sd], dead: 0, k: 0, d: 0, a: 0 };
-  const towerQueue = { B: [...TOWER_ORDER], R: [...TOWER_ORDER] }; // trụ của phe này sẽ mất theo thứ tự
+  const tok = {};
+  for (const sd of ['B', 'R']) for (const r of ROLES) tok[sd + r] = { pos: BASE[sd], dead: 0, hp: 1, lvl: 1, gold: 500, cs: 0, k: 0, d: 0, a: 0 };
 
   const evText = (e) => {
     const p = { min: e.m, team: tShort(e.side) };
@@ -268,7 +257,6 @@ function liveGame(d, opts = {}) {
     return t('ev.' + e.type, p);
   };
   const pick = (sd, rl) => g.picks[sd][rl];
-  const side = (sd) => (sd === 'B' ? g.blue : g.red);
   const winsOf = (tid) => (tid === match.a ? match.winsA : match.winsB);
   const pips = (tid) => `<span class="pips">${Array.from({ length: Math.ceil(match.bo / 2) }, (_, i) => `<i class="${i < winsOf(tid) ? 'on' : ''}"></i>`).join('')}</span>`;
   const portrait = (sd, rl) => `<div class="bc-p ${sd}" id="sp-${sd}${rl}"><div class="ph">${champIcon(pick(sd, rl), 64)}<span class="lv" id="lv-${sd}${rl}">1</span><span class="rs" id="rs-${sd}${rl}"></span></div>
@@ -298,6 +286,7 @@ function liveGame(d, opts = {}) {
       <div class="bc-team r">${pips(g.red)}<b>${tShort('R')}</b>${badge(g.red, 'md')}</div>
       <div class="bc-sub"><span class="dk" id="dkB"></span><span class="lg">${leagueBadge(lgId, 'xs')} ${esc(compTitle(comp))} · ${t('dr.game', { n: match.games.length + 1 })}</span><span class="dk r" id="dkR"></span></div>
     </div>
+    <div class="bc-cast" id="cast"></div>
     <div class="bc-timers"><div><span class="ob dr"></span><span id="tDr">05:00</span></div><div><span class="ob ba"></span><span id="tBa">20:00</span></div></div>
     <div class="bc-side l">${ROLES.map((rl) => portrait('B', rl)).join('')}</div>
     <div class="bc-side r">${ROLES.map((rl) => portrait('R', rl)).join('')}</div>
@@ -312,23 +301,14 @@ function liveGame(d, opts = {}) {
   const map = r.querySelector('#map');
   if (opts.fast) speed = Math.max(speed, 16);
 
-  const alive = (sd) => ROLES.filter((x) => !tok[sd + x].dead);
-  const kill = (sd, killerRole, victimRole, at) => {
-    const os = sd === 'B' ? 'R' : 'B';
-    const v = tok[os + victimRole];
-    v.dead = Math.min(3, 1 + Math.floor(minute / 15)); v.deadMax = v.dead; v.d++; v.diedAt = at; v.pos = BASE[os];
-    if (killerRole) tok[sd + killerRole].k++;
-    kfeed.push({ sd, kc: g.picks[sd][killerRole || ROLES[0]], vc: g.picks[os][victimRole], id: Math.random() });
-    for (const a of alive(sd).filter((x) => x !== killerRole).slice(0, 2)) tok[sd + a].a++;
-    flash(at, sd);
-  };
-  const flash = (at, sd) => {
+  const flash = (at, sd, big) => {
+    if (!at || !alive()) return;
     const el = document.createElement('i');
     el.className = `boom ${sd === 'B' ? 'b' : 'r'}`;
     el.style.left = at[0] + '%'; el.style.top = at[1] + '%';
     r.querySelector('#fx').appendChild(el);
     setTimeout(() => el.remove(), 1400);
-    arena?.flash(at, sd);
+    arena?.flash(at, sd, big);
   };
   const banner = (text, sd) => {
     const b = r.querySelector('#banner');
@@ -337,141 +317,123 @@ function liveGame(d, opts = {}) {
     clearTimeout(banner.h);
     banner.h = setTimeout(() => { b.className = 'banner'; }, Math.max(900, 2600 / speed * 3));
   };
-  const killTower = (takerSide) => {
-    const loser = takerSide === 'B' ? 'R' : 'B';
-    const next = towerQueue[loser].shift();
-    if (!next) return null;
-    const el = map.querySelector(`[data-tw="${loser}-${next[0]}-${next[1]}"]`);
-    if (el) el.classList.add('down');
-    arena?.towerDown(`${loser}-${next[0]}-${next[1]}`);
-    const pt = BLUE_TOWERS[next[0]][next[1]];
-    return loser === 'B' ? pt : MIR(pt);
+  // bình luận viên: lý do đằng sau từng pha (chỉ số tuyển thủ quyết định)
+  const cast = (key, e) => {
+    const el = r.querySelector('#cast');
+    const os = e.side === 'B' ? 'R' : 'B';
+    const p = { team: tShort(e.side), opp: tShort(os), who: e.who ? ign(e.side, e.who) : '', lane: e.lane ? t('lane.' + e.lane) : '', obj: e.obj ? t('obj.' + e.obj) : '' };
+    el.innerHTML = `<span class="${e.side}">${mmss(e.s)}</span> ${esc(t('cm.' + key, p))}`;
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   };
-
-  // vị trí "bình thường" theo giai đoạn trận
-  const lead = () => g.gold[Math.min(minute, g.dur)] / 12000; // >0: Xanh đang hơn
-  const placeAll = () => {
-    const push = clamp(.5 + lead() * .5, .15, .85);
-    for (const sd of ['B', 'R']) for (const role of ROLES) {
-      const tk = tok[sd + role];
-      if (tk.dead) { tk.pos = BASE[sd]; continue; }
-      let pt;
-      if (minute < 14) {
-        if (role === 'Jungle') pt = sd === 'B' ? [[30, 55], [55, 78], [18, 38]][minute % 3] : [[70, 45], [45, 22], [82, 62]][minute % 3];
-        else pt = near(lanePoint(LANE_OF[role], push), sd, role === 'Support' ? 3 : 2);
-      } else {
-        // giữa/cuối trận: gom đội ở đường giữa hoặc đường dưới
-        const lane = minute % 6 < 3 ? 'mid' : (minute % 6 < 5 ? 'bot' : 'top');
-        pt = near(lanePoint(lane, push), sd, 5);
-      }
-      tk.pos = jit(pt, minute < 14 ? 1.5 : 3);
-    }
-  };
-  const gather = (pt, sides = ['B', 'R'], spread = 4) => {
-    for (const sd of sides) for (const role of alive(sd)) tok[sd + role].pos = jit(near(pt, sd, 3), spread);
-  };
+  const NOTE_BANNER = new Set(['steal', 'ace']);
 
   const applyEv = (e) => {
-    const os = e.side === 'B' ? 'R' : 'B';
     if (e.type === 'kill' || e.type === 'firstblood') {
       live.kills[e.side]++;
-      const lane = LANE_OF[e.victim] === 'jg' ? 'mid' : LANE_OF[e.victim];
-      const at = jit(lanePoint(lane, clamp(.5 + lead() * .5, .2, .8)), 4);
-      tok[e.side + e.killer].pos = at; tok[os + e.victim].pos = at;
-      kill(e.side, e.killer, e.victim, at);
+      const os = e.side === 'B' ? 'R' : 'B';
+      tok[os + e.victim].diedAt = e.at;
+      kfeed.push({ sd: e.side, kc: g.picks[e.side][e.killer], vc: g.picks[os][e.victim] });
+      flash(e.at, e.side);
       if (e.type === 'firstblood') banner(t('bn.firstblood', { team: tShort(e.side) }), e.side);
-    }
-    if (e.type === 'teamfight') {
-      const at = jit(minute > 20 && Math.random() < .5 ? PIT.baron : minute > 8 && Math.random() < .5 ? PIT.dragon : lanePoint('mid', .5), 5);
-      gather(at);
-      for (let i = 0; i < e.kb; i++) { const v = alive('R'); if (v.length) kill('B', alive('B')[0], v[Math.floor(Math.random() * v.length)], jit(at, 3)); }
-      for (let i = 0; i < e.kr; i++) { const v = alive('B'); if (v.length) kill('R', alive('R')[0], v[Math.floor(Math.random() * v.length)], jit(at, 3)); }
-      live.kills.B += e.kb; live.kills.R += e.kr;
+    } else if (e.type === 'teamfight') {
       banner(t('bn.teamfight', { team: tShort(e.side), kb: e.side === 'B' ? e.kb : e.kr, kr: e.side === 'B' ? e.kr : e.kb }), e.side);
-    }
-    if (e.type === 'dragon' || e.type === 'soul' || e.type === 'elder') {
-      if (e.type === 'dragon') { live.drakes[e.side]++; live.dk[e.side].push(e.drake); }
-      live.nextDr = e.type === 'elder' || e.type === 'soul' ? minute + 6 : minute + 5;
-      gather(PIT.dragon, [e.side], 3); flash(PIT.dragon, e.side); arena?.objective('dragon', e.side);
+      flash(e.at, e.side, true);
+    } else if (e.type === 'dragon' || e.type === 'soul' || e.type === 'elder') {
+      if (e.type === 'dragon') live.dk[e.side].push(e.drake);
+      live.nextDr = e.s + (e.type === 'dragon' ? 300 : 360);
+      flash(PIT.dragon, e.side, true); arena?.objective('dragon', e.side);
       banner(e.type === 'soul' ? t('bn.soul', { team: tShort(e.side), drake: t('drake.' + e.drake) }) : e.type === 'elder' ? t('bn.elder', { team: tShort(e.side) }) : t('bn.dragon', { team: tShort(e.side), drake: t('drake.' + e.drake) }), e.side);
-    }
-    if (e.type === 'baron') { live.nextBa = minute + 6; live.barons[e.side]++; gather(PIT.baron, [e.side], 3); flash(PIT.baron, e.side); arena?.objective('baron', e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side); }
-    if (e.type === 'herald' || e.type === 'grubs') { gather(PIT.baron, [e.side], 3); }
-    if (e.type === 'tower' || e.type === 'firsttower') {
+    } else if (e.type === 'baron') {
+      live.nextBa = e.s + 360; live.barons[e.side]++;
+      flash(PIT.baron, e.side, true); arena?.objective('baron', e.side); banner(t('bn.baron', { team: tShort(e.side) }), e.side);
+    } else if (e.type === 'herald' || e.type === 'grubs') {
+      flash(PIT.baron, e.side);
+      cast(e.type, e);
+    } else if (e.type === 'tower' || e.type === 'firsttower') {
       live.towers[e.side]++;
-      const at = killTower(e.side);
-      if (at) { gather(at, [e.side], 4); flash(at, e.side); }
+      map.querySelector(`[data-tw="${e.id}"]`)?.classList.add('down');
+      arena?.towerDown(e.id);
+      flash(e.at, e.side);
       if (e.type === 'firsttower') banner(t('bn.firsttower', { team: tShort(e.side) }), e.side);
+    } else if (e.type === 'nexus') {
+      const os = e.side === 'B' ? 'R' : 'B';
+      flash(BASE[os], e.side, true); arena?.nexusDown(os); banner(t('bn.victory', { team: tShort(e.side) }), e.side);
+    } else if (e.type === 'note') {
+      if (NOTE_BANNER.has(e.key)) banner(t('cm.' + e.key, { team: tShort(e.side), obj: e.obj ? t('obj.' + e.obj) : '' }), e.side);
+      cast(e.key, e);
     }
-    if (e.type === 'nexus') { gather(BASE[os], [e.side], 4); flash(BASE[os], e.side); arena?.nexusDown(os); banner(t('bn.victory', { team: tShort(e.side) }), e.side); }
-    feed.push({ side: e.side, text: evText(e) });
   };
 
-  const mm = (x) => `${String(x).padStart(2, '0')}:00`;
+  const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const kfmt = (n) => (n / 1000).toFixed(1) + 'K';
   const draw = () => {
-    const f = Math.min(1, minute / g.dur);
     const teamGold = { B: 0, R: 0 };
     for (const [k, tk] of Object.entries(tok)) {
       const sd = k[0], rl = k.slice(1);
-      const x = pmap[k];
-      // 2D
       const el = r.querySelector('#tk-' + k);
       el.style.left = tk.pos[0] + '%'; el.style.top = tk.pos[1] + '%';
       el.classList.toggle('dead', tk.dead > 0);
-      el.querySelector('i').textContent = tk.dead > 0 ? tk.dead : '';
-      // minimap
+      el.querySelector('i').textContent = tk.dead > 0 ? tk.dead * 15 : '';
       const md = r.querySelector('#md-' + k);
       md.style.left = tk.pos[0] + '%'; md.style.top = tk.pos[1] + '%';
       md.classList.toggle('dead', tk.dead > 0);
-      // chỉ số trực tiếp (ước tính tăng dần tới kết quả cuối)
-      const gold = x ? 500 + (x.gold - 500) * f : 0;
-      teamGold[sd] += gold;
-      const lvl = Math.min(18, Math.max(1, Math.floor(1 + minute * (rl === 'Support' ? .5 : .6) + tk.k * .3 + tk.a * .1)));
-      r.querySelector('#lv-' + k).textContent = lvl;
-      r.querySelector('#rs-' + k).textContent = tk.dead > 0 ? Math.round(Math.min(60, 7 + minute * 1.2) * tk.dead / Math.max(tk.deadMax || tk.dead, 1)) : '';
+      teamGold[sd] += tk.gold;
+      r.querySelector('#lv-' + k).textContent = tk.lvl;
+      r.querySelector('#rs-' + k).textContent = tk.dead > 0 ? tk.dead * 15 : '';
       r.querySelector('#sp-' + k).classList.toggle('dead', tk.dead > 0);
-      const hp = tk.dead > 0 ? 0 : arena ? arena.hp(k) : 1;
-      r.querySelector('#hp-' + k).style.width = `${Math.round(hp * 100)}%`;
+      r.querySelector('#hp-' + k).style.width = `${Math.round((tk.dead > 0 ? 0 : tk.hp) * 100)}%`;
       r.querySelector('#kd-' + k).textContent = `${tk.k}/${tk.d}/${tk.a}`;
-      r.querySelector('#cs-' + k).textContent = x ? Math.round(x.cs * f) : 0;
+      r.querySelector('#cs-' + k).textContent = tk.cs;
+      // trang bị theo build pro của tướng, mở khoá theo vàng thật
       const build = (DB.champions[pick(sd, rl)]?.build || []).filter((i) => DB.items[i]);
-      const n = Math.min(build.length, Math.floor(gold / (rl === 'Support' ? 2600 : 3100)));
+      const n = Math.min(build.length, Math.floor((tk.gold - 500) / (rl === 'Support' ? 2400 : 2900)));
       const it = r.querySelector('#it-' + k);
       if (it.dataset.n !== String(n)) {
         it.dataset.n = n;
         it.innerHTML = Array.from({ length: 6 }, (_, i) => (i < n ? `<img src="${itemImg(build[i])}" alt="">` : '<span></span>')).join('');
       }
     }
-    map.style.setProperty('--tt', `${Math.max(.15, 0.9 / speed)}s`);
-    r.querySelector('.bc-mini').style.setProperty('--tt', `${Math.max(.15, (arena ? 3.6 : .9) / speed)}s`);
+    const sec = tick * TICK;
+    map.style.setProperty('--tt', `${Math.max(.1, 0.25 / speed)}s`);
+    r.querySelector('.bc-mini').style.setProperty('--tt', `${Math.max(.1, (arena ? 1 : .25) / speed)}s`);
     r.querySelector('#kB').textContent = live.kills.B;
     r.querySelector('#kR').textContent = live.kills.R;
-    r.querySelector('#clock').textContent = mm(minute);
+    r.querySelector('#clock').textContent = mmss(sec);
     r.querySelector('#gB').textContent = kfmt(teamGold.B);
     r.querySelector('#gR').textContent = kfmt(teamGold.R);
     r.querySelector('#gB').classList.toggle('up', teamGold.B > teamGold.R);
     r.querySelector('#gR').classList.toggle('up', teamGold.R > teamGold.B);
     r.querySelector('#twB').textContent = live.towers.B;
     r.querySelector('#twR').textContent = live.towers.R;
-    for (const sd of ['B', 'R']) r.querySelector('#dk' + sd).innerHTML = live.dk[sd].map((d) => `<i class="dr-${d}" title="${t('drake.' + d)}"></i>`).join('') + (live.barons[sd] ? `<i class="ba" title="Baron">${live.barons[sd]}</i>` : '');
-    r.querySelector('#tDr').textContent = live.nextDr <= minute ? 'LIVE' : mm(live.nextDr);
-    r.querySelector('#tBa').textContent = live.nextBa <= minute ? 'LIVE' : mm(live.nextBa);
+    for (const sd of ['B', 'R']) r.querySelector('#dk' + sd).innerHTML = live.dk[sd].map((x) => `<i class="dr-${x}" title="${t('drake.' + x)}"></i>`).join('') + (live.barons[sd] ? `<i class="ba" title="Baron">${live.barons[sd]}</i>` : '');
+    r.querySelector('#tDr').textContent = live.nextDr <= sec ? 'LIVE' : mmss(live.nextDr);
+    r.querySelector('#tBa').textContent = live.nextBa <= sec ? 'LIVE' : mmss(live.nextBa);
     const kf = r.querySelector('#kfeed');
     kf.innerHTML = kfeed.slice(-5).map((x) => `<div class="kf ${x.sd}">${champIcon(x.kc, 30)}<span>⚔</span>${champIcon(x.vc, 30)}</div>`).join('');
   };
-  const step = () => {
-    minute++;
-    for (const tk of Object.values(tok)) if (tk.dead) tk.dead--;
-    placeAll();
-    while (evIdx < g.events.length && g.events[evIdx].m <= minute) applyEv(g.events[evIdx++]);
-    if (arena) { arena.minuteTick(lead()); arena.setTargets(tok); }
-    draw();
-    if (minute >= g.dur) { clearInterval(timer); timer = null; setTimeout(() => { stopArena(); postGame(g); }, Math.max(900, (arena ? 6000 : 2400) / speed)); }
+  const load = (i) => {
+    const f = F[i];
+    for (const [k, v] of Object.entries(f)) Object.assign(tok[k], { pos: [v[0], v[1]], hp: v[2], dead: v[3], lvl: v[4], gold: v[5], cs: v[6], k: v[7], d: v[8], a: v[9] });
   };
-  // 3D: một phút trận = 4 giây (1x) để kịp diễn giải di chuyển và giao tranh
-  const minuteMs = () => (arena ? 4000 : 1000) / speed;
-  const run = () => { clearInterval(timer); timer = setInterval(step, minuteMs()); arena?.setSpeed(speed); };
+  const leadNow = () => { let s = 0; for (const [k, tk] of Object.entries(tok)) s += (k[0] === 'B' ? 1 : -1) * tk.gold; return s / 12000; };
+  const step = () => {
+    if (!alive()) { if (gen === liveGen) { clearInterval(timer); timer = null; } return; }
+    if (tick >= F.length) return;
+    load(tick);
+    tick++;
+    while (evIdx < g.events.length && g.events[evIdx].t <= tick) applyEv(g.events[evIdx++]);
+    if (arena) { if (tick % 4 === 0) arena.minuteTick(leadNow()); arena.setTargets(tok); }
+    draw();
+    if (tick >= F.length) {
+      while (evIdx < g.events.length) applyEv(g.events[evIdx++]);
+      draw();
+      clearInterval(timer); timer = null;
+      setTimeout(() => { if (gen !== liveGen) return; stopArena(); postGame(g); }, Math.max(900, (arena ? 6000 : 2400) / speed));
+    }
+  };
+  // 3D: 1 nhịp (15 giây trận) = 1 giây ở tốc độ 1x
+  const tickMs = () => (arena ? 1000 : 250) / speed;
+  const run = () => { if (!alive()) return; clearInterval(timer); if (tick < F.length) timer = setInterval(step, tickMs()); arena?.setSpeed(speed); };
   r.querySelectorAll('[data-sp]').forEach((b) => b.onclick = () => {
     speed = +b.dataset.sp;
     try { localStorage.setItem('lolm_speed', speed); } catch { /* */ }
@@ -480,11 +442,11 @@ function liveGame(d, opts = {}) {
   });
   r.querySelector('[data-skip]').onclick = () => {
     clearInterval(timer); timer = null; stopArena();
-    minute = g.dur;
+    tick = F.length; liveGen++;
     postGame(g);
   };
   r.querySelector('[data-skipall]')?.addEventListener('click', () => {
-    clearInterval(timer); timer = null; stopArena();
+    clearInterval(timer); timer = null; stopArena(); liveGen++;
     if (!g.recorded) { g.recorded = true; recordGame(match, g, true); }
     if (!match.done) simSeries(match);
     seriesEnd();
@@ -496,7 +458,7 @@ function liveGame(d, opts = {}) {
     const ld = r.querySelector('#aload');
     ld.textContent = t('m.loading3d');
     try { await loadThree(); } catch { ld.textContent = ''; return false; }
-    if (!overlay || !arenaEl.isConnected || minute >= g.dur) return false;
+    if (!alive() || !arenaEl.isConnected || tick >= F.length) return false;
     const towerIds = {};
     for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => { towerIds[`B-${lane}-${i}`] = pt; towerIds[`R-${lane}-${i}`] = MIR(pt); });
     const names = Object.fromEntries(Object.keys(tok).map((k) => [k, ign(k[0], k.slice(1))]));
@@ -504,7 +466,6 @@ function liveGame(d, opts = {}) {
       arenaEl.classList.remove('flat');
       arena = createArena(arenaEl, { picks: g.picks, champUrl: champTile, names, towerIds });
     } catch (e) { console.warn(e); arenaEl.classList.add('flat'); ld.textContent = ''; return false; }
-    // đồng bộ trạng thái đã diễn ra
     map.querySelectorAll('.tw.down').forEach((el) => arena.towerDown(el.dataset.tw));
     arena.setTargets(tok);
     ld.textContent = '';
@@ -518,7 +479,6 @@ function liveGame(d, opts = {}) {
     try { localStorage.setItem('lolm_view', want3D ? '3d' : '2d'); } catch { /* */ }
     run();
   };
-  placeAll();
   draw();
   if (want3D) start3D().then(() => run()); else run();
 }

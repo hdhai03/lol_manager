@@ -6,6 +6,9 @@ Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt
 
 - **7 khu vực thật**: LCK, LPL, LEC, LCS, LCP, CBLOL, VCS, gồm 62 đội và hơn 330 tuyển thủ với đội hình theo dữ liệu mùa 2026.
 - **Chỉ số tuyển thủ dựa trên thống kê thật**: tỉ lệ thắng, KDA, CS/phút, sát thương/phút, vàng/phút, tầm nhìn, số trận quốc tế. Các chỉ số này được chuẩn hoá theo vị trí trong từng giải, rồi nhân với hệ số sức mạnh của khu vực.
+- **15 chỉ số chi tiết, chia 4 nhóm**: Kỹ thuật (last-hit, độ chính xác chiêu, né chiêu, vị trí đứng), Tư duy (nhận thức bản đồ, phán đoán, độ hổ báo, kiên nhẫn, sáng tạo), Tinh thần (tập trung, bản lĩnh, thể lực bền) và Đồng đội (phối hợp, chỉ huy, thích nghi). Chỉ số được suy ra từ số liệu thật của từng tuyển thủ (CS/phút, KDA, sát thương, tầm nhìn, tỉ lệ thắng, độ rộng tướng tủ, tuổi, kinh nghiệm), và OVR được tính theo trọng số riêng của từng vị trí. Ngoài ra còn có đặc điểm (vua đường, tay to lúc khó, mắt thần, nóng nảy, dễ tilt...), thể lực và tinh thần.
+- **Chiến thuật**: nhịp độ, ưu tiên mục tiêu, lối chơi (giao tranh tổng / bắt lẻ / đẩy lẻ), mục tiêu giao tranh, hướng đi rừng và chỉ đạo riêng cho từng tuyển thủ.
+- **Mô phỏng trong trận (`js/engine.js`)**: trận đấu không được định trước kết quả. Mỗi nhịp 15 giây, 10 AI tuyển thủ tự farm, đổi máu, gank, roam, tranh Rồng/Bọ/Sứ Giả/Baron, công/thủ trụ, đẩy lẻ, bắt lẻ và giao tranh tổng. Chỉ số không cộng thẳng vào sát thương mà quyết định hành vi: trúng/né chiêu, có phát hiện gank hay không, đọc được giao tranh thắng/thua, rút lui đúng lúc, outplay, cướp mục tiêu... Màn xem trận phát lại đúng các khung hình này, kèm bình luận viên giải thích từng pha.
 - **Tướng tủ thật**: lấy từ những tướng mỗi tuyển thủ đã chơi trong năm 2026.
 - **Meta tướng chuyên nghiệp**: xếp hạng S/A/B/C/D theo tỉ lệ có mặt, cấm/chọn và tỉ lệ thắng ở các patch gần nhất. Trang bị pro được tính từ các trận thật.
 - **Mùa giải đầy đủ**: Split 1 → Playoffs → MSI → Split 2 → Playoffs → CKTG (vòng bảng và loại trực tiếp) → kỳ chuyển nhượng → mùa mới.
@@ -64,6 +67,12 @@ node tests/sim-season.mjs "T1"
 
 Lệnh này giả lập tự động 2 mùa giải và in nhà vô địch các giải, kích thước file save và các lỗi đội hình nếu có.
 
+```bash
+node tests/engine-stats.mjs 400
+```
+
+Lệnh này chạy 400 ván ngẫu nhiên rồi in thống kê của engine: thời lượng, số mạng, trụ, rồng, Baron, CS/sát thương/vàng mỗi phút theo vị trí, số lần xảy ra từng loại tình huống, và tỉ lệ thắng theo chênh lệch OVR.
+
 ## Cấu trúc
 
 ```
@@ -73,7 +82,9 @@ js/i18n.js          bản dịch Việt / Anh
 js/data.js          tải dữ liệu
 js/state.js         trạng thái game, lưu/tải
 js/season.js        lịch thi đấu, playoffs, MSI, CKTG, chuyển nhượng
-js/sim.js           cấm/chọn AI và mô phỏng trận đấu
+js/attrs.js         hệ chỉ số chi tiết, đặc điểm, thể lực, chiến thuật
+js/engine.js        mô phỏng trong trận theo nhịp 15 giây
+js/sim.js           cấm/chọn AI, nối engine với mùa giải
 js/match.js         màn hình ngày thi đấu
 js/ui.js            các màn hình còn lại
 scripts/fetch-data.mjs  script lấy dữ liệu

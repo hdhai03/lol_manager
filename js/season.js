@@ -2,7 +2,7 @@
 import { DB } from './data.js';
 import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, teamSalary, makeRookie, refreshValue, blankStats, userTeam } from './state.js';
 import { simSeries } from './sim.js';
-import { ROLES, ATTRS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
+import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
 
 export const PHASES = ['split1', 'playoffs1', 'msi', 'split2', 'playoffs2', 'worlds', 'offseason'];
 export const WORLDS_SLOTS = { LCK: 4, LPL: 4, LEC: 3, LCS: 2, LCP: 1, CBLOL: 1, VCS: 1 };
@@ -221,12 +221,17 @@ function dailyTick() {
   for (const p of Object.values(S.players)) {
     if (p.retired) continue;
     const isUser = p.teamId === S.userTeam;
+    // hồi thể lực mỗi ngày
+    p.cond = clamp((p.cond ?? 100) + 9 + (p.stats.stamina - 60) / 10, 20, 100);
     const gap = p.potential - p.ovr;
-    if (p.age <= 25 && gap > 0 && rand() < 0.03 + gap * 0.004 + (isUser ? 0.02 : 0)) {
-      const a = isUser && rand() < 0.65 ? S.training : pick(ATTRS);
+    if (p.age <= 25 && gap > 0 && rand() < 0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) {
+      // giáo án theo nhóm: chỉ số trong nhóm được ưu tiên, aggression không luyện được
+      const grp = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
+      const a = pick(grp.filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] + 1, 30, 99);
-    } else if (p.age >= 28 && rand() < 0.012 * (p.age - 26)) {
-      const a = pick(ATTRS);
+      if (isUser && rand() < 0.15) p.cond = clamp(p.cond - 4, 20, 100); // tập nặng hơi mệt
+    } else if (p.age >= 28 && rand() < 0.02 * (p.age - 26)) {
+      const a = pick(['dodge', 'accuracy', 'stamina', 'farm', pick(ATTRS)].filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] - 1, 30, 99);
     }
     p.ovr = computeOvr(p);

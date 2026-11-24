@@ -288,6 +288,7 @@ export function createArena(container, opts) {
         const u = units[k]; if (!u) continue;
         const w = W(tk.pos);
         u.target.set(w.x, 0, w.z);
+        if (tk.hp != null) u.hpT = tk.hp;
         if (tk.dead > 0 && u.alive) { u.alive = false; u.dying = 1; u.diedAt = tk.diedAt ? W(tk.diedAt) : null; }
         if (tk.dead === 0 && !u.alive && u.deadVis) { u.alive = true; u.deadVis = false; u.hp = 1; const b = W(k[0] === 'B' ? [9, 91] : [91, 9]); u.g.position.set(b.x, 0, b.z); u.g.visible = true; u.g.scale.setScalar(1); burst(u.g.position, COL_LIGHT[u.side], 5); }
       }
@@ -342,6 +343,7 @@ export function createArena(container, opts) {
       u.cd -= dt;
       if (foe && fd < 22 && u.cd <= 0) { fire(u.g.position, foe.g.position, u.side, Math.random() < .15); u.cd = .6 + Math.random() * .7; foe.hp = Math.max(.15, foe.hp - .06); }
       if (!foe || fd > 30) u.hp = Math.min(1, u.hp + dt * .05);
+      if (u.hpT != null) u.hp += (u.hpT - u.hp) * Math.min(1, rdt * 2.5); // máu thật từ bộ mô phỏng
     }
 
     // lính

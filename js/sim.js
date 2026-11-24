@@ -1,7 +1,9 @@
 // Mô phỏng cấm/chọn và trận đấu
 import { DB } from './data.js';
 import { S, lineupPlayers, fillLineup } from './state.js';
-import { ROLES, rand, randInt, clamp, logistic, gauss, weighted, pick, shuffle } from './util.js';
+import { ROLES, rand, clamp, logistic, gauss } from './util.js';
+import { runGame } from './engine.js';
+import { aiTactics, drainCondition } from './attrs.js';
 
 // Thứ tự cấm/chọn chuẩn giải chuyên nghiệp
 export const DRAFT_ORDER = [
@@ -140,10 +142,7 @@ export function autoDraft(blueId, redId) {
 }
 
 // ----- Mô phỏng ván đấu -----
-const KILL_W = { Top: 1, Jungle: 1.05, Mid: 1.35, Bot: 1.55, Support: 0.35 };
-const DEATH_W = { Top: 1.1, Jungle: 1, Mid: 0.95, Bot: 1, Support: 1.15 };
-const DRAKES = ['infernal', 'mountain', 'ocean', 'cloud', 'hextech', 'chemtech'];
-
+// Ước lượng sức mạnh trước trận (hiển thị tỉ lệ thắng); kết quả thật do engine.js mô phỏng nhịp-theo-nhịp
 export function teamPower(teamId, picks) {
   const line = lineupMap(teamId);
   let sum = 0;
@@ -151,126 +150,18 @@ export function teamPower(teamId, picks) {
   return sum / 5 + compScore(Object.values(picks));
 }
 
-export function simulateGame(d) {
-  const blue = d.blue, red = d.red;
-  // phong độ trong ngày (ngẫu nhiên) + lợi thế phe xanh nhỏ
-  const pB = teamPower(blue, d.picks.B) + 0.4 + gauss() * 1.6;
-  const pR = teamPower(red, d.picks.R) + gauss() * 1.6;
-  const pWinB = logistic((pB - pR) / 5.5);
-  const blueWins = rand() < pWinB;
-  const W = blueWins ? 'B' : 'R';
-  const closeness = Math.abs(pWinB - 0.5); // 0..0.5
-  const dur = clamp(Math.round(31 + gauss() * 4.5 - closeness * 10), 22, 48);
-  const finalGd = (3500 + rand() * 9000 + closeness * 6000) * (blueWins ? 1 : -1);
-
-  // đường vàng (brownian bridge)
-  const walk = [0];
-  for (let m = 1; m <= dur; m++) walk.push(walk[m - 1] + gauss() * 650);
-  const gold = [0];
-  for (let m = 1; m <= dur; m++) {
-    const f = m / dur;
-    gold.push(Math.round(finalGd * f ** 1.4 + walk[m] - f * walk[dur]));
-  }
-  const lead = (m) => logistic(gold[Math.min(m, dur)] / 2600 + (blueWins ? 0.25 : -0.25)); // xác suất phe xanh thắng sự kiện
-
-  const lineB = lineupMap(blue), lineR = lineupMap(red);
-  const ps = {};
-  for (const [side, line, picks] of [['B', lineB, d.picks.B], ['R', lineR, d.picks.R]]) {
-    for (const r of ROLES) {
-      const p = line[r];
-      ps[side + r] = { side, role: r, pid: p ? p.id : null, champ: picks[r], k: 0, d: 0, a: 0, cs: 0, gold: 0, dmg: 0, eff: effRating(p, picks[r], r) };
-    }
-  }
-  const events = [];
-  const add = (m, type, side, data = {}) => events.push({ m, type, side, ...data });
-
-  // hạ gục
-  const totalKills = randInt(12, 34);
-  const killTimes = [];
-  for (let i = 0; i < totalKills; i++) killTimes.push(clamp(Math.round(2 + (dur - 2) * Math.pow(rand(), 0.8)), 2, dur));
-  killTimes.sort((a, b) => a - b);
-  let first = true;
-  const kills = { B: 0, R: 0 };
-  // gom nhóm thành giao tranh
-  let i = 0;
-  while (i < killTimes.length) {
-    const m = killTimes[i];
-    let j = i;
-    while (j + 1 < killTimes.length && killTimes[j + 1] === m) j++;
-    const n = j - i + 1;
-    let kb = 0, kr = 0;
-    for (let x = 0; x < n; x++) {
-      const side = rand() < lead(m) ? 'B' : 'R';
-      const os = side === 'B' ? 'R' : 'B';
-      const killer = weighted(ROLES, ROLES.map((r) => KILL_W[r] * (ps[side + r].eff / 70) ** 3));
-      const victim = weighted(ROLES, ROLES.map((r) => DEATH_W[r] * (70 / ps[os + r].eff) ** 3));
-      ps[side + killer].k++;
-      ps[os + victim].d++;
-      const assists = shuffle(ROLES.filter((r) => r !== killer)).slice(0, randInt(0, 3));
-      for (const a of assists) ps[side + a].a++;
-      kills[side]++;
-      if (side === 'B') kb++; else kr++;
-      if (first) { add(m, 'firstblood', side, { killer, victim }); first = false; }
-      else if (n < 3) add(m, 'kill', side, { killer, victim });
-    }
-    if (n >= 3) add(m, 'teamfight', kb >= kr ? 'B' : 'R', { kb, kr });
-    i = j + 1;
-  }
-
-  // mục tiêu lớn
-  const drakes = { B: [], R: [] };
-  let soul = null;
-  let t = 5;
-  while (t < dur - 1) {
-    const side = rand() < lead(t) ? 'B' : 'R';
-    if (!soul) {
-      const type = drakes.B.length + drakes.R.length < 2 ? pick(DRAKES) : (drakes.B[1] || drakes.R[1] || pick(DRAKES));
-      drakes[side].push(type);
-      add(t, 'dragon', side, { drake: type, n: drakes[side].length });
-      if (drakes[side].length === 4) { soul = side; add(t, 'soul', side, { drake: type }); }
-    } else if (t > 28) {
-      add(t, 'elder', side);
-    }
-    t += randInt(5, 7);
-  }
-  add(7, 'grubs', rand() < lead(7) ? 'B' : 'R');
-  if (dur > 16) add(15, 'herald', rand() < lead(15) ? 'B' : 'R');
-  for (let b = 21 + randInt(0, 4); b < dur - 1; b += randInt(7, 10)) {
-    add(b, 'baron', rand() < lead(b) ? 'B' : 'R');
-  }
-  // trụ
-  const towers = { B: 0, R: 0 };
-  const winTowers = randInt(7, 11), loseTowers = randInt(0, Math.min(6, Math.round(2 + (0.5 - closeness) * 8)));
-  const tw = [];
-  for (let x = 0; x < winTowers; x++) tw.push([W, Math.round(10 + (dur - 10) * Math.pow(rand(), 0.7))]);
-  for (let x = 0; x < loseTowers; x++) tw.push([W === 'B' ? 'R' : 'B', Math.round(8 + (dur - 12) * rand())]);
-  tw.sort((a, b) => a[1] - b[1]);
-  for (const [side, m] of tw) {
-    towers[side]++;
-    if (towers[side] === 1 && towers[side === 'B' ? 'R' : 'B'] === 0) add(m, 'firsttower', side);
-    else add(m, 'tower', side, { n: towers[side] });
-  }
-  add(dur, 'nexus', W);
-  events.sort((a, b) => a.m - b.m || (a.type === 'nexus') - (b.type === 'nexus'));
-
-  // thống kê cá nhân
-  for (const x of Object.values(ps)) {
-    const p = S.players[x.pid];
-    const baseCs = { Top: 8.3, Jungle: 6, Mid: 8.8, Bot: 9.6, Support: 1.2 }[x.role];
-    const winner = x.side === W;
-    x.cs = Math.round(dur * (baseCs + (x.eff - 70) * 0.03 + (winner ? 0.4 : -0.3)) + gauss() * 10);
-    x.gold = Math.round(dur * ({ Top: 400, Jungle: 360, Mid: 420, Bot: 450, Support: 260 }[x.role]) + x.k * 300 + x.a * 120 + (winner ? 1500 : 0));
-    x.dmg = Math.round(dur * ({ Top: 620, Jungle: 450, Mid: 780, Bot: 820, Support: 250 }[x.role]) * (0.8 + rand() * 0.5) + x.k * 900);
-    x.score = (x.k * 3 + x.a * 1.5 - x.d * 1.5) + (winner ? 5 : 0) + x.dmg / 2500;
-    if (!p) x.score -= 99;
-  }
-  const mvp = Object.values(ps).filter((x) => x.side === W).sort((a, b) => b.score - a.score)[0];
-
-  return {
-    winner: W, winnerId: blueWins ? blue : red, blue, red, dur, gold, events, kills, towers, drakes, soul,
-    players: Object.values(ps).map(({ eff, score, ...x }) => x), mvp: mvp ? mvp.pid : null,
-    picks: d.picks, bans: d.bans, pWinB: +pWinB.toFixed(3),
+export function simulateGame(d, opts = {}) {
+  const lines = { B: lineupMap(d.blue), R: lineupMap(d.red) };
+  const fits = { B: {}, R: {} };
+  for (const sd of ['B', 'R']) for (const r of ROLES) fits[sd][r] = champFit(lines[sd][r], d.picks[sd][r], r);
+  const tac = (sd) => {
+    const tid = sd === 'B' ? d.blue : d.red;
+    const base = tid === S.userTeam && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
+    return { ...base, day: gauss() * 2.6 }; // phong độ chung của cả đội trong ngày
   };
+  const g = runGame({ blue: d.blue, red: d.red, picks: d.picks, bans: d.bans, lines, fits, tactics: { B: tac('B'), R: tac('R') }, record: !!opts.record, series: opts.series || 0 });
+  g.pWinB = +logistic((teamPower(d.blue, d.picks.B) - teamPower(d.red, d.picks.R)) / 5.5).toFixed(3);
+  return g;
 }
 
 // cập nhật phong độ/thống kê sau ván
@@ -287,6 +178,7 @@ export function applyGameResult(g) {
     }
     p.form = clamp((p.form || 0) * 0.85 + (win ? 0.6 : -0.6) + (g.mvp === p.id ? 0.8 : 0), -5, 5);
     p.morale = clamp((p.morale || 70) + (win ? 2 : -2), 20, 100);
+    drainCondition(p, g.dur);
     // kinh nghiệm tướng
     const pe = p.pool.find((c) => c.c === x.champ);
     if (pe) { pe.g++; if (win) pe.w++; } else p.pool.push({ c: x.champ, g: 1, w: win ? 1 : 0 });
@@ -304,7 +196,7 @@ export function simSeries(match) {
     const gi = match.games.length;
     const aBlue = gi % 2 === 0 ? match.aBlueFirst !== false : match.aBlueFirst === false;
     const blue = aBlue ? match.a : match.b, red = aBlue ? match.b : match.a;
-    const g = simulateGame(autoDraft(blue, red));
+    const g = simulateGame(autoDraft(blue, red), { series: gi });
     recordGame(match, g, false);
   }
 }

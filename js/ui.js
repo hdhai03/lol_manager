@@ -8,7 +8,8 @@ import {
   PHASES, startPhase, standings, advanceDay, userMatchToday, nextUserMatch, allPhaseMatches, leagueTeams,
   startNewSeason, makeOffer, acceptOffer, releasePlayer, renewCost, renewContract, askingPrice, seasonDate, setAutoSave, progressComps,
 } from './season.js';
-import { ROLES, ATTRS, esc, money, clamp } from './util.js';
+import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from './util.js';
+import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from './attrs.js';
 import { openMatchDay } from './match.js';
 
 const app = () => document.getElementById('app');
@@ -311,7 +312,7 @@ export function startGameUI() {
 }
 
 // ---------------- Khung game ----------------
-const TABS = ['dashboard', 'roster', 'transfers', 'schedule', 'standings', 'meta', 'world', 'finance'];
+const TABS = ['dashboard', 'roster', 'tactics', 'transfers', 'schedule', 'standings', 'meta', 'world', 'finance'];
 
 function newsText(n) {
   const p = {};
@@ -359,7 +360,29 @@ function renderGame() {
   r.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { view.tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
   r.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => topAction(b.dataset.act));
   const c = r.querySelector('#content');
-  ({ dashboard, roster, schedule, standingsTab, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
+  ({ dashboard, roster, tactics, schedule, standingsTab, transfers, metaTab, world, finance })[tabFn(view.tab)](c);
+}
+// ---------- Chiến thuật ----------
+function tactics(c) {
+  const ut = userTeam();
+  S.tactics ??= defaultTactics();
+  const T = S.tactics;
+  const lp = lineupPlayers(ut);
+  const group = (k) => `<div class="tac-row"><div class="tac-l"><b>${t('tac.' + k)}</b>${['tempo', 'obj', 'style', 'focus'].includes(k) ? `<span class="muted small">${t('tac.h.' + k)}</span>` : ''}</div>
+    <div class="seg">${TACTIC_OPTS[k].map((o) => `<button class="chip ${T[k] === o ? 'on' : ''}" data-tk="${k}" data-tv="${o}">${t(`tac.${k}.${o}`)}</button>`).join('')}</div></div>`;
+  c.innerHTML = `<div class="page-h"><h2>${t('tac.title')}</h2><p class="muted">${t('tac.sub')}</p></div>
+    <div class="tac-grid">
+      <div class="card">${['tempo', 'obj', 'style', 'focus', 'jungle'].map(group).join('')}
+        <div class="btn-row"><button class="btn sm ghost" data-treset>${t('tac.reset')}</button></div></div>
+      <div class="card"><h3>${t('tac.personal')}</h3><p class="muted small">${t('tac.h.personal')}</p>
+        ${lp.map(({ role, p }) => `<div class="tac-p">${roleTag(role)}${face(p, 'sm')}<div class="grow"><b>${p ? esc(p.ign) : '—'}</b>
+          ${p ? `<div class="muted small">${t('attr.aggression')} ${p.stats.aggression} · ${t('attr.patience')} ${p.stats.patience}${traitsOf(p).length ? ' · ' + traitsOf(p).map((x) => t('trait.' + x)).join(', ') : ''}</div>` : ''}</div>
+          <div class="seg sm">${PERSONAL_OPTS.map((o) => `<button class="chip sm ${(T.personal[role] || 'standard') === o ? 'on' : ''}" data-pr="${role}" data-pv="${o}">${t('tac.pt.' + o)}</button>`).join('')}</div></div>`).join('')}
+      </div>
+    </div>`;
+  c.querySelectorAll('[data-tk]').forEach((b) => b.onclick = () => { T[b.dataset.tk] = b.dataset.tv; tactics(c); });
+  c.querySelectorAll('[data-pr]').forEach((b) => b.onclick = () => { T.personal[b.dataset.pr] = b.dataset.pv; tactics(c); });
+  c.querySelector('[data-treset]').onclick = () => { S.tactics = defaultTactics(); tactics(c); };
 }
 const tabFn = (x) => ({ standings: 'standingsTab', meta: 'metaTab' }[x] || x);
 
@@ -678,6 +701,8 @@ function playerDetail(p) {
   const lineRole = ROLES.find((r) => ut.lineup[r] === p.id);
   const trend = p.form > 1 ? '⏶' : p.form < -1 ? '⏷' : '–';
   const kda = ss.g ? ((ss.k + ss.a) / Math.max(ss.d, 1)).toFixed(2) : '–';
+  const cond = Math.round(p.cond ?? 100);
+  const traits = traitsOf(p);
   let actions;
   if (mine) {
     actions = `<div class="chips" style="width:100%">${ROLES.map((r) => `<button class="chip sm ${lineRole === r ? 'on' : ''}" data-setrole="${r}">${roleIcon(r)} ${t('roleS.' + r)}</button>`).join('')}</div>
@@ -700,10 +725,19 @@ function playerDetail(p) {
       <div><span>${t('contract')}</span><b>${p.contractUntil}</b></div>
       <div><span>${t('value')}</span><b>${money(p.value)}</b></div>
     </div>
+    <div class="pd-sub" style="margin-top:.4rem">${t('p.attrs')}</div>
+    <div class="attr-groups">${Object.entries(ATTR_GROUPS).map(([g, list]) => `<div class="ag ${S.training === g && mine ? 'train' : ''}"><div class="ag-h"><span>${t('grp.' + g)}</span><b class="v-${vClass(groupScore(p, g))}">${groupScore(p, g)}</b></div>
+      ${list.map((a) => `<div class="attr-bar" title="${esc(t('ad.' + a))}"><span>${t('attr.' + a)}</span><div class="bar ${a === 'aggression' ? 'style' : ''}"><i class="v-${vClass(p.stats[a])}" style="width:${clamp(p.stats[a], 0, 100)}%"></i></div><b class="v-${vClass(p.stats[a])}">${p.stats[a]}</b></div>`).join('')}</div>`).join('')}</div>
+    <div style="height:1.1rem"></div>
     <div class="pd-cols">
       <div><div class="pd-sub">${t('p.summary')}</div>
-        ${ATTRS.map((a) => `<div class="attr-row"><span>${t('attr.' + a)}</span><b class="v-${vClass(p.stats[a])}">${p.stats[a]}</b><i>${S.training === a && mine && p.age <= 25 ? '⏶' : ''}</i></div>`).join('')}
-        <div class="attr-row"><span>${t('form')}</span><b>${p.form > 0 ? '+' : ''}${p.form.toFixed(1)}</b><i>${trend}</i></div>
+        <div class="pd-status">
+          <div><span>${t('p.cond')}</span><div class="bar ${cond < 60 ? 'low' : ''}"><i style="width:${cond}%"></i></div><b>${cond}</b></div>
+          <div><span>${t('p.morale')}</span><div class="bar"><i style="width:${Math.round(p.morale ?? 70)}%"></i></div><b>${Math.round(p.morale ?? 70)}</b></div>
+          <div><span>${t('form')}</span><b>${p.form > 0 ? '+' : ''}${p.form.toFixed(1)} ${trend}</b></div>
+        </div>
+        <div class="pd-sub" style="margin-top:.8rem">${t('p.traits')}</div>
+        <div class="traits">${traits.length ? traits.map((x) => `<span class="trait ${BAD_TRAITS.has(x) ? 'bad' : ''}" title="${esc(t('td.' + x))}">${t('trait.' + x)}</span>`).join('') : `<span class="muted small">${t('p.noTraits')}</span>`}</div>
       </div>
       <div><div class="pd-sub">${t('p.pool')}</div>
         <div class="pool">${p.pool.slice(0, 8).map((x) => `<div class="pool-c">${champIcon(x.c, 38)}<span>${x.g} · ${x.g ? pct(x.w / x.g) : '–'}</span></div>`).join('') || '<span class="muted">—</span>'}</div>
@@ -713,7 +747,7 @@ function playerDetail(p) {
       </div>
     </div>
     ${mine ? `<div class="pd-sub" style="margin-top:1.2rem">${t('p.dev')}</div>
-      <div class="pd-row2"><span>${t('p.plan')}</span><span class="chips" style="margin:0">${ATTRS.map((a) => `<button class="chip sm ${S.training === a ? 'on' : ''}" data-train="${a}">${t('attr.' + a)}</button>`).join('')}</span>
+      <div class="pd-row2"><span>${t('p.plan')}</span><span class="chips" style="margin:0">${Object.keys(ATTR_GROUPS).map((g) => `<button class="chip sm ${S.training === g ? 'on' : ''}" data-train="${g}">${t('train.' + g)}</button>`).join('')}</span>
       <span>${t('p.progress')}</span><div class="prog-line"><b>${p.ovr}</b><div class="bar"><i style="width:${clamp(((p.ovr - 40) / Math.max(p.potential - 40, 1)) * 100, 4, 100)}%"></i></div><b>${p.potential}</b></div></div>` : ''}
     ${(p.titles || []).length ? `<div class="pd-sub" style="margin-top:1rem">${t('p.titles')}</div><div class="small">${p.titles.map((x) => `🏆 ${esc(x)}`).join(' · ')}</div>` : ''}
     <div class="pd-actions">${actions}</div>`;
@@ -788,11 +822,12 @@ function roster(c) {
     <div class="lineup-sum">${badge(ut.id, 'md')}<div class="grid">${ROLES.map((r) => `<span class="${ut.lineup[r] ? '' : 'miss'}">${t('roleS.' + r)} ${teamPlayers(ut).filter((p) => p.role === r).length}</span>`).join('')}</div>
       <div class="ring" style="--p:${clamp((ovr - 50) * 2.2, 5, 100)}"><b>${ovr}</b></div><button class="btn sm ghost" data-auto>${t('roster.auto')}</button></div></div>
   <div class="squad">
-    <div class="card sq-wrap"><table class="sq-table"><thead><tr><th>${t('role')}</th><th>${t('name')}</th><th class="hide-sm">${t('age')}</th><th>OVR</th><th>${t('pot')}</th><th class="hide-sm">${t('form')}</th><th></th></tr></thead><tbody>
+    <div class="card sq-wrap"><table class="sq-table"><thead><tr><th>${t('role')}</th><th>${t('name')}</th><th class="hide-sm">${t('age')}</th><th>OVR</th><th>${t('pot')}</th><th class="hide-sm">${t('p.cond')}</th><th class="hide-sm">${t('form')}</th><th></th></tr></thead><tbody>
       ${rows.map(({ p, slot }, i) => `<tr class="${p.id === view.selPlayer ? 'sel' : ''} ${i === starterIds.length && i > 0 ? 'sep' : ''}" data-sel="${esc(p.id)}">
         <td>${roleTag(slot || p.role)}</td><td><div class="sq-name">${face(p, 'sm')}${esc(p.ign)}${slot && slot !== p.role ? ` <span class="warn small">${t('roster.offRole')}</span>` : ''}</div></td>
         <td class="hide-sm">${p.age}</td><td><b class="v-${vClass(p.ovr)}">${p.ovr}</b></td>
         <td class="pot"><span class="v-${vClass(p.ovr)}">${p.ovr}</span> - <span class="v-${vClass(p.potential)}">${p.potential}</span></td>
+        <td class="hide-sm"><span class="cond-mini ${(p.cond ?? 100) < 60 ? 'low' : ''}"><i style="width:${Math.round(p.cond ?? 100)}%"></i></span></td>
         <td class="hide-sm">${formArrow(p.form)}</td><td><span class="st-tag ${slot ? 'on' : ''}">${slot ? t('roster.starter') : t('roster.sub')}</span></td></tr>`).join('')}
     </tbody></table></div>
     <div class="card" id="detail">${sel ? playerDetail(sel) : ''}</div>

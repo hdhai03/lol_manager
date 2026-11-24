@@ -1,6 +1,26 @@
 export const ROLES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support'];
-export const ATTRS = ['laning', 'mechanics', 'teamfight', 'macro', 'vision', 'consistency'];
-export const ATTR_W = { laning: 0.2, mechanics: 0.2, teamfight: 0.2, macro: 0.2, vision: 0.08, consistency: 0.12 };
+// 15 chỉ số chia 4 nhóm. Chỉ số không cộng thẳng sát thương mà quyết định cách AI chơi trong trận
+// (trúng chiêu, né, chọn thời điểm giao tranh, đọc bản đồ...). "aggression" là phong cách, không tính OVR.
+export const ATTR_GROUPS = {
+  tech: ['farm', 'accuracy', 'dodge', 'positioning'],
+  mind: ['awareness', 'judgment', 'aggression', 'patience', 'creativity'],
+  mental: ['focus', 'composure', 'stamina'],
+  team: ['teamwork', 'leadership', 'adaptability'],
+};
+export const ATTRS = Object.values(ATTR_GROUPS).flat();
+const W_BASE = { farm: 1, accuracy: 1, dodge: 1, positioning: 1, awareness: 1, judgment: 1.1, aggression: 0, patience: 0.5, creativity: 0.5, focus: 0.8, composure: 0.7, stamina: 0.4, teamwork: 0.8, leadership: 0.4, adaptability: 0.4 };
+const W_ROLE = {
+  Top: { farm: 0.4, dodge: 0.3, composure: 0.2 },
+  Jungle: { awareness: 0.6, judgment: 0.5, farm: -0.5, leadership: 0.2 },
+  Mid: { accuracy: 0.5, creativity: 0.3, dodge: 0.2 },
+  Bot: { farm: 0.5, positioning: 0.6, accuracy: 0.2, awareness: -0.2 },
+  Support: { farm: -0.9, awareness: 0.6, teamwork: 0.5, leadership: 0.5, positioning: 0.2, accuracy: -0.2 },
+};
+export const ATTR_W = Object.fromEntries(Object.keys(W_ROLE).map((r) => {
+  const w = Object.fromEntries(ATTRS.map((a) => [a, Math.max(0, W_BASE[a] + (W_ROLE[r][a] || 0))]));
+  const tot = Object.values(w).reduce((x, y) => x + y, 0);
+  return [r, Object.fromEntries(ATTRS.map((a) => [a, w[a] / tot]))];
+}));
 
 export const rand = Math.random;
 export const randInt = (a, b) => a + Math.floor(rand() * (b - a + 1));
@@ -36,7 +56,8 @@ export function hue(str) {
   return h;
 }
 export function computeOvr(p) {
-  return Math.round(ATTRS.reduce((s, k) => s + p.stats[k] * ATTR_W[k], 0));
+  const w = ATTR_W[p.role] || ATTR_W.Mid;
+  return Math.round(ATTRS.reduce((s, k) => s + (p.stats[k] ?? 60) * w[k], 0));
 }
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

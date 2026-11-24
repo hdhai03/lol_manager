@@ -1,0 +1,667 @@
+// Bộ máy mô phỏng trận đấu theo nhịp (mỗi nhịp = 15 giây trong trận).
+// Kết quả không định trước: 10 "AI tuyển thủ" tự đi đường, farm, gank, tranh mục tiêu, giao tranh và đẩy trụ.
+// Chỉ số tuyển thủ không cộng thẳng sát thương mà quyết định hành vi:
+//   farm → lính/phút; accuracy/dodge → trúng/né chiêu; positioning → bị bắt hay không; awareness → né gank, phản ứng mục tiêu;
+//   judgment → đọc giao tranh, rút lui đúng lúc; aggression/patience → tần suất ăn thua; creativity → outplay, cướp mục tiêu;
+//   focus → lỗi vị trí; composure → khi bị dẫn; stamina → cuối trận/series; teamwork/leadership → phối hợp; adaptability → tướng lạ.
+import { DB } from './data.js';
+import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util.js';
+import { traitsOf } from './attrs.js';
+
+export const TICK = 15; // giây / nhịp
+export const MIR = ([x, y]) => [100 - x, 100 - y];
+export const BLUE_TOWERS = {
+  top: [[8, 27], [10, 50], [9, 70]], mid: [[41, 59], [33, 67], [25, 75]], bot: [[73, 92], [50, 90], [30, 91]], nexus: [[14, 84], [16, 86]],
+};
+export const BASE = { B: [9, 91], R: [91, 9] };
+export const PIT = { dragon: [67, 69], baron: [33, 31] };
+const LANES = ['top', 'mid', 'bot'];
+export const LANE_OF = { Top: 'top', Jungle: 'jg', Mid: 'mid', Bot: 'bot', Support: 'bot' };
+const TOWER_T = [0.36, 0.18, 0.03]; // vị trí trụ phe Xanh dọc đường (0 = nhà Xanh, 1 = nhà Đỏ)
+const CAMPS = { B: [[30, 55], [55, 78], [18, 38], [22, 62], [44, 70]], R: [] };
+CAMPS.R = CAMPS.B.map(MIR);
+const DRAKES = ['infernal', 'mountain', 'ocean', 'cloud', 'hextech', 'chemtech'];
+const DMG = 0.21; // hệ số sát thương mỗi hiệp giao tranh
+
+export function lanePoint(lane, tt) {
+  if (lane === 'top') return tt < 0.5 ? [9, 70 - tt * 2 * 60] : [9 + (tt - 0.5) * 2 * 61, 10];
+  if (lane === 'bot') return tt < 0.5 ? [30 + tt * 2 * 60, 91] : [90, 91 - (tt - 0.5) * 2 * 61];
+  return [25 + tt * 50, 75 - tt * 50];
+}
+const jit = (p, r = 2) => [clamp(p[0] + (rand() - 0.5) * r * 2, 2, 98), clamp(p[1] + (rand() - 0.5) * r * 2, 2, 98)];
+const toward = (p, side, d) => [p[0] + (side === 'B' ? -d : d), p[1] + (side === 'B' ? d : -d)];
+const OPP = { B: 'R', R: 'B' };
+const avg = (arr, f) => (arr.length ? arr.reduce((s, x) => s + f(x), 0) / arr.length : 0);
+const TEMPO = { early: 1.35, balanced: 1, late: 0.7 };
+
+// ---------------- đơn vị ----------------
+function mkUnit(side, role, p, champ, fit, tac) {
+  const c = DB.champions[champ] || { tags: ['Fighter'], info: { attack: 5, defense: 5, magic: 5 }, power: 50, roles: [role] };
+  const at = {};
+  const s = p ? p.stats : null;
+  const tr = new Set(p ? traitsOf(p) : []);
+  const condPen = p ? Math.max(0, 85 - (p.cond ?? 100)) * 0.3 : 0;
+  for (const a of ATTRS) {
+    let v = s ? s[a] ?? 60 : 42;
+    if (a !== 'aggression') v -= condPen;
+    if (p && (a === 'focus' || a === 'composure')) v += ((p.morale ?? 70) - 70) * 0.08;
+    if (p && ['farm', 'accuracy', 'dodge', 'positioning'].includes(a)) v += (p.form || 0) * 0.6 + (fit - 60) * 0.12;
+    if (p && p.role !== role) v -= ['farm', 'accuracy', 'dodge', 'positioning'].includes(a) ? (tr.has('flex') ? 2 : 7) : (tr.has('flex') ? 1 : 3);
+    at[a] = v;
+  }
+  // phong độ trong ngày: cùng chỉ số nhưng mỗi ván một khác (người focus cao dao động ít hơn)
+  const swing = gauss() * (p ? clamp((100 - (s.focus ?? 70)) / 8, 2, 5.5) : 4) + (tac.day || 0);
+  for (const a of ATTRS) if (a !== 'aggression' && a !== 'stamina') at[a] += swing;
+  const pt = tac.personal?.[role] || 'standard';
+  if (pt === 'aggressive') { at.aggression += 14; at.patience -= 10; }
+  if (pt === 'safe') { at.aggression -= 14; at.patience += 10; at.positioning += 3; }
+  const main = c.tags[0];
+  let atk = 0.55 + (c.info.attack + c.info.magic) / 22, hp = 0.75 + c.info.defense / 9;
+  if (c.tags.includes('Tank')) { atk *= 0.75; hp *= 1.25; }
+  if (main === 'Marksman') atk *= 1.15;
+  if (main === 'Assassin') atk *= 1.15;
+  if (main === 'Support') atk *= 0.7;
+  const line = c.tags.includes('Tank') || main === 'Fighter' ? 'front' : main === 'Assassin' ? 'dive' : 'back';
+  return {
+    k: side + role, side, role, lane: LANE_OF[role], pid: p ? p.id : null, champ, at, tr, pt,
+    atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
+    scale: { Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 }[main] || 1,
+    early: { Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 }[main] || 0,
+    meta: 0.92 + (c.power || 50) / 600,
+    lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, streak: 0,
+    hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]], busy: 0, mv: -1,
+  };
+}
+
+// ---------------- mô phỏng ----------------
+export function runGame(input) {
+  const { blue, red, picks, bans, lines, fits, tactics, record, series = 0 } = input;
+  const U = {};
+  for (const sd of ['B', 'R']) for (const r of ROLES) U[sd + r] = mkUnit(sd, r, lines[sd][r], picks[sd][r], fits[sd][r], tactics[sd]);
+  const team = (sd) => ROLES.map((r) => U[sd + r]);
+  const alive = (sd) => team(sd).filter((u) => !u.dead);
+  const towers = {};
+  for (const sd of ['B', 'R']) for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => {
+    towers[`${sd}-${lane}-${i}`] = { id: `${sd}-${lane}-${i}`, side: sd, lane, i, hp: lane === 'nexus' ? 130 : [100, 135, 160][i], alive: true, pos: sd === 'B' ? pt : MIR(pt) };
+  });
+  const nexus = { B: 160, R: 160 };
+  const front = { top: 0.5, mid: 0.5, bot: 0.5 };
+  const obj = { dragon: 300, grubs: 360, herald: 840, baron: 1200, elder: Infinity };
+  const objSeen = { dragon: 0, grubs: 0, herald: 0, baron: 0, elder: 0 };
+  const buff = { B: { baron: 0, elder: 0, drakes: [], soul: false, herald: false }, R: { baron: 0, elder: 0, drakes: [], soul: false, herald: false } };
+  const taken = { B: 0, R: 0 }; // trụ đã phá
+  const regroup = { B: 0, R: 0 };
+  const siege = { B: null, R: null }; // sau khi thua giao tranh: lùi về hồi phục
+  const kills = { B: 0, R: 0 };
+  const events = [];
+  const frames = record ? [] : null;
+  let tick = 0, sec = 0, winner = null, firstBlood = false, firstTower = false, soulType = null;
+  const tac = tactics;
+  const shot = (sd) => team(sd).reduce((b, u) => (u.at.leadership > b.at.leadership ? u : b));
+  const minute = () => sec / 60;
+  const ev = (type, side, data = {}) => events.push({ t: tick, m: Math.floor(sec / 60), s: sec, type, side, ...data });
+  const note = (key, side, data = {}) => ev('note', side, { key, ...data });
+
+  // sức mạnh hiện tại (cấp, vàng, thời điểm mạnh của tướng, bùa)
+  const stat = (u) => {
+    const m = minute();
+    const tim = 1 + u.early * (1 - clamp((m - 12) / 18, 0, 1.6));
+    const b = buff[u.side];
+    return (1 + (u.lvl - 1) * 0.085) * (1 + ((u.gold - 500) / 7000) * u.scale) * tim * u.meta
+      * (b.baron > sec ? 1.1 : 1) * (b.elder > sec ? 1.18 : 1) * (b.soul ? 1.06 : 1) * (1 + b.drakes.length * 0.012);
+  };
+  const atkOf = (u) => u.atkB * stat(u);
+  const hpOf = (u) => u.hpB * stat(u);
+  const power = (us, live) => us.reduce((s, u) => s + stat(u) * (u.atkB + u.hpB) * (0.4 + 0.6 * (live ? Math.max(u.fhp, 0) / hpOf(u) : u.hp)) * (0.85 + (u.at.accuracy + u.at.dodge + u.at.positioning) / 1000), 0);
+  // ước lượng sức mạnh (đội có judgment cao đọc chính xác hơn)
+  const estimate = (sd, mine, theirs) => {
+    const j = avg(team(sd), (u) => u.at.judgment) + (shot(sd).at.leadership - 70) * 0.3;
+    const noise = gauss() * clamp((100 - j) / 220, 0.03, 0.3);
+    return (power(mine) / Math.max(power(theirs), 0.01)) * (1 + noise);
+  };
+
+  const giveGold = (u, g) => { u.gold += g; };
+  const giveXp = (u, x) => {
+    u.xp += x;
+    while (u.lvl < 18 && u.xp >= 180 * u.lvl + 50 * u.lvl * u.lvl) u.lvl++;
+  };
+  const respawnTicks = (u) => Math.ceil((6 + u.lvl * 2.6 + Math.max(0, minute() - 15) * 0.9) / TICK);
+
+  // ---------------- giao tranh ----------------
+  // A, B: hai nhóm (khác phe). opts.rounds, opts.surprise (phe B bị bất ngờ), opts.at (vị trí)
+  function fight(A, B, at, opts = {}) {
+    A = A.filter((u) => !u.dead); B = B.filter((u) => !u.dead);
+    if (!A.length || !B.length) return { kills: { B: 0, R: 0 }, win: A.length ? A[0].side : B.length ? B[0].side : null };
+    const all = [...A, ...B];
+    const sideOf = { [A[0].side]: A, [B[0].side]: B };
+    const coord = {}, behind = {};
+    for (const grp of [A, B]) {
+      const sd = grp[0].side;
+      const lead = Math.max(...grp.map((u) => u.at.leadership));
+      coord[sd] = 1 + (avg(grp, (u) => u.at.teamwork) - 70) / 220 + (lead - 70) / 350 + (grp.length >= 3 && grp.some((u) => u.tr.has('shotcaller')) ? 0.03 : 0);
+      behind[sd] = teamGold(sd) - teamGold(OPP[sd]) < -3000;
+    }
+    for (const u of all) {
+      if (opts.at) { u.pos = jit(toward(opts.at, u.side, 1.5), 2.5); u.mv = tick; }
+      u.fhp = u.hp * hpOf(u); u.out = false; u.hitBy = new Set();
+      u.caught = rand() < (88 - (u.at.focus + u.at.positioning) / 2) / 240 + (u.tr.has('hothead') ? 0.05 : 0) + (opts.surprise === u.side ? 0.45 : 0);
+    }
+    // thế chủ động: đội đọc trận tốt hơn (judgment + shotcaller) ra đòn trước
+    const ini = (grp) => avg(grp, (u) => u.at.judgment) + Math.max(...grp.map((u) => u.at.leadership)) * 0.4 + gauss() * 6;
+    const initiative = ini(A) >= ini(B) ? A[0].side : B[0].side;
+    const res = { kills: { B: 0, R: 0 }, dead: [] };
+    const rounds = opts.rounds || 7;
+    for (let r = 0; r < rounds; r++) {
+      const live = (sd) => sideOf[sd].filter((u) => u.fhp > 0 && !u.out);
+      const sA = A[0].side, sB = B[0].side;
+      if (!live(sA).length || !live(sB).length) break;
+      // rút lui cả đội khi đọc ra thế thua
+      if (r >= 1) for (const sd of [sA, sB]) {
+        const mine = live(sd), theirs = live(OPP[sd]);
+        const ratio = power(mine, true) / Math.max(power(theirs, true), 0.01);
+        const j = avg(mine, (u) => u.at.judgment) + (mine.some((u) => u.tr.has('calm')) ? 8 : 0) - (mine.some((u) => u.tr.has('hothead')) ? 10 : 0);
+        if (ratio < 0.6 && rand() < j / 150) {
+          for (const u of mine) if (rand() < 0.45 + (u.at.dodge - avg(theirs, (e) => e.at.accuracy)) / 120 + (u.line === 'back' ? 0.05 : 0)) u.out = true;
+          if (mine.filter((u) => u.out).length >= 2) note('disengage', sd);
+        }
+      }
+      // rút lui cá nhân khi máu thấp
+      for (const u of all) if (u.fhp > 0 && !u.out && u.fhp / hpOf(u) < 0.22 && rand() < u.at.judgment / 170) {
+        const foes = live(OPP[u.side]);
+        if (rand() < 0.45 + (u.at.dodge - avg(foes, (e) => e.at.accuracy)) / 120) u.out = true;
+      }
+      const hits = [];
+      for (const u of all) {
+        if (u.fhp <= 0 || u.out) continue;
+        const foes = live(OPP[u.side]);
+        if (!foes.length) continue;
+        let mult = coord[u.side] * (behind[u.side] ? (u.tr.has('clutch') ? 1.06 : u.tr.has('tilter') ? 0.92 : 1 + (u.at.composure - 75) / 600) : 1);
+        if (minute() > 30 || series >= 3) mult *= 1 - Math.max(0, 72 - u.at.stamina) / 380 - (series >= 3 ? 0.01 : 0);
+        if (u.healer && rand() < 0.5) { // hồi máu/khiên đồng đội yếu nhất
+          const ally = sideOf[u.side].filter((x) => x.fhp > 0).sort((a, b) => a.fhp / hpOf(a) - b.fhp / hpOf(b))[0];
+          if (ally) ally.fhp = Math.min(hpOf(ally), ally.fhp + atkOf(u) * DMG * 0.9 * mult);
+          mult *= 0.5;
+        }
+        const tgt = chooseTarget(u, foes);
+        const hit = clamp(0.62 + (u.at.accuracy - tgt.at.dodge) / 150 + (u.line === 'back' && u.atkB > 1 ? 0.1 : 0), 0.3, 0.95);
+        let dmg = atkOf(u) * DMG * hit * (0.75 + rand() * 0.5) * mult;
+        if (tgt.caught && r < 2) dmg *= 1.35;
+        if (r === 0 && u.side === initiative) dmg *= 1.2;
+        dmg *= 1 - (tgt.at.positioning - 70) / 350; // đứng đúng chỗ: ít dính sát thương lan
+        if (rand() < (u.at.creativity - 55) / 500) { dmg *= 1.6; u.outplay = true; }
+        hits.push([u, tgt, dmg]);
+      }
+      if (!hits.length) break;
+      for (const [u, tgt, dmg] of hits) {
+        if (tgt.fhp <= 0) continue;
+        tgt.fhp -= dmg; u.dealt += dmg; tgt.hitBy.add(u);
+        if (tgt.fhp <= 0) {
+          // né cú chí mạng nhờ outplay
+          if (tgt.outplay && rand() < 0.25) { tgt.fhp = hpOf(tgt) * 0.05; note('outplay', tgt.side, { who: tgt.role }); continue; }
+          res.dead.push(tgt);
+          die(tgt, u, [...tgt.hitBy].filter((x) => x !== u), opts.at || u.pos);
+          res.kills[u.side]++;
+        }
+      }
+    }
+    for (const u of all) { if (!u.dead) u.hp = clamp(u.fhp / hpOf(u), 0.04, 1); u.outplay = false; }
+    const left = (grp) => grp.filter((u) => !u.dead && !u.out).length;
+    res.win = left(A) > left(B) ? A[0].side : left(B) > left(A) ? B[0].side : (res.kills[A[0].side] >= res.kills[B[0].side] ? A[0].side : B[0].side);
+    const n = res.kills.B + res.kills.R;
+    if (n >= 3) ev('teamfight', res.kills.B >= res.kills.R ? 'B' : 'R', { kb: res.kills.B, kr: res.kills.R, at: opts.at });
+    for (const sd of ['B', 'R']) if (!alive(sd).length && res.kills[OPP[sd]] >= 3) note('ace', OPP[sd]);
+    return res;
+  }
+
+  function chooseTarget(u, foes) {
+    const f = tac[u.side].focus;
+    const frontAlive = foes.some((e) => e.line === 'front');
+    const maxG = Math.max(...foes.map((e) => e.gold));
+    const w = foes.map((e) => {
+      let x = 1;
+      const hpf = e.fhp / hpOf(e);
+      if (f === 'carry') x *= e.gold === maxG ? 3 : 1;
+      else if (f === 'weakest') x *= 1 / (hpf + 0.2);
+      else x *= 1 / (hpf + 0.45) * (e.line === 'front' ? 1.3 : 1);
+      if (e.line !== 'front' && frontAlive) {
+        // vượt tuyến trước: sát thủ dễ hơn; positioning của mục tiêu quyết định
+        x *= u.line === 'dive' ? 0.9 : clamp(0.35 + (u.at.judgment - e.at.positioning) / 150 - (e.tr.has('glass') ? -0.15 : 0), 0.12, 0.75);
+      }
+      return x;
+    });
+    return weighted(foes, w);
+  }
+
+  function die(v, killer, assists, at) {
+    const bounty = 300 + (v.streak >= 2 ? Math.min(700, 150 * (v.streak - 1)) : 0);
+    v.dead = respawnTicks(v); v.hp = 0; v.deaths++; v.streak = 0; v.recall = 0; v.task = 'dead';
+    killer.kills++; killer.streak++;
+    giveGold(killer, bounty); giveXp(killer, 150 + v.lvl * 25);
+    for (const a of assists) { a.assists++; giveGold(a, Math.round(bounty * 0.5 / Math.max(assists.length, 1)) + 25); giveXp(a, 60 + v.lvl * 10); }
+    kills[killer.side]++;
+    const pos = jit(at, 3);
+    v.mv = tick;
+    if (!firstBlood) { firstBlood = true; ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos }); }
+    else ev('kill', killer.side, { killer: killer.role, victim: v.role, at: pos, assists: assists.map((a) => a.role) });
+    v.pos = pos; v.diedAt = pos;
+  }
+
+  const shuffleSides = () => (rand() < 0.5 ? ['B', 'R'] : ['R', 'B']);
+  const teamGold = (sd) => team(sd).reduce((s, u) => s + u.gold, 0);
+  const present = (sd, lane) => team(sd).filter((u) => !u.dead && !u.recall && u.task === 'lane' && u.lane === lane);
+  const outerAlive = (sd, lane) => [0, 1, 2].find((i) => towers[`${sd}-${lane}-${i}`].alive);
+  const towerT = (sd, i) => (sd === 'B' ? TOWER_T[i] : 1 - TOWER_T[i]);
+
+  // ---------------- đẩy đường & trụ ----------------
+  function laneTick(lane, laning) {
+    const pB = present('B', lane), pR = present('R', lane);
+    const PB = power(pB) + 0.8, PR = power(pR) + 0.8; // + lính
+    // siêu lính khi nhà lính bị phá
+    const sup = (sd) => (towers[`${OPP[sd]}-${lane}-2`].alive ? 0 : 0.035);
+    front[lane] += 0.06 * (PB - PR) / (PB + PR) + sup('B') - sup('R');
+    const ob = outerAlive('B', lane), or = outerAlive('R', lane);
+    const lo = ob === undefined ? -0.08 : towerT('B', ob) - 0.02;
+    const hi = or === undefined ? 1.08 : towerT('R', or) + 0.02;
+    front[lane] = clamp(front[lane], lo, hi);
+    // trụ chịu sát thương khi lính + tướng áp sát mà không có ai thủ
+    for (const [sd, mine, theirs, edge] of [['B', pB, pR, front[lane] >= hi - 0.01], ['R', pR, pB, front[lane] <= lo + 0.01]]) {
+      if (!edge || !mine.length && theirs.length) continue;
+      const contested = theirs.length ? 0.35 : 1; // có người thủ: chỉ cấu được trụ khi thắng đường
+      const enemy = OPP[sd];
+      const i = outerAlive(enemy, lane);
+      const tw = i === undefined ? null : towers[`${enemy}-${lane}-${i}`];
+      const dmg = (towers[`${enemy}-${lane}-2`].alive ? 0.5 : 4) + mine.reduce((s, u) => s + stat(u) * (laning && i === 0 ? 1.55 : 1.3), 0) * (buff[sd].baron > sec ? 1.9 : 1) * (buff[sd].herald && mine.length ? 1.6 : 1);
+      if (tw) hitTower(tw, sd, dmg * contested, mine);
+      else if (!theirs.length) hitNexus(enemy, sd, dmg, mine);
+    }
+  }
+  function hitTower(tw, sd, dmg, by) {
+    tw.hp -= dmg;
+    if (by.length && tw.i === 0 && sec < 840) for (const u of by) giveGold(u, Math.round(dmg * 3)); // ốp trụ
+    if (buff[sd].herald && by.length) buff[sd].herald = false;
+    if (tw.hp > 0) return;
+    tw.alive = false;
+    taken[sd]++;
+    for (const u of team(sd)) giveGold(u, by.includes(u) ? 250 : 50);
+    if (!firstTower) { firstTower = true; ev('firsttower', sd, { id: tw.id, at: tw.pos }); }
+    else ev('tower', sd, { id: tw.id, n: taken[sd], at: tw.pos });
+  }
+  function hitNexus(enemy, sd, dmg, by) {
+    // trụ nhà chính chỉ đánh được khi đã mất ít nhất một nhà lính
+    const inhibDown = LANES.some((l) => !towers[`${enemy}-${l}-2`].alive);
+    if (!inhibDown) return;
+    const nt = [0, 1].map((i) => towers[`${enemy}-nexus-${i}`]).find((x) => x.alive);
+    if (nt) { if (by.length) hitTower(nt, sd, dmg * 0.8, by); return; }
+    if (!by.length) return;
+    nexus[enemy] -= dmg * 0.9;
+    if (nexus[enemy] <= 0) winner = sd;
+  }
+
+  // ---------------- giai đoạn đi đường ----------------
+  function laningTick() {
+    for (const lane of LANES) {
+      const pB = present('B', lane), pR = present('R', lane);
+      for (const [mine, theirs] of [[pB, pR], [pR, pB]]) {
+        const ratio = (power(mine) + 0.3) / (power(theirs) + 0.3);
+        for (const u of mine) {
+          if (sec < 75) { u.pos = jit(toward(lanePoint(lane, 0.5), u.side, 6), 1); continue; } // lính chưa tới
+          const rate = { Top: 2.25, Mid: 2.35, Bot: 2.55, Support: 0.35, Jungle: 0 }[u.role];
+          const f = clamp(0.93 + (u.at.farm - 70) / 250 + (u.at.focus - 70) / 700 + (ratio - 1) * 0.08, 0.5, 1.15) * (u.hp < 0.4 ? 0.75 : 1);
+          const cs = rate * f * (0.9 + rand() * 0.2);
+          u.cs += cs; giveGold(u, cs * 20 + (u.role === 'Support' ? 9 : 0));
+          giveXp(u, mine.length > 1 ? 72 : 95);
+          u.hp = Math.min(1, u.hp + 0.025);
+        }
+      }
+      // ăn thua trong đường: tần suất do aggression/patience, kết quả do accuracy/dodge/positioning
+      if (pB.length && pR.length) {
+        const ag = avg([...pB, ...pR], (u) => u.at.aggression - (u.at.patience - 60) * 0.3);
+        const tempo = (TEMPO[tac.B.tempo] + TEMPO[tac.R.tempo]) / 2;
+        if (rand() < 0.075 * clamp((ag - 25) / 45, 0.3, 1.8) * tempo) {
+          const res = fight(pB, pR, lanePoint(lane, front[lane]), { rounds: 2, at: lanePoint(lane, front[lane]), src: 'trade' });
+          if (res.kills.B + res.kills.R === 1) note('solo', res.kills.B ? 'B' : 'R', { lane });
+        }
+        // dồn sát thương khi đối thủ máu thấp
+        for (const [mine, theirs] of [[pB, pR], [pR, pB]]) {
+          const low = theirs.filter((e) => !e.dead && e.hp < 0.38);
+          const me = mine.filter((u) => !u.dead && u.hp > 0.55);
+          if (low.length && me.length && rand() < avg(me, (u) => u.at.aggression) / 230 + (me.some((u) => u.tr.has('hothead')) ? 0.08 : 0)) {
+            fight(me, theirs.filter((e) => !e.dead), lanePoint(lane, front[lane]), { rounds: 4, at: lanePoint(lane, front[lane]), src: 'allin' });
+          }
+        }
+      }
+    }
+    // đi rừng: farm hoặc gank
+    for (const sd of ['B', 'R']) {
+      const jg = U[sd + 'Jungle'];
+      if (jg.dead || jg.recall) continue;
+      if (jg.task === 'gank') { resolveGank(jg, jg.target); continue; }
+      if (jg.busy > 0) { jg.busy--; continue; }
+      if (sec < 90) { jg.pos = jit(CAMPS[sd][0], 1); continue; } // bãi quái chưa hồi
+      const cs = 1.5 * clamp(0.93 + (jg.at.farm - 70) / 250, 0.5, 1.15);
+      jg.cs += cs; giveGold(jg, cs * 30); giveXp(jg, 82);
+      jg.hp = Math.min(1, jg.hp + 0.02);
+      jg.pos = jit(pick(CAMPS[sd]), 1.5);
+      if (sec < 180) continue;
+      const jt = tac[sd].jungle;
+      const pG = 0.075 * (0.5 + jg.at.aggression / 100) * TEMPO[tac[sd].tempo] * (jt === 'farm' ? 0.4 : 1);
+      if (rand() < pG) {
+        const lanes = LANES.map((l) => {
+          const foes = present(OPP[sd], l);
+          if (!foes.length) return 0;
+          const pushed = sd === 'B' ? 0.5 - front[l] : front[l] - 0.5; // >0: địch dồn về phía mình
+          let w = (1 + pushed * 3) * (1.6 - avg(foes, (e) => e.hp)) * (present(sd, l).length ? 1.2 : 0.6);
+          if (jt === l) w *= 3;
+          return Math.max(w, 0.05);
+        });
+        if (lanes.some((w) => w > 0)) { jg.task = 'gank'; jg.target = weighted(LANES, lanes); jg.pos = lanePoint(jg.target, front[jg.target]); }
+      }
+    }
+    // đường giữa / hỗ trợ đi roam
+    for (const sd of ['B', 'R']) {
+      for (const role of ['Mid', 'Support']) {
+        const u = U[sd + role];
+        if (u.dead || u.recall || u.task !== 'lane' || sec < 240 || u.hp < 0.6) continue;
+        const p = (role === 'Mid' ? 0.022 : 0.016) * clamp((u.at.creativity + u.at.awareness - 100) / 80, 0.2, 1.6) * TEMPO[tac[sd].tempo];
+        if (rand() < p) {
+          const dest = role === 'Mid' ? pick(['top', 'bot']) : 'mid';
+          if (present(OPP[sd], dest).length) { note('roam', sd, { who: role, lane: dest }); resolveGank(u, dest, true); }
+        }
+      }
+    }
+  }
+
+  function resolveGank(g, lane, roam) {
+    const sd = g.side, os = OPP[sd];
+    g.task = 'lane'; if (!roam) { g.task = 'jungle'; g.busy = 1; }
+    const targets = present(os, lane);
+    if (!targets.length) return;
+    // phát hiện gank: awareness của mục tiêu (+hỗ trợ cắm mắt) so với creativity/awareness của người gank
+    const aw = Math.max(...targets.map((u) => u.at.awareness + (u.tr.has('visionary') ? 8 : 0)));
+    const pDetect = clamp(0.22 + (aw - g.at.creativity * 0.5 - g.at.awareness * 0.3) / 100, 0.05, 0.72);
+    if (rand() < pDetect) {
+      note('dodged', os, { who: targets[0].role, lane });
+      for (const u of targets) u.hp = Math.max(u.hp - 0.05, 0.2);
+      front[lane] += os === 'B' ? -0.05 : 0.05;
+      return;
+    }
+    const allies = [g, ...present(sd, lane).filter((u) => u !== g)];
+    const def = [...targets];
+    const ejg = U[os + 'Jungle'];
+    if (!ejg.dead && !ejg.recall && ejg.task !== 'gank' && rand() < (ejg.at.awareness - 40) / 120) { def.push(ejg); note('counter', os, {}); }
+    const at = lanePoint(lane, front[lane]);
+    g.pos = at;
+    const res = fight(allies, def, at, { rounds: 4, surprise: os, at, src: 'gank' });
+    note(res.kills[sd] > res.kills[os] ? 'gankWin' : res.kills[os] > res.kills[sd] ? 'gankLose' : 'gankNone', sd, { who: g.role, lane });
+  }
+
+  // ---------------- mục tiêu lớn ----------------
+  const objUp = (k) => sec >= obj[k] && (k !== 'grubs' || sec < 825) && (k !== 'herald' || sec < 1185);
+  function contestObj(k) {
+    const pos = k === 'dragon' || k === 'elder' ? PIT.dragon : PIT.baron;
+    const nearRoles = k === 'dragon' || k === 'elder' ? ['Jungle', 'Bot', 'Support', 'Mid'] : k === 'baron' ? ROLES : ['Jungle', 'Top', 'Mid'];
+    const grp = (sd) => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : nearRoles.map((r) => U[sd + r]).filter((u) => !u.dead))
+      .filter((u) => !u.recall && (u.task !== 'split' || rand() < 0.65)); // người đẩy lẻ dịch chuyển về giao tranh
+    const want = {};
+    for (const sd of ['B', 'R']) {
+      const mine = grp(sd), theirs = grp(OPP[sd]);
+      if (!mine.some((u) => u.role === 'Jungle') && k !== 'baron' && k !== 'elder') { want[sd] = false; continue; }
+      if (!mine.length) { want[sd] = false; continue; }
+      const t = tac[sd];
+      let thr = k === 'baron' ? 1.2 : k === 'elder' ? 1.0 : 1.05;
+      if ((k === 'dragon' || k === 'elder') && t.obj === 'dragon') thr -= 0.15;
+      if ((k === 'grubs' || k === 'herald' || k === 'baron') && t.obj === 'top') thr -= 0.15;
+      if ((k === 'grubs' || k === 'herald') && t.obj === 'dragon') thr += 0.15;
+      thr -= (avg(mine, (u) => u.at.aggression) - 62) / 250 + (t.tempo === 'early' && sec < 900 ? 0.08 : 0);
+      thr -= clamp((sec - Math.max(obj[k], objSeen[k])) / 600, 0, 0.35); // để lâu thì dễ đánh hơn
+      const ratio = estimate(sd, mine, theirs.filter((u) => !u.dead));
+      want[sd] = ratio > thr || (theirs.filter((u) => !u.dead).length <= 2 && mine.length >= 3);
+    }
+    if (!want.B && !want.R) return;
+    let takerSide;
+    if (want.B && want.R) {
+      for (const u of [...grp('B'), ...grp('R')]) { u.pos = jit(toward(pos, u.side, 3), 3); u.mv = tick; }
+      const res = fight(grp('B'), grp('R'), pos, { rounds: 7, at: pos, src: 'obj-' + k });
+      takerSide = res.win;
+      const loser = OPP[takerSide];
+      const lj = U[loser + 'Jungle'];
+      if (!lj.dead && rand() < 0.07 + (lj.at.creativity - 70) / 300 + (lj.tr.has('outplayer') ? 0.05 : 0)) { takerSide = loser; note('steal', loser, { obj: k }); }
+      else if (!alive(takerSide).length) return;
+    } else {
+      takerSide = want.B ? 'B' : 'R';
+      const mine = grp(takerSide);
+      for (const u of mine) { u.pos = jit(toward(pos, u.side, 2), 2.5); u.mv = tick; }
+      // địch phản ứng muộn (awareness) → đánh nhau ngay tại hố
+      const os = OPP[takerSide];
+      const big = k === 'baron' || k === 'elder';
+      const late = grp(os).filter((u) => rand() < (u.at.awareness - (big ? 15 : 50)) / (big ? 110 : 170));
+      if (late.length >= (big ? 2 : 1) && (big || late.some((u) => u.role === 'Jungle'))) {
+        const res = fight(mine, late, pos, { rounds: 5, at: pos, src: 'objlate-' + k });
+        if (res.win !== takerSide) {
+          const lj = U[os + 'Jungle'];
+          if (!lj.dead && rand() < 0.12 + (lj.at.creativity - 70) / 250) { takerSide = os; note('steal', os, { obj: k }); }
+          else return;
+        }
+      }
+    }
+    if (!alive(takerSide).length) return;
+    takeObj(k, takerSide, pos);
+  }
+  function takeObj(k, sd, pos) {
+    const b = buff[sd];
+    if (k === 'dragon') {
+      const n = buff.B.drakes.length + buff.R.drakes.length;
+      const type = n < 2 ? pick(DRAKES.filter((d) => !buff.B.drakes.includes(d) && !buff.R.drakes.includes(d))) : (soulType ||= pick(DRAKES));
+      b.drakes.push(type);
+      ev('dragon', sd, { drake: type, n: b.drakes.length, at: pos });
+      if (b.drakes.length >= 4) { b.soul = true; ev('soul', sd, { drake: type, at: pos }); obj.dragon = Infinity; obj.elder = sec + 360; }
+      else obj.dragon = sec + 300;
+    } else if (k === 'elder') { b.elder = sec + 150; obj.elder = sec + 360; ev('elder', sd, { at: pos }); }
+    else if (k === 'baron') { b.baron = sec + 180; obj.baron = sec + 360; for (const u of alive(sd)) giveGold(u, 300); ev('baron', sd, { at: pos }); }
+    else if (k === 'grubs') { obj.grubs = Infinity; ev('grubs', sd, { at: pos }); for (const u of alive(sd)) giveGold(u, 40); }
+    else if (k === 'herald') { obj.herald = Infinity; b.herald = true; ev('herald', sd, { at: pos }); }
+    for (const u of alive(sd)) giveXp(u, k === 'baron' ? 400 : 150);
+  }
+
+  // ---------------- giữa / cuối trận ----------------
+  function macroTick() {
+    const plans = {};
+    for (const sd of ['B', 'R']) {
+      const t = tac[sd];
+      const os = OPP[sd];
+      const mine = alive(sd).filter((u) => !u.recall), theirs = alive(os);
+      const ratio = estimate(sd, mine, theirs);
+      // tách đường: đi đường trên đẩy lẻ nếu chiến thuật cho phép
+      const splitter = t.style === 'split' ? U[sd + 'Top'] : null;
+      for (const u of team(sd)) if (u.task === 'split' || u.task === 'splitdef') u.task = 'group';
+      if (splitter && !splitter.dead && !splitter.recall && splitter.hp > 0.5) splitter.task = 'split';
+      // chọn đường để công trụ: đường có trụ ngoài cùng dễ nhất
+      const laneScore = (l) => {
+        const i = outerAlive(os, l);
+        if (i === undefined) return 3; // tiến vào nhà
+        const tw = towers[`${os}-${l}-${i}`];
+        return 2 - i * 0.4 - tw.hp / 200 + (sd === 'B' ? front[l] : 1 - front[l]);
+      };
+      const best = LANES.filter((l) => !(splitter && splitter.task === 'split' && l === 'top')).sort((a, b) => laneScore(b) - laneScore(a))[0];
+      // giữa trận phần lớn thời gian là farm đường; chỉ tập trung công trụ khi đọc ra lợi thế (hoặc có Baron)
+      const aggro = (avg(mine, (u) => u.at.aggression) - 62) / 220;
+      const m = minute();
+      const need = 1.1 - aggro - (t.tempo === 'early' ? 0.06 : t.tempo === 'late' && m < 28 ? -0.08 : 0) - clamp((m - 24) / 40, 0, 0.25);
+      let plan = { kind: 'farm' };
+      const splitting = splitter && splitter.task === 'split';
+      if (mine.length >= 3 && (ratio > need + (splitting ? 0.12 : 0) || buff[sd].baron > sec || buff[sd].elder > sec || mine.length - theirs.length >= 2)) plan = { kind: 'siege', lane: best };
+      if (regroup[sd] > tick) plan = { kind: 'farm' };
+      plans[sd] = { ...plan, ratio };
+    }
+    // mục tiêu lớn được ưu tiên khi đội đang lợi thế
+    for (const k of ['elder', 'baron', 'dragon', 'herald']) if (objUp(k)) contestObj(k);
+    if (winner) return;
+    // đẩy lẻ: buộc đối phương cử người thủ (awareness/judgment), nếu không thì mất trụ đường trên
+    for (const sd of ['B', 'R']) {
+      const sp = U[sd + 'Top'];
+      if (sp.task !== 'split' || sp.dead) continue;
+      sp.pos = lanePoint('top', front.top); sp.mv = tick;
+      const os = OPP[sd];
+      const cands = alive(os).filter((u) => !u.recall && u.task !== 'group' && u.task !== 'split');
+      const opp = U[os + 'Top'];
+      const def = !opp.dead && !opp.recall ? opp : cands[0];
+      const react = def ? 0.5 + (Math.max(def.at.awareness, shot(os).at.leadership) - 60) / 90 : 0;
+      if (def && rand() < react) {
+        def.task = 'splitdef'; def.pos = jit(lanePoint('top', front.top), 2); def.mv = tick;
+        if (rand() < 0.35 + (sp.at.aggression - 60) / 150) fight([sp], [def], sp.pos, { rounds: 4, at: sp.pos, src: 'split' });
+      } else {
+        const i = outerAlive(os, 'top');
+        const dmg = stat(sp) * 4.6 * (buff[sd].baron > sec ? 1.6 : 1);
+        if (i !== undefined) hitTower(towers[`${os}-top-${i}`], sd, dmg, [sp]);
+        if (rand() < 0.3) note('split', sd, {});
+      }
+      if (!sp.dead) { sp.cs += 2.3; giveGold(sp, 48); giveXp(sp, 85); }
+    }
+    // công / thủ trụ: một đợt công trụ kéo dài vài nhịp; phe thủ chỉ quyết định ra giao tranh một lần lúc bắt đầu
+    let fought = false;
+    for (const sd of shuffleSides()) {
+      const pl = plans[sd];
+      const os = OPP[sd];
+      const grp = alive(sd).filter((u) => !u.recall && u.task !== 'split' && u.task !== 'splitdef');
+      const on = siege[sd];
+      if (!on && pl.kind !== 'siege') { for (const u of grp) u.task = 'lane'; continue; }
+      if (!grp.length) { siege[sd] = null; continue; }
+      for (const u of grp) u.task = 'group';
+      const lane = on ? on.lane : pl.lane;
+      const i = outerAlive(os, lane);
+      const target = i === undefined ? towers[`${os}-nexus-0`].alive ? towers[`${os}-nexus-0`] : towers[`${os}-nexus-1`].alive ? towers[`${os}-nexus-1`] : null : towers[`${os}-${lane}-${i}`];
+      const at = target ? target.pos : BASE[os];
+      for (const u of grp) { u.pos = jit(toward(at, sd, 5), 3); u.mv = tick; }
+      if (!on) {
+        siege[sd] = { lane, start: tick };
+        // phe thủ: ra thủ hay nhường trụ (judgment đọc thế trận; hiếu chiến dễ lao vào)
+        const defenders = alive(os).filter((u) => !u.recall && u.task !== 'split' && u.task !== 'splitdef');
+        let fightIt = false;
+        if (defenders.length && !fought) {
+          const dr = estimate(os, defenders, grp);
+          const nexusThreat = i === undefined;
+          const ag = (avg(defenders, (u) => u.at.aggression) - 62) / 180;
+          const deep = target && target.i >= 1;
+          fightIt = nexusThreat || dr > 0.92 - ag - (deep ? 0.1 : 0) || (dr > 0.7 && rand() < 0.12 + ag);
+        }
+        if (fightIt) {
+          fought = true;
+          const res = fight(grp, defenders, at, { rounds: 7, at, src: 'siege' });
+          regroup[OPP[res.win]] = tick + 3;
+          if (res.win !== sd) { siege[sd] = null; continue; }
+          siege[os] = null;
+        } else if (defenders.length) note('concede', os, {});
+      }
+      const atk = grp.filter((u) => !u.dead);
+      if (!atk.length) { siege[sd] = null; continue; }
+      // trụ bắn trả: trụ càng sâu càng đau, Baron giúp lính đỡ đòn
+      const shotDmg = (target ? (target.lane === 'nexus' ? 0.13 : [0.05, 0.09, 0.12][target.i]) : 0.14) * (buff[sd].baron > sec ? 0.45 : 1);
+      const tank = atk.sort((x, y) => y.hpB - x.hpB)[0];
+      tank.hp -= shotDmg * 2.2; for (const u of atk) u.hp -= shotDmg * 0.5;
+      for (const u of atk) if (u.hp <= 0.05) u.hp = 0.05;
+      const dmg = (1 + atk.reduce((s, u) => s + stat(u) * 1.15, 0)) * (buff[sd].baron > sec ? 1.9 : 1) * (buff[sd].elder > sec ? 1.3 : 1);
+      if (target) hitTower(target, sd, dmg, atk);
+      else hitNexus(os, sd, dmg, atk);
+      if (winner) return;
+      // kết thúc đợt công: trụ đã sập, quân đã mỏi, hoặc đã kéo dài quá lâu
+      if ((target && !target.alive) || avg(atk, (u) => u.hp) < 0.4 || tick - siege[sd].start >= 6) {
+        const keep = target && !target.alive && avg(atk, (u) => u.hp) > 0.6 && (buff[sd].baron > sec || buff[sd].elder > sec);
+        if (!keep) { siege[sd] = null; regroup[sd] = tick + 2; }
+      }
+    }
+    // bị bắt lẻ khi đi farm (awareness thấp, đội địch chơi bắt lẻ)
+    for (const sd of ['B', 'R']) {
+      const os = OPP[sd];
+      for (const u of alive(sd)) {
+        if (u.task !== 'lane' && u.task !== 'split') continue;
+        const hunters = alive(os).filter((e) => !e.recall && e.task !== 'split');
+        if (hunters.length < 2) continue;
+        const p = 0.013 * (1 + (65 - u.at.awareness) / 40 + (65 - u.at.positioning) / 80) * (tac[os].style === 'pick' ? 1.7 : 1) * (u.tr.has('hothead') ? 1.3 : 1);
+        if (rand() < clamp(p, 0.004, 0.09)) {
+          const n = Math.min(hunters.length, 2 + (rand() < 0.4 ? 1 : 0));
+          const hs = hunters.sort(() => rand() - 0.5).slice(0, n);
+          note('caught', sd, { who: u.role });
+          const at = u.lane === 'jg' ? pick(CAMPS[sd]) : lanePoint(u.lane, front[u.lane]);
+          for (const h of hs) h.pos = jit(at, 2);
+          fight(hs, [u], at, { rounds: 4, surprise: sd, at, src: 'caught' });
+        }
+      }
+    }
+    // farm khi không giao tranh
+    for (const u of [...alive('B'), ...alive('R')]) {
+      if (u.recall) continue;
+      const lane = u.lane === 'jg' ? null : u.lane;
+      if (u.task === 'lane') {
+        const rate = u.role === 'Support' ? 0.3 : u.role === 'Jungle' ? 1.75 : u.role === 'Bot' ? 2.75 : 2.5;
+        const cs = rate * clamp(0.93 + (u.at.farm - 70) / 250, 0.5, 1.15);
+        u.cs += cs; giveGold(u, cs * 21 + (u.role === 'Support' ? 12 : 0)); giveXp(u, 85);
+        u.hp = Math.min(1, u.hp + 0.03);
+        if (u.mv !== tick) u.pos = lane ? jit(lanePoint(lane, front[lane]), 2) : jit(pick(CAMPS[u.side]), 2);
+      } else if (u.task === 'group') {
+        const cs = (u.role === 'Support' ? 0.25 : u.role === 'Jungle' ? 1.4 : u.role === 'Bot' ? 2.3 : 2.0) * clamp(0.93 + (u.at.farm - 70) / 250, 0.5, 1.15);
+        u.cs += cs; giveGold(u, cs * 21 + 8); giveXp(u, 75);
+      }
+    }
+  }
+
+  // ---------------- vòng lặp chính ----------------
+  const MAX_TICKS = 4 * 60; // 60 phút
+  while (!winner && tick < MAX_TICKS) {
+    tick++; sec = tick * TICK;
+    for (const u of [...team('B'), ...team('R')]) {
+      if (u.dead) { u.dead--; u.pos = [...BASE[u.side]]; if (!u.dead) { u.hp = 1; u.task = u.role === 'Jungle' && sec < 840 ? 'jungle' : 'lane'; } continue; }
+      if (sec >= 65) giveGold(u, 30.6);
+      if (u.recall) { u.recall--; u.pos = [...BASE[u.side]]; if (!u.recall) { u.hp = 1; u.task = u.role === 'Jungle' && sec < 840 ? 'jungle' : 'lane'; } continue; }
+      // về nhà khi máu thấp — judgment thấp dễ "tham" ở lại
+      if (u.hp < 0.3 && rand() < 0.45 + u.at.judgment / 200) { u.recall = 2; u.pos = [...BASE[u.side]]; }
+    }
+    const laning = sec < 840 && taken.B + taken.R < 4;
+    if (laning) {
+      for (const k of ['dragon', 'grubs', 'herald']) if (objUp(k)) contestObj(k);
+      laningTick();
+      for (const u of [...team('B'), ...team('R')]) if (!u.dead && !u.recall && u.task === 'lane' && u.mv !== tick) u.pos = jit(toward(lanePoint(u.lane === 'jg' ? 'mid' : u.lane, front[u.lane] ?? 0.5), u.side, u.role === 'Support' ? 3 : 1.5), 1.5);
+    } else {
+      for (const u of [...team('B'), ...team('R')]) if (u.task === 'jungle' || u.task === 'gank') u.task = 'lane';
+      macroTick();
+    }
+    for (const l of LANES) laneTick(l, laning);
+    // sau 40 phút: không còn ai thủ được lâu, nhà chính yếu dần
+    if (sec > 2400) for (const sd of ['B', 'R']) nexus[sd] -= 0.4;
+    for (const k of Object.keys(objSeen)) if (sec === obj[k]) objSeen[k] = sec;
+    if (frames) frames.push(snap());
+  }
+  if (!winner) winner = teamGold('B') + taken.B * 800 >= teamGold('R') + taken.R * 800 ? 'B' : 'R';
+  ev('nexus', winner, { at: BASE[OPP[winner]] });
+
+  function snap() {
+    const f = {};
+    for (const u of [...team('B'), ...team('R')]) f[u.k] = [Math.round(u.pos[0] * 10) / 10, Math.round(u.pos[1] * 10) / 10, u.dead ? 0 : Math.round(u.hp * 100) / 100, u.dead, u.lvl, Math.round(u.gold), Math.round(u.cs), u.kills, u.deaths, u.assists];
+    return f;
+  }
+
+  // ---------------- tổng hợp ----------------
+  const dur = Math.max(1, Math.ceil(sec / 60));
+  // vàng chênh lệch theo phút (Xanh - Đỏ), lấy từ khung hình nếu có, nếu không thì nội suy
+  const gold = [0];
+  if (frames) {
+    for (let m = 1; m <= dur; m++) {
+      const fr = frames[Math.min(frames.length - 1, m * 4 - 1)];
+      gold.push(ROLES.reduce((s, r) => s + fr['B' + r][5] - fr['R' + r][5], 0));
+    }
+  } else {
+    const gd = teamGold('B') - teamGold('R');
+    for (let m = 1; m <= dur; m++) gold.push(Math.round(gd * (m / dur) ** 1.3));
+  }
+  const players = [];
+  for (const u of [...team('B'), ...team('R')]) {
+    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg: Math.round(u.dealt * 560 + dur * 60) });
+  }
+  const score = (x) => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
+  const mvp = players.filter((x) => x.side === winner && x.pid).sort((a, b) => score(b) - score(a))[0];
+  events.sort((a, b) => a.t - b.t);
+  return {
+    winner, winnerId: winner === 'B' ? blue : red, blue, red, dur, durS: sec, gold, events, kills, towers: taken,
+    drakes: { B: buff.B.drakes, R: buff.R.drakes }, soul: buff.B.soul ? 'B' : buff.R.soul ? 'R' : null,
+    players, mvp: mvp ? mvp.pid : null, picks, bans, frames,
+  };
+}
