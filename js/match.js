@@ -81,7 +81,7 @@ function preMatch() {
     const a = b.dataset.a;
     if (a === 'manual') draftScreen();
     else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || [])); }
-    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); }
+    else skipSeries();
   });
 }
 
@@ -208,7 +208,6 @@ function renderDraft() {
 
 // ---------------- Xem trận trực tiếp ----------------
 let timer = null;
-let quickMode = false;
 let liveGen = 0;
 let arena = null;
 const stopArena = () => { if (arena) { arena.dispose(); arena = null; } };
@@ -509,14 +508,19 @@ function postGame(g) {
     const a = b.dataset.a;
     if (a === 'manual') draftScreen();
     else if (a === 'auto') { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || [])); }
-    else { quickMode = true; const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); }
+    else skipSeries();
   });
   // giả lập nhanh: tự sang ván tiếp sau vài giây
-  if (quickMode && !over) setTimeout(() => { if (overlay && r.isConnected && !match.done && root().querySelector('[data-a=quick]')) { const { blue, red } = sides(); liveGame(autoDraft(blue, red, match.fearless || []), { fast: true }); } }, 2500);
+}
+
+// giả lập ngay các ván còn lại của loạt, không xem
+function skipSeries() {
+  liveGen++; stopArena();
+  if (!match.done) simSeries(match);
+  seriesEnd();
 }
 
 function seriesEnd() {
-  quickMode = false;
   const won = match.winner === me();
   const opp = match.a === me() ? match.b : match.a;
   const my = match.a === me() ? match.winsA : match.winsB;
