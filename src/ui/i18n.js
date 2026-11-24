@@ -1,4 +1,4 @@
-import { DB } from './data.js';
+import { DB } from '../engine/data';
 
 const vi = {
   'app.title': 'Rift Manager',

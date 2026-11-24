@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-const OUT = new URL('../data/', import.meta.url).pathname;
+const OUT = new URL('../public/data/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -254,7 +254,7 @@ async function main() {
   }
 
   // tải ảnh tướng & trang bị về assets/
-  const ASSETS = new URL('../assets/', import.meta.url).pathname;
+  const ASSETS = new URL('../public/assets/', import.meta.url).pathname;
   for (const [dir, ids] of [['champion', Object.keys(champions)], ['item', Object.keys(items)]]) {
     mkdirSync(ASSETS + dir, { recursive: true });
     for (const id of ids) {

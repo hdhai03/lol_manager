@@ -1,15 +1,15 @@
 // Ngày thi đấu: cấm/chọn và xem trận trực tiếp
-import { DB } from './data.js';
-import { t, cname } from './i18n.js';
-import { S, teamOvr, lineupPlayers, addNews, fillLineup } from './state.js';
+import { DB } from '../engine/data';
+import { t, cname } from './i18n';
+import { S, teamOvr, lineupPlayers, addNews, fillLineup } from '../engine/state';
 import {
   DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, autoDraft, draftTaken, openRoles, champFit, swapPicks, simulateGame, recordGame, simSeries, compTraits,
-} from './sim.js';
-import { ROLES, esc, logistic, clamp } from './util.js';
-import { TICK, MIR, BLUE_TOWERS, BASE, PIT } from './engine.js';
-import { badge, champIcon, roleTag, ovrTag, compTitle, compLogoId, face, leagueBadge, roleIcon, bgArt } from './ui.js';
-import { champImg, champArt, champTile, champSplash, itemImg, mapImg } from './data.js';
-import { loadThree, webglOk, createArena } from './arena3d.js';
+} from '../engine/sim';
+import { ROLES, esc, logistic, clamp } from '../engine/util';
+import { TICK, MIR, BLUE_TOWERS, BASE, PIT } from '../engine/engine';
+import { badge, champIcon, roleTag, ovrTag, compTitle, compLogoId, face, leagueBadge, roleIcon, bgArt } from './ui';
+import { champImg, champArt, champTile, champSplash, itemImg, mapImg } from '../engine/data';
+import { loadThree, webglOk, createArena } from './arena3d';
 const roleIconSvg = (r) => roleIcon(r);
 
 let overlay = null;

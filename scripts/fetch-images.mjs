@@ -6,7 +6,7 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 const ROOT = new URL('../', import.meta.url).pathname;
-const DATA = ROOT + 'data/';
+const DATA = ROOT + "public/data/";
 const CACHE = ROOT + 'scripts/.cache/';
 mkdirSync(CACHE, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -91,7 +91,7 @@ async function main() {
   const teams = JSON.parse(readFileSync(DATA + 'teams.json', 'utf8'));
   const players = JSON.parse(readFileSync(DATA + 'players.json', 'utf8'));
   const images = { leagues: {}, teams: {}, players: {}, source: 'Leaguepedia (lol.fandom.com)', generated: new Date().toISOString() };
-  for (const d of ['league', 'team', 'player']) mkdirSync(ROOT + 'assets/' + d, { recursive: true });
+  for (const d of ['league', 'team', 'player']) mkdirSync(ROOT + "public/assets/" + d, { recursive: true });
 
   // ---- Giải đấu (gồm cả MSI & CKTG) ----
   const leagueFiles = {
@@ -106,7 +106,7 @@ async function main() {
   for (const [id, files] of Object.entries(leagueFiles)) {
     const f = files.find((x) => lt[x]);
     const path = `assets/league/${id}.webp`;
-    if (f && download(lt[f], ROOT + path, 512)) images.leagues[id] = path;
+    if (f && download(lt[f], ROOT + 'public/' + path, 512)) images.leagues[id] = path;
     else console.warn('Không có logo giải', id);
   }
   console.log('Logo giải:', Object.keys(images.leagues).length);
@@ -122,7 +122,7 @@ async function main() {
   for (const n of names) {
     const f = [`${n}logo square.png`, teamImg[n]].find((x) => x && tt[x]);
     const path = `assets/team/${slug(n)}.webp`;
-    if (f && download(tt[f], ROOT + path, 512)) images.teams[n] = path;
+    if (f && download(tt[f], ROOT + 'public/' + path, 512)) images.teams[n] = path;
     else console.warn('Không có logo đội', n);
   }
   console.log('Logo đội:', Object.keys(images.teams).length, '/', names.length);
@@ -147,7 +147,7 @@ async function main() {
     const f = (best[l] || []).find((x) => pt[x]);
     if (!f) continue;
     const path = `assets/player/${slug(l)}.webp`;
-    if (download(pt[f], ROOT + path, { portrait: true, w: 960 })) { images.players[l] = path; ok++; }
+    if (download(pt[f], ROOT + 'public/' + path, { portrait: true, w: 960 })) { images.players[l] = path; ok++; }
   }
   console.log('Ảnh tuyển thủ:', ok, '/', links.length);
 
@@ -158,7 +158,7 @@ async function main() {
   const LUM = "import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGBA')\npx=[(r,g,b) for r,g,b,a in im.getdata() if a>128]\nprint(sum(0.2126*r+0.7152*g+0.0722*b for r,g,b in px)/max(len(px),1))";
   images.dark = [];
   for (const path of [...Object.values(images.leagues), ...Object.values(images.teams)]) {
-    const lum = parseFloat(execFileSync('python3', ['-I', '-c', LUM, ROOT + path]).toString());
+    const lum = parseFloat(execFileSync('python3', ['-I', '-c', LUM, ROOT + 'public/' + path]).toString());
     if (lum < 60) images.dark.push(path);
   }
   console.log('Logo tối:', images.dark.length);

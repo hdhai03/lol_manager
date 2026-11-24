@@ -4,40 +4,67 @@
 //   farm → lính/phút; accuracy/dodge → trúng/né chiêu; positioning → bị bắt hay không; awareness → né gank, phản ứng mục tiêu;
 //   judgment → đọc giao tranh, rút lui đúng lúc; aggression/patience → tần suất ăn thua; creativity → outplay, cướp mục tiêu;
 //   focus → lỗi vị trí; composure → khi bị dẫn; stamina → cuối trận/series; teamwork/leadership → phối hợp; adaptability → tướng lạ.
-import { DB } from './data.js';
-import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util.js';
-import { traitsOf } from './attrs.js';
+import { DB } from './data';
+import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util';
+import { traitsOf } from './attrs';
+import type { Attr, Bans, FrameUnit, GameEvent, GameResult, ObjTally, Picks, Player, PlayerLine, Role, Side, Tactics, PersonalTactic } from './types';
+
+export type Pt = [number, number];
+type Lane = 'top' | 'mid' | 'bot';
+type ObjKey = 'dragon' | 'grubs' | 'herald' | 'baron' | 'elder';
+/** một tướng trên bản đồ (trạng thái trong lúc mô phỏng) */
+interface Unit {
+  k: string; side: Side; role: Role; lane: Lane | 'jg'; pid: string | null; champ: string;
+  at: Record<Attr, number>; tr: Set<string>; pt: PersonalTactic;
+  atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
+  lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
+  hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt;
+}
+interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
+interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
+type Struct = Tower | Inhib;
+interface Buff { baron: number; elder: number; drakes: string[]; soul: boolean; herald: number }
+interface FightRes { kills: Record<Side, number>; dead: Unit[]; win: Side | null }
+interface FightOpts { rounds?: number; surprise?: Side; at?: Pt; src?: string }
+/** dữ liệu vào cho một ván */
+export interface RunInput {
+  blue: string; red: string; picks: Picks; bans: Bans;
+  lines: Record<Side, Partial<Record<Role, Player | null>>>; fits: Record<Side, Partial<Record<Role, number>>>;
+  tactics: Record<Side, Tactics>; record?: boolean; series?: number;
+}
 
 export const TICK = 15; // giây / nhịp
-export const MIR = ([x, y]) => [100 - x, 100 - y];
-export const BLUE_TOWERS = {
+export const MIR = ([x, y]: Pt): Pt => [100 - x, 100 - y];
+export const BLUE_TOWERS: Record<Lane | 'nexus', Pt[]> = {
   top: [[8, 27], [10, 50], [9, 70]], mid: [[41, 59], [33, 67], [25, 75]], bot: [[73, 92], [50, 90], [30, 91]], nexus: [[14, 84], [16, 86]],
 };
-export const BASE = { B: [9, 91], R: [91, 9] };
-export const PIT = { dragon: [67, 69], baron: [33, 31] };
-const LANES = ['top', 'mid', 'bot'];
-export const LANE_OF = { Top: 'top', Jungle: 'jg', Mid: 'mid', Bot: 'bot', Support: 'bot' };
+export const BASE: Record<Side, Pt> = { B: [9, 91], R: [91, 9] };
+export const PIT: Record<'dragon' | 'baron', Pt> = { dragon: [67, 69], baron: [33, 31] };
+const LANES: Lane[] = ['top', 'mid', 'bot'];
+export const LANE_OF: Record<Role, Lane | 'jg'> = { Top: 'top', Jungle: 'jg', Mid: 'mid', Bot: 'bot', Support: 'bot' };
 const TOWER_T = [0.36, 0.18, 0.03]; // vị trí trụ phe Xanh dọc đường (0 = nhà Xanh, 1 = nhà Đỏ)
-const CAMPS = { B: [[30, 55], [55, 78], [18, 38], [22, 62], [44, 70]], R: [] };
+const CAMPS: Record<Side, Pt[]> = { B: [[30, 55], [55, 78], [18, 38], [22, 62], [44, 70]], R: [] };
 CAMPS.R = CAMPS.B.map(MIR);
 const DRAKES = ['infernal', 'mountain', 'ocean', 'cloud', 'hextech', 'chemtech'];
 const DMG = 0.165; // hệ số sát thương mỗi hiệp giao tranh
 
-export function lanePoint(lane, tt) {
+export function lanePoint(lane: string, tt: number): Pt {
   if (lane === 'top') return tt < 0.5 ? [9, 70 - tt * 2 * 60] : [9 + (tt - 0.5) * 2 * 61, 10];
   if (lane === 'bot') return tt < 0.5 ? [30 + tt * 2 * 60, 91] : [90, 91 - (tt - 0.5) * 2 * 61];
   return [25 + tt * 50, 75 - tt * 50];
 }
-const jit = (p, r = 2) => [clamp(p[0] + (rand() - 0.5) * r * 2, 2, 98), clamp(p[1] + (rand() - 0.5) * r * 2, 2, 98)];
-const toward = (p, side, d) => [p[0] + (side === 'B' ? -d : d), p[1] + (side === 'B' ? d : -d)];
-const OPP = { B: 'R', R: 'B' };
-const avg = (arr, f) => (arr.length ? arr.reduce((s, x) => s + f(x), 0) / arr.length : 0);
-const TEMPO = { early: 1.35, balanced: 1, late: 0.7 };
+const jit = (p: Pt, r = 2): Pt => [clamp(p[0] + (rand() - 0.5) * r * 2, 2, 98), clamp(p[1] + (rand() - 0.5) * r * 2, 2, 98)];
+const toward = (p: Pt, side: Side, d: number): Pt => [p[0] + (side === 'B' ? -d : d), p[1] + (side === 'B' ? d : -d)];
+const OPP: Record<Side, Side> = { B: 'R', R: 'B' };
+const SIDES: Side[] = ['B', 'R'];
+const avg = <T>(arr: T[], f: (x: T) => number): number => (arr.length ? arr.reduce((s, x) => s + f(x), 0) / arr.length : 0);
+const TEMPO: Record<Tactics['tempo'], number> = { early: 1.35, balanced: 1, late: 0.7 };
 
 // ---------------- đơn vị ----------------
-function mkUnit(side, role, p, champ, fit, tac) {
-  const c = DB.champions[champ] || { tags: ['Fighter'], info: { attack: 5, defense: 5, magic: 5 }, power: 50, roles: [role] };
-  const at = {};
+function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: string, fit: number, tac: Tactics): Unit {
+  const c = DB.champions[champ] || { tags: ['Fighter'], info: { attack: 5, defense: 5, magic: 5, difficulty: 5 }, power: 50, roles: [role] };
+  const at = {} as Record<Attr, number>;
   const s = p ? p.stats : null;
   const tr = new Set(p ? traitsOf(p) : []);
   const condPen = p ? Math.max(0, 85 - (p.cond ?? 100)) * 0.3 : 0;
@@ -50,7 +77,7 @@ function mkUnit(side, role, p, champ, fit, tac) {
     at[a] = v;
   }
   // phong độ trong ngày: cùng chỉ số nhưng mỗi ván một khác (người focus cao dao động ít hơn)
-  const swing = gauss() * (p ? clamp((100 - (s.focus ?? 70)) / 8, 2, 5.5) : 4) + (tac.day || 0);
+  const swing = gauss() * (p && s ? clamp((100 - (s.focus ?? 70)) / 8, 2, 5.5) : 4) + (tac.day || 0);
   for (const a of ATTRS) if (a !== 'aggression' && a !== 'stamina') at[a] += swing;
   const pt = tac.personal?.[role] || 'standard';
   if (pt === 'aggressive') { at.aggression += 14; at.patience -= 10; }
@@ -65,87 +92,89 @@ function mkUnit(side, role, p, champ, fit, tac) {
   return {
     k: side + role, side, role, lane: LANE_OF[role], pid: p ? p.id : null, champ, at, tr, pt,
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
-    scale: { Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 }[main] || 1,
-    early: { Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 }[main] || 0,
+    scale: ({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1,
+    early: ({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0,
     meta: 0.92 + (c.power || 50) / 600,
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
-    hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]], busy: 0, mv: -1,
+    hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
+    fhp: 0, out: false, hitBy: new Set(), caught: false,
   };
 }
 
 // ---------------- mô phỏng ----------------
-export function runGame(input) {
+export function runGame(input: RunInput): GameResult {
   const { blue, red, picks, bans, lines, fits, tactics, record, series = 0 } = input;
-  const U = {};
-  for (const sd of ['B', 'R']) for (const r of ROLES) U[sd + r] = mkUnit(sd, r, lines[sd][r], picks[sd][r], fits[sd][r], tactics[sd]);
-  const team = (sd) => ROLES.map((r) => U[sd + r]);
-  const alive = (sd) => team(sd).filter((u) => !u.dead);
-  const towers = {};
-  for (const sd of ['B', 'R']) for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => {
+  const U: Record<string, Unit> = {};
+  for (const sd of SIDES) for (const r of ROLES) U[sd + r] = mkUnit(sd, r, lines[sd][r], picks[sd][r] ?? '', fits[sd][r] ?? 50, tactics[sd]);
+  const team = (sd: Side): Unit[] => ROLES.map((r) => U[sd + r]);
+  const alive = (sd: Side): Unit[] => team(sd).filter((u) => !u.dead);
+  const towers: Record<string, Tower> = {};
+  for (const sd of SIDES) for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => {
     towers[`${sd}-${lane}-${i}`] = { id: `${sd}-${lane}-${i}`, side: sd, lane, i, hp: lane === 'nexus' ? 130 : [100, 135, 160][i], alive: true, pos: sd === 'B' ? pt : MIR(pt) };
   });
-  const nexus = { B: 160, R: 160 };
+  const nexus: Record<Side, number> = { B: 160, R: 160 };
   // nhà lính (sau trụ thứ 3 mỗi đường): hồi sinh sau 5 phút; khi mất, đường đó có siêu lính
-  const inhib = {};
-  for (const sd of ['B', 'R']) for (const l of LANES) {
+  const inhib: Record<string, Inhib> = {};
+  for (const sd of SIDES) for (const l of LANES) {
     const pt = BLUE_TOWERS[l][2];
-    const p2 = [pt[0] + (BASE.B[0] - pt[0]) * 0.35, pt[1] + (BASE.B[1] - pt[1]) * 0.35];
+    const p2: Pt = [pt[0] + (BASE.B[0] - pt[0]) * 0.35, pt[1] + (BASE.B[1] - pt[1]) * 0.35];
     inhib[`${sd}-${l}`] = { id: `${sd}-inhib-${l}`, side: sd, lane: l, hp: 80, alive: true, back: 0, pos: sd === 'B' ? p2 : MIR(p2) };
   }
   // thống kê mục tiêu từng đội (cho bảng tổng kết)
-  const tally = { B: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 }, R: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 } };
-  const front = { top: 0.5, mid: 0.5, bot: 0.5 };
-  const obj = { dragon: 300, grubs: 480, herald: 900, baron: 1200, elder: Infinity };
-  const objSeen = { dragon: 0, grubs: 0, herald: 0, baron: 0, elder: 0 };
-  const buff = { B: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 }, R: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 } };
-  const taken = { B: 0, R: 0 }; // trụ đã phá
-  const regroup = { B: 0, R: 0 };
-  const siege = { B: null, R: null }; // sau khi thua giao tranh: lùi về hồi phục
-  const kills = { B: 0, R: 0 };
-  const events = [];
-  const frames = record ? [] : null;
-  let tick = 0, sec = 0, winner = null, firstBlood = false, firstTower = false, soulType = null;
+  const tally: Record<Side, ObjTally> = { B: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 }, R: { grubs: 0, heralds: 0, barons: 0, elders: 0, inhibs: 0, plates: 0 } };
+  const front: Record<Lane, number> = { top: 0.5, mid: 0.5, bot: 0.5 };
+  const obj: Record<ObjKey, number> = { dragon: 300, grubs: 480, herald: 900, baron: 1200, elder: Infinity };
+  const objSeen: Record<ObjKey, number> = { dragon: 0, grubs: 0, herald: 0, baron: 0, elder: 0 };
+  const buff: Record<Side, Buff> = { B: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 }, R: { baron: 0, elder: 0, drakes: [], soul: false, herald: 0 } };
+  const taken: Record<Side, number> = { B: 0, R: 0 }; // trụ đã phá
+  const regroup: Record<Side, number> = { B: 0, R: 0 };
+  const siege: Record<Side, { lane: Lane; start: number } | null> = { B: null, R: null }; // sau khi thua giao tranh: lùi về hồi phục
+  const kills: Record<Side, number> = { B: 0, R: 0 };
+  const events: GameEvent[] = [];
+  const frames: Record<string, FrameUnit>[] | null = record ? [] : null;
+  let tick = 0, sec = 0, firstBlood = false, firstTower = false;
+  let winner: Side | null = null, soulType: string | null = null;
   const tac = tactics;
-  const shot = (sd) => team(sd).reduce((b, u) => (u.at.leadership > b.at.leadership ? u : b));
+  const shot = (sd: Side): Unit => team(sd).reduce((b, u) => (u.at.leadership > b.at.leadership ? u : b));
   const minute = () => sec / 60;
-  const ev = (type, side, data = {}) => events.push({ t: tick, m: Math.floor(sec / 60), s: sec, type, side, ...data });
-  const note = (key, side, data = {}) => ev('note', side, { key, ...data });
+  const ev = (type: string, side: Side, data: Record<string, unknown> = {}): number => events.push({ t: tick, m: Math.floor(sec / 60), s: sec, type, side, ...data });
+  const note = (key: string, side: Side, data: Record<string, unknown> = {}): number => ev('note', side, { key, ...data });
 
   // sức mạnh hiện tại (cấp, vàng, thời điểm mạnh của tướng, bùa)
-  const stat = (u) => {
+  const stat = (u: Unit): number => {
     const m = minute();
     const tim = 1 + u.early * (1 - clamp((m - 12) / 18, 0, 1.6));
     const b = buff[u.side];
     return (1 + (u.lvl - 1) * 0.085) * (1 + ((u.gold - 500) / 7000) * u.scale) * tim * u.meta
       * (b.baron > sec ? 1.1 : 1) * (b.elder > sec ? 1.18 : 1) * (b.soul ? 1.06 : 1) * (1 + b.drakes.length * 0.012);
   };
-  const atkOf = (u) => u.atkB * stat(u);
-  const hpOf = (u) => u.hpB * stat(u);
-  const power = (us, live) => us.reduce((s, u) => s + stat(u) * (u.atkB + u.hpB) * (0.4 + 0.6 * (live ? Math.max(u.fhp, 0) / hpOf(u) : u.hp)) * (0.85 + (u.at.accuracy + u.at.dodge + u.at.positioning) / 1000), 0);
+  const atkOf = (u: Unit): number => u.atkB * stat(u);
+  const hpOf = (u: Unit): number => u.hpB * stat(u);
+  const power = (us: Unit[], live?: boolean): number => us.reduce((s, u) => s + stat(u) * (u.atkB + u.hpB) * (0.4 + 0.6 * (live ? Math.max(u.fhp, 0) / hpOf(u) : u.hp)) * (0.85 + (u.at.accuracy + u.at.dodge + u.at.positioning) / 1000), 0);
   // ước lượng sức mạnh (đội có judgment cao đọc chính xác hơn)
-  const estimate = (sd, mine, theirs) => {
+  const estimate = (sd: Side, mine: Unit[], theirs: Unit[]): number => {
     const j = avg(team(sd), (u) => u.at.judgment) + (shot(sd).at.leadership - 70) * 0.3;
     const noise = gauss() * clamp((100 - j) / 220, 0.03, 0.3);
     return (power(mine) / Math.max(power(theirs), 0.01)) * (1 + noise);
   };
 
-  const giveGold = (u, g) => { u.gold += g; };
-  const giveXp = (u, x) => {
+  const giveGold = (u: Unit, g: number): void => { u.gold += g; };
+  const giveXp = (u: Unit, x: number): void => {
     u.xp += x;
     while (u.lvl < 18 && u.xp >= 180 * u.lvl + 50 * u.lvl * u.lvl) u.lvl++;
   };
   const BRW = [10, 10, 12, 12, 14, 16, 20, 25, 28, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, 52.5];
   const tif = () => { const m = minute(); return m < 15 ? 0 : m < 30 ? (m - 15) * 0.0085 : m < 45 ? 0.1275 + (m - 30) * 0.006 : Math.min(0.5, 0.2175 + (m - 45) * 0.029); };
-  const respawnTicks = (u) => Math.max(1, Math.round(BRW[u.lvl - 1] * (1 + tif()) / TICK));
+  const respawnTicks = (u: Unit): number => Math.max(1, Math.round(BRW[u.lvl - 1] * (1 + tif()) / TICK));
 
   // ---------------- giao tranh ----------------
   // A, B: hai nhóm (khác phe). opts.rounds, opts.surprise (phe B bị bất ngờ), opts.at (vị trí)
-  function fight(A, B, at, opts = {}) {
+  function fight(A: Unit[], B: Unit[], at: Pt | undefined, opts: FightOpts = {}): FightRes {
     A = A.filter((u) => !u.dead); B = B.filter((u) => !u.dead);
-    if (!A.length || !B.length) return { kills: { B: 0, R: 0 }, win: A.length ? A[0].side : B.length ? B[0].side : null };
+    if (!A.length || !B.length) return { kills: { B: 0, R: 0 }, dead: [], win: A.length ? A[0].side : B.length ? B[0].side : null };
     const all = [...A, ...B];
-    const sideOf = { [A[0].side]: A, [B[0].side]: B };
-    const coord = {}, behind = {};
+    const sideOf = { [A[0].side]: A, [B[0].side]: B } as Record<Side, Unit[]>;
+    const coord = {} as Record<Side, number>, behind = {} as Record<Side, boolean>;
     for (const grp of [A, B]) {
       const sd = grp[0].side;
       const lead = Math.max(...grp.map((u) => u.at.leadership));
@@ -158,12 +187,12 @@ export function runGame(input) {
       u.caught = rand() < (88 - (u.at.focus + u.at.positioning) / 2) / 240 + (u.tr.has('hothead') ? 0.05 : 0) + (opts.surprise === u.side ? 0.45 : 0);
     }
     // thế chủ động: đội đọc trận tốt hơn (judgment + shotcaller) ra đòn trước
-    const ini = (grp) => avg(grp, (u) => u.at.judgment) + Math.max(...grp.map((u) => u.at.leadership)) * 0.4 + gauss() * 6;
+    const ini = (grp: Unit[]): number => avg(grp, (u) => u.at.judgment) + Math.max(...grp.map((u) => u.at.leadership)) * 0.4 + gauss() * 6;
     const initiative = ini(A) >= ini(B) ? A[0].side : B[0].side;
-    const res = { kills: { B: 0, R: 0 }, dead: [] };
+    const res: FightRes = { kills: { B: 0, R: 0 }, dead: [], win: null };
     const rounds = opts.rounds || 7;
     for (let r = 0; r < rounds; r++) {
-      const live = (sd) => sideOf[sd].filter((u) => u.fhp > 0 && !u.out);
+      const live = (sd: Side): Unit[] => sideOf[sd].filter((u) => u.fhp > 0 && !u.out);
       const sA = A[0].side, sB = B[0].side;
       if (!live(sA).length || !live(sB).length) break;
       // rút lui cả đội khi đọc ra thế thua
@@ -181,7 +210,7 @@ export function runGame(input) {
         const foes = live(OPP[u.side]);
         if (rand() < 0.45 + (u.at.dodge - avg(foes, (e) => e.at.accuracy)) / 120) u.out = true;
       }
-      const hits = [];
+      const hits: [Unit, Unit, number][] = [];
       for (const u of all) {
         if (u.fhp <= 0 || u.out) continue;
         const foes = live(OPP[u.side]);
@@ -216,15 +245,15 @@ export function runGame(input) {
       }
     }
     for (const u of all) { if (!u.dead) u.hp = clamp(u.fhp / hpOf(u), 0.04, 1); u.outplay = false; }
-    const left = (grp) => grp.filter((u) => !u.dead && !u.out).length;
+    const left = (grp: Unit[]): number => grp.filter((u) => !u.dead && !u.out).length;
     res.win = left(A) > left(B) ? A[0].side : left(B) > left(A) ? B[0].side : (res.kills[A[0].side] >= res.kills[B[0].side] ? A[0].side : B[0].side);
     const n = res.kills.B + res.kills.R;
     if (n >= 3) ev('teamfight', res.kills.B >= res.kills.R ? 'B' : 'R', { kb: res.kills.B, kr: res.kills.R, at: opts.at });
-    for (const sd of ['B', 'R']) if (!alive(sd).length && res.kills[OPP[sd]] >= 3) note('ace', OPP[sd]);
+    for (const sd of SIDES) if (!alive(sd).length && res.kills[OPP[sd]] >= 3) note('ace', OPP[sd]);
     return res;
   }
 
-  function chooseTarget(u, foes) {
+  function chooseTarget(u: Unit, foes: Unit[]): Unit {
     const f = tac[u.side].focus;
     const frontAlive = foes.some((e) => e.line === 'front');
     const maxG = Math.max(...foes.map((e) => e.gold));
@@ -243,7 +272,7 @@ export function runGame(input) {
     return weighted(foes, w);
   }
 
-  function die(v, killer, assists, at) {
+  function die(v: Unit, killer: Unit, assists: Unit[], at: Pt): void {
     // điểm hạ gục chia đều hơn: đồng đội góp sát thương đôi khi là người kết liễu
     if (assists.length && rand() < 0.3) { const k2 = assists[Math.floor(rand() * assists.length)]; assists = [...assists.filter((x) => x !== k2), killer]; killer = k2; }
     const bounty = 300 + (v.streak >= 2 ? Math.min(700, 150 * (v.streak - 1)) : 0);
@@ -259,56 +288,57 @@ export function runGame(input) {
     v.pos = pos; v.diedAt = pos;
   }
 
-  const shuffleSides = () => (rand() < 0.5 ? ['B', 'R'] : ['R', 'B']);
-  const teamGold = (sd) => team(sd).reduce((s, u) => s + u.gold, 0);
-  const present = (sd, lane) => team(sd).filter((u) => !u.dead && !u.recall && u.task === 'lane' && u.lane === lane);
-  const outerAlive = (sd, lane) => [0, 1, 2].find((i) => towers[`${sd}-${lane}-${i}`].alive);
+  const shuffleSides = (): Side[] => (rand() < 0.5 ? ['B', 'R'] : ['R', 'B']);
+  const teamGold = (sd: Side): number => team(sd).reduce((s, u) => s + u.gold, 0);
+  const present = (sd: Side, lane: string): Unit[] => team(sd).filter((u) => !u.dead && !u.recall && u.task === 'lane' && u.lane === lane);
+  const outerAlive = (sd: Side, lane: string): number | undefined => [0, 1, 2].find((i) => towers[`${sd}-${lane}-${i}`].alive);
   // mục tiêu công trình tiếp theo trên đường: trụ → nhà lính → (trụ nhà chính / nhà chính)
-  const laneStruct = (sd, lane) => { const i = outerAlive(sd, lane); if (i !== undefined) return towers[`${sd}-${lane}-${i}`]; const ih = inhib[`${sd}-${lane}`]; return ih.alive ? ih : null; };
+  const laneStruct = (sd: Side, lane: string): Struct | null => { const i = outerAlive(sd, lane); if (i !== undefined) return towers[`${sd}-${lane}-${i}`]; const ih = inhib[`${sd}-${lane}`]; return ih.alive ? ih : null; };
   // hệ số phá công trình: Sâu Hư Không (mỗi con +5%, đủ 3 con có Đói Khát Hư Không)
-  const structMult = (sd) => 1 + tally[sd].grubs * 0.05 + (tally[sd].grubs >= 3 ? 0.1 : 0);
-  const towerT = (sd, i) => (sd === 'B' ? TOWER_T[i] : 1 - TOWER_T[i]);
+  const structMult = (sd: Side): number => 1 + tally[sd].grubs * 0.05 + (tally[sd].grubs >= 3 ? 0.1 : 0);
+  const towerT = (sd: Side, i: number): number => (sd === 'B' ? TOWER_T[i] : 1 - TOWER_T[i]);
 
   // ---------------- đẩy đường & trụ ----------------
-  function laneTick(lane, laning) {
+  function laneTick(lane: Lane, laning: boolean): void {
     const pB = present('B', lane), pR = present('R', lane);
     const PB = power(pB) + 0.8, PR = power(pR) + 0.8; // + lính
     // siêu lính khi nhà lính bị phá
-    const sup = (sd) => (inhib[`${OPP[sd]}-${lane}`].alive ? 0 : 0.035);
+    const sup = (sd: Side): number => (inhib[`${OPP[sd]}-${lane}`].alive ? 0 : 0.035);
     front[lane] += 0.06 * (PB - PR) / (PB + PR) + sup('B') - sup('R');
     const ob = outerAlive('B', lane), or = outerAlive('R', lane);
     const lo = ob === undefined ? -0.08 : towerT('B', ob) - 0.02;
     const hi = or === undefined ? 1.08 : towerT('R', or) + 0.02;
     front[lane] = clamp(front[lane], lo, hi);
     // trụ chịu sát thương khi lính + tướng áp sát mà không có ai thủ
-    for (const [sd, mine, theirs, edge] of [['B', pB, pR, front[lane] >= hi - 0.01], ['R', pR, pB, front[lane] <= lo + 0.01]]) {
+    const sidesInfo: [Side, Unit[], Unit[], boolean][] = [['B', pB, pR, front[lane] >= hi - 0.01], ['R', pR, pB, front[lane] <= lo + 0.01]];
+    for (const [sd, mine, theirs, edge] of sidesInfo) {
       if (!edge || !mine.length && theirs.length) continue;
       const contested = theirs.length ? 0.35 : 1; // có người thủ: chỉ cấu được trụ khi thắng đường
       const enemy = OPP[sd];
       const tw = laneStruct(enemy, lane);
-      const i = tw && tw.i;
+      const i = tw && 'i' in tw ? tw.i : null;
       const dmg = ((inhib[`${enemy}-${lane}`].alive ? 0.5 : 4) + mine.reduce((s, u) => s + stat(u) * (laning && i === 0 ? 1.55 : 1.3), 0) * (buff[sd].baron > sec ? 1.9 : 1)) * structMult(sd);
       if (tw) hitStruct(tw, sd, dmg * contested, mine);
       else if (!theirs.length) hitNexus(enemy, sd, dmg, mine);
     }
   }
   // trụ hoặc nhà lính
-  function hitStruct(tw, sd, dmg, by) {
+  function hitStruct(tw: Struct, sd: Side, dmg: number, by: Unit[]): void {
     // Sứ Giả (Mắt Sứ Giả còn hiệu lực): húc một cú 3000 sát thương chuẩn vào công trình đầu tiên
     if (buff[sd].herald > sec && by.length) {
       buff[sd].herald = 0;
       dmg += tw.id.includes('inhib') ? 40 : 55;
       note('heraldCharge', sd, {});
     }
-    if (tw.id.includes('inhib')) return hitInhib(tw, sd, dmg, by);
-    return hitTower(tw, sd, dmg, by);
+    if ('i' in tw) return hitTower(tw, sd, dmg, by);
+    return hitInhib(tw, sd, dmg, by);
   }
-  function hitTower(tw, sd, dmg, by) {
+  function hitTower(tw: Tower, sd: Side, dmg: number, by: Unit[]): void {
     const before = tw.hp;
     tw.hp -= dmg;
     // ốp trụ ngoài: 5 lớp, mỗi lớp 120 vàng chia cho đội đang đánh (mùa 2026: không rơi theo thời gian)
     if (tw.i === 0) {
-      const plates = (h) => Math.min(5, Math.floor((100 - Math.max(h, 0)) / 20));
+      const plates = (h: number): number => Math.min(5, Math.floor((100 - Math.max(h, 0)) / 20));
       const n = plates(tw.hp) - plates(before);
       if (n > 0) { tally[sd].plates += n; if (by.length) for (const u of by) giveGold(u, Math.round(120 * n / by.length)); }
     }
@@ -322,7 +352,7 @@ export function runGame(input) {
     if (!firstTower) { firstTower = true; if (by.length) for (const u of by) giveGold(u, Math.round(300 / by.length)); ev('firsttower', sd, { id: tw.id, at: tw.pos }); }
     else ev('tower', sd, { id: tw.id, n: taken[sd], at: tw.pos });
   }
-  function hitInhib(ih, sd, dmg, by) {
+  function hitInhib(ih: Inhib, sd: Side, dmg: number, by: Unit[]): void {
     ih.hp -= dmg;
     if (ih.hp > 0) return;
     ih.alive = false; ih.back = sec + 300;
@@ -330,7 +360,7 @@ export function runGame(input) {
     if (by.length) giveGold(by[0], 50);
     ev('inhib', sd, { id: ih.id, lane: ih.lane, at: ih.pos });
   }
-  function hitNexus(enemy, sd, dmg, by) {
+  function hitNexus(enemy: Side, sd: Side, dmg: number, by: Unit[]): void {
     // trụ nhà chính chỉ đánh được khi đã mất ít nhất một nhà lính
     const inhibDown = LANES.some((l) => !inhib[`${enemy}-${l}`].alive);
     if (!inhibDown) return;
@@ -342,7 +372,7 @@ export function runGame(input) {
   }
 
   // ---------------- giai đoạn đi đường ----------------
-  function laningTick() {
+  function laningTick(): void {
     for (const lane of LANES) {
       const pB = present('B', lane), pR = present('R', lane);
       for (const [mine, theirs] of [[pB, pR], [pR, pB]]) {
@@ -376,10 +406,10 @@ export function runGame(input) {
       }
     }
     // đi rừng: farm hoặc gank
-    for (const sd of ['B', 'R']) {
+    for (const sd of SIDES) {
       const jg = U[sd + 'Jungle'];
       if (jg.dead || jg.recall) continue;
-      if (jg.task === 'gank') { resolveGank(jg, jg.target); continue; }
+      if (jg.task === 'gank') { resolveGank(jg, jg.target ?? 'mid'); continue; }
       if (jg.busy > 0) { jg.busy--; continue; }
       if (sec < 90) { jg.pos = jit(CAMPS[sd][0], 1); continue; } // bãi quái chưa hồi
       const cs = 1.5 * clamp(0.93 + (jg.at.farm - 70) / 250, 0.5, 1.15);
@@ -402,20 +432,20 @@ export function runGame(input) {
       }
     }
     // đường giữa / hỗ trợ đi roam
-    for (const sd of ['B', 'R']) {
+    for (const sd of SIDES) {
       for (const role of ['Mid', 'Support']) {
         const u = U[sd + role];
         if (u.dead || u.recall || u.task !== 'lane' || sec < 240 || u.hp < 0.6) continue;
         const p = (role === 'Mid' ? 0.022 : 0.016) * clamp((u.at.creativity + u.at.awareness - 100) / 80, 0.2, 1.6) * TEMPO[tac[sd].tempo];
         if (rand() < p) {
-          const dest = role === 'Mid' ? pick(['top', 'bot']) : 'mid';
+          const dest: Lane = role === 'Mid' ? pick<Lane>(['top', 'bot']) : 'mid';
           if (present(OPP[sd], dest).length) { note('roam', sd, { who: role, lane: dest }); resolveGank(u, dest, true); }
         }
       }
     }
   }
 
-  function resolveGank(g, lane, roam) {
+  function resolveGank(g: Unit, lane: Lane, roam?: boolean): void {
     const sd = g.side, os = OPP[sd];
     g.task = 'lane'; if (!roam) { g.task = 'jungle'; g.busy = 1; }
     const targets = present(os, lane);
@@ -440,15 +470,15 @@ export function runGame(input) {
   }
 
   // ---------------- mục tiêu lớn ----------------
-  const objUp = (k) => sec >= obj[k] && (k !== 'grubs' || sec < 885) && (k !== 'herald' || sec < 1185);
+  const objUp = (k: ObjKey): boolean => sec >= obj[k] && (k !== 'grubs' || sec < 885) && (k !== 'herald' || sec < 1185);
   let grubFight = false;
-  function contestObj(k) {
+  function contestObj(k: ObjKey): void {
     const pos = k === 'dragon' || k === 'elder' ? PIT.dragon : PIT.baron;
     const nearRoles = k === 'dragon' || k === 'elder' ? ['Jungle', 'Bot', 'Support', 'Mid'] : k === 'baron' ? ROLES : ['Jungle', 'Top', 'Mid'];
-    const grp = (sd) => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : nearRoles.map((r) => U[sd + r]).filter((u) => !u.dead))
+    const grp = (sd: Side): Unit[] => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : nearRoles.map((r) => U[sd + r]).filter((u) => !u.dead))
       .filter((u) => !u.recall && (u.task !== 'split' || rand() < 0.65)); // người đẩy lẻ dịch chuyển về giao tranh
-    const want = {};
-    for (const sd of ['B', 'R']) {
+    const want = {} as Record<Side, boolean>;
+    for (const sd of SIDES) {
       const mine = grp(sd), theirs = grp(OPP[sd]);
       if (!mine.some((u) => u.role === 'Jungle') && k !== 'baron' && k !== 'elder') { want[sd] = false; continue; }
       if (!mine.length) { want[sd] = false; continue; }
@@ -463,11 +493,12 @@ export function runGame(input) {
       want[sd] = ratio > thr || (theirs.filter((u) => !u.dead).length <= 2 && mine.length >= 3);
     }
     if (!want.B && !want.R) return;
-    let takerSide;
+    let takerSide: Side;
     grubFight = want.B && want.R;
     if (want.B && want.R) {
       for (const u of [...grp('B'), ...grp('R')]) { u.pos = jit(toward(pos, u.side, 3), 3); u.mv = tick; }
       const res = fight(grp('B'), grp('R'), pos, { rounds: 7, at: pos, src: 'obj-' + k });
+      if (!res.win) return;
       takerSide = res.win;
       const loser = OPP[takerSide];
       const lj = U[loser + 'Jungle'];
@@ -493,7 +524,7 @@ export function runGame(input) {
     if (!alive(takerSide).length) return;
     takeObj(k, takerSide, pos);
   }
-  function takeObj(k, sd, pos) {
+  function takeObj(k: ObjKey, sd: Side, pos: Pt): void {
     const b = buff[sd];
     if (k === 'dragon') {
       const n = buff.B.drakes.length + buff.R.drakes.length;
@@ -518,9 +549,9 @@ export function runGame(input) {
   }
 
   // ---------------- giữa / cuối trận ----------------
-  function macroTick() {
-    const plans = {};
-    for (const sd of ['B', 'R']) {
+  function macroTick(): void {
+    const plans = {} as Record<Side, { kind: 'farm' | 'siege'; lane?: Lane; ratio: number }>;
+    for (const sd of SIDES) {
       const t = tac[sd];
       const os = OPP[sd];
       const mine = alive(sd).filter((u) => !u.recall), theirs = alive(os);
@@ -530,7 +561,7 @@ export function runGame(input) {
       for (const u of team(sd)) if (u.task === 'split' || u.task === 'splitdef') u.task = 'group';
       if (splitter && !splitter.dead && !splitter.recall && splitter.hp > 0.5) splitter.task = 'split';
       // chọn đường để công trụ: đường có trụ ngoài cùng dễ nhất
-      const laneScore = (l) => {
+      const laneScore = (l: Lane): number => {
         const i = outerAlive(os, l);
         if (i === undefined) return 3; // tiến vào nhà
         const tw = towers[`${os}-${l}-${i}`];
@@ -541,17 +572,17 @@ export function runGame(input) {
       const aggro = (avg(mine, (u) => u.at.aggression) - 62) / 220;
       const m = minute();
       const need = 1.1 - aggro - (t.tempo === 'early' ? 0.06 : t.tempo === 'late' && m < 28 ? -0.08 : 0) - clamp((m - 24) / 40, 0, 0.25);
-      let plan = { kind: 'farm' };
+      let plan: { kind: 'farm' | 'siege'; lane?: Lane } = { kind: 'farm' };
       const splitting = splitter && splitter.task === 'split';
       if (mine.length >= 3 && (ratio > need + (splitting ? 0.12 : 0) || buff[sd].baron > sec || buff[sd].elder > sec || mine.length - theirs.length >= 2)) plan = { kind: 'siege', lane: best };
       if (regroup[sd] > tick) plan = { kind: 'farm' };
       plans[sd] = { ...plan, ratio };
     }
     // mục tiêu lớn được ưu tiên khi đội đang lợi thế
-    for (const k of ['elder', 'baron', 'dragon', 'herald', 'grubs']) if (objUp(k)) contestObj(k);
+    for (const k of ['elder', 'baron', 'dragon', 'herald', 'grubs'] as ObjKey[]) if (objUp(k)) contestObj(k);
     if (winner) return;
     // đẩy lẻ: buộc đối phương cử người thủ (awareness/judgment), nếu không thì mất trụ đường trên
-    for (const sd of ['B', 'R']) {
+    for (const sd of SIDES) {
       const sp = U[sd + 'Top'];
       if (sp.task !== 'split' || sp.dead) continue;
       sp.pos = lanePoint('top', front.top); sp.mv = tick;
@@ -581,7 +612,7 @@ export function runGame(input) {
       if (!on && pl.kind !== 'siege') { for (const u of grp) u.task = 'lane'; continue; }
       if (!grp.length) { siege[sd] = null; continue; }
       for (const u of grp) u.task = 'group';
-      const lane = on ? on.lane : pl.lane;
+      const lane: Lane = on ? on.lane : pl.lane ?? 'mid';
       const ls = laneStruct(os, lane);
       const i = ls ? 0 : undefined;
       const target = ls || (towers[`${os}-nexus-0`].alive ? towers[`${os}-nexus-0`] : towers[`${os}-nexus-1`].alive ? towers[`${os}-nexus-1`] : null);
@@ -596,13 +627,13 @@ export function runGame(input) {
           const dr = estimate(os, defenders, grp);
           const nexusThreat = i === undefined;
           const ag = (avg(defenders, (u) => u.at.aggression) - 62) / 180;
-          const deep = target && (target.i >= 1 || !!target.id.match(/inhib|nexus/));
+          const deep = !!target && (('i' in target && target.i >= 1) || !!target.id.match(/inhib|nexus/));
           fightIt = nexusThreat || dr > 0.92 - ag - (deep ? 0.1 : 0) || (dr > 0.7 && rand() < 0.12 + ag);
         }
         if (fightIt) {
           fought = true;
           const res = fight(grp, defenders, at, { rounds: 7, at, src: 'siege' });
-          regroup[OPP[res.win]] = tick + 3;
+          if (res.win) regroup[OPP[res.win]] = tick + 3;
           if (res.win !== sd) { siege[sd] = null; continue; }
           siege[os] = null;
         } else if (defenders.length) note('concede', os, {});
@@ -610,7 +641,7 @@ export function runGame(input) {
       const atk = grp.filter((u) => !u.dead);
       if (!atk.length) { siege[sd] = null; continue; }
       // trụ bắn trả: trụ càng sâu càng đau, Baron giúp lính đỡ đòn
-      const shotDmg = (target ? (target.id.includes('inhib') ? 0 : target.lane === 'nexus' ? 0.13 : [0.05, 0.09, 0.12][target.i]) : 0.14) * (buff[sd].baron > sec ? 0.45 : 1);
+      const shotDmg = (target ? (!('i' in target) ? 0 : target.lane === 'nexus' ? 0.13 : [0.05, 0.09, 0.12][target.i]) : 0.14) * (buff[sd].baron > sec ? 0.45 : 1);
       const tank = atk.sort((x, y) => y.hpB - x.hpB)[0];
       tank.hp -= shotDmg * 2.2; for (const u of atk) u.hp -= shotDmg * 0.5;
       for (const u of atk) if (u.hp <= 0.05) u.hp = 0.05;
@@ -619,13 +650,13 @@ export function runGame(input) {
       else hitNexus(os, sd, dmg, atk);
       if (winner) return;
       // kết thúc đợt công: trụ đã sập, quân đã mỏi, hoặc đã kéo dài quá lâu
-      if ((target && !target.alive) || avg(atk, (u) => u.hp) < 0.4 || tick - siege[sd].start >= 6) {
+      if ((target && !target.alive) || avg(atk, (u) => u.hp) < 0.4 || tick - (siege[sd]?.start ?? tick) >= 6) {
         const keep = target && !target.alive && avg(atk, (u) => u.hp) > 0.6 && (buff[sd].baron > sec || buff[sd].elder > sec);
         if (!keep) { siege[sd] = null; regroup[sd] = tick + 2; }
       }
     }
     // bị bắt lẻ khi đi farm (awareness thấp, đội địch chơi bắt lẻ)
-    for (const sd of ['B', 'R']) {
+    for (const sd of SIDES) {
       const os = OPP[sd];
       for (const u of alive(sd)) {
         if (u.task !== 'lane' && u.task !== 'split') continue;
@@ -672,9 +703,9 @@ export function runGame(input) {
     }
     const laning = sec < 840 && taken.B + taken.R < 4;
     if (laning) {
-      for (const k of ['dragon', 'grubs', 'herald']) if (objUp(k)) contestObj(k);
+      for (const k of ['dragon', 'grubs', 'herald'] as ObjKey[]) if (objUp(k)) contestObj(k);
       laningTick();
-      for (const u of [...team('B'), ...team('R')]) if (!u.dead && !u.recall && u.task === 'lane' && u.mv !== tick) u.pos = jit(toward(lanePoint(u.lane === 'jg' ? 'mid' : u.lane, front[u.lane] ?? 0.5), u.side, u.role === 'Support' ? 3 : 1.5), 1.5);
+      for (const u of [...team('B'), ...team('R')]) if (!u.dead && !u.recall && u.task === 'lane' && u.mv !== tick) u.pos = jit(toward(lanePoint(u.lane === 'jg' ? 'mid' : u.lane, u.lane === 'jg' ? 0.5 : front[u.lane]), u.side, u.role === 'Support' ? 3 : 1.5), 1.5);
     } else {
       for (const u of [...team('B'), ...team('R')]) if (u.task === 'jungle' || u.task === 'gank') u.task = 'lane';
       macroTick();
@@ -682,20 +713,20 @@ export function runGame(input) {
     for (const l of LANES) laneTick(l, laning);
     // nhà lính hồi sinh sau 5 phút, trụ nhà chính sau 3 phút
     for (const ih of Object.values(inhib)) if (!ih.alive && sec >= ih.back) { ih.alive = true; ih.hp = 80; ev('inhibBack', ih.side, { id: ih.id }); }
-    for (const sd of ['B', 'R']) for (const i of [0, 1]) {
+    for (const sd of SIDES) for (const i of [0, 1]) {
       const nt = towers[`${sd}-nexus-${i}`];
       if (!nt.alive && nt.back && sec >= nt.back) { nt.alive = true; nt.hp = 52; nt.back = 0; ev('towerBack', sd, { id: nt.id }); }
     }
     // sau 40 phút: không còn ai thủ được lâu, nhà chính yếu dần
-    if (sec > 2400) for (const sd of ['B', 'R']) nexus[sd] -= 0.4;
-    for (const k of Object.keys(objSeen)) if (sec === obj[k]) objSeen[k] = sec;
+    if (sec > 2400) for (const sd of SIDES) nexus[sd] -= 0.4;
+    for (const k of Object.keys(objSeen) as ObjKey[]) if (sec === obj[k]) objSeen[k] = sec;
     if (frames) frames.push(snap());
   }
   if (!winner) winner = teamGold('B') + taken.B * 800 >= teamGold('R') + taken.R * 800 ? 'B' : 'R';
   ev('nexus', winner, { at: BASE[OPP[winner]] });
 
-  function snap() {
-    const f = {};
+  function snap(): Record<string, FrameUnit> {
+    const f: Record<string, FrameUnit> = {};
     for (const u of [...team('B'), ...team('R')]) f[u.k] = [Math.round(u.pos[0] * 10) / 10, Math.round(u.pos[1] * 10) / 10, u.dead ? 0 : Math.round(u.hp * 100) / 100, u.dead, u.lvl, Math.round(u.gold), Math.round(u.cs), u.kills, u.deaths, u.assists];
     return f;
   }
@@ -718,7 +749,7 @@ export function runGame(input) {
     const dmg = Math.round(u.dealt * 600 + dur * 60), early = Math.round(u.dealtEarly * 600 + Math.min(dur, 14) * 60);
     players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg) });
   }
-  const score = (x) => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
+  const score = (x: PlayerLine): number => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
   const mvp = players.filter((x) => x.side === winner && x.pid).sort((a, b) => score(b) - score(a))[0];
   events.sort((a, b) => a.t - b.t);
   return {

@@ -12,7 +12,7 @@ import os
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "data", "bin")
+OUT = os.path.join(ROOT, "public", "data", "bin")
 CHUNK = 14 * 1024 * 1024  # mỗi file < 15MB
 GROUPS = ["league", "team", "champion", "item", "tile", "player", "map", "loading", "splash"]
 MIME = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg"}
@@ -24,7 +24,7 @@ for f in os.listdir(OUT):
 
 index = {}
 for g in GROUPS:
-    d = os.path.join(ROOT, "assets", g)
+    d = os.path.join(ROOT, "public", "assets", g)
     if not os.path.isdir(d):
         continue
     chunks, cur, files = [], bytearray(), {}

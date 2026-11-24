@@ -1,17 +1,22 @@
 // Bảng xếp hạng sức mạnh toàn cầu (theo mô hình Global Power Rankings của LoL Esports):
 // điểm Elo của đội (80%) + điểm sức mạnh khu vực (20%). Elo cập nhật sau mỗi loạt đấu với hệ số K theo bối cảnh
 // (play-in < vòng bảng < playoffs; quốc tế nặng hơn quốc nội); kết quả quốc tế đẩy điểm khu vực lên/xuống.
-import { S, teamOvr } from './state.js';
-import { compOrder } from './formats.js';
+import { S, teamOvr } from './state';
+import { compOrder } from './formats';
 
 // điểm sức mạnh khu vực khởi điểm = Regional Strength Score thật của LoL Esports (cuối CKTG 2026); VCS ước lượng
-const LEAGUE0 = { LPL: 1431, LCK: 1394, LEC: 1231, LCS: 1149, LCP: 1036, CBLOL: 959, VCS: 930 };
+import type { Comp, Gpr, LeagueId, Match, Phase, Team } from './types';
+
+/** một dòng của bảng xếp hạng sức mạnh */
+export interface GprRow { team: string; league: LeagueId; score: number; wl: [number, number]; intl: { fst: number | null; msi: number | null; worlds: number | null }; rank: number; delta: number }
+
+const LEAGUE0: Record<string, number> = { LPL: 1431, LCK: 1394, LEC: 1231, LCS: 1149, LCP: 1036, CBLOL: 959, VCS: 930 };
 const W_TEAM = 0.8;
 
-export function ensureGpr() {
+export function ensureGpr(): Gpr {
   if (S.gpr && S.gpr.teams) return S.gpr;
-  const g = { teams: {}, leagues: { ...LEAGUE0 }, snaps: [] };
-  const byLg = {};
+  const g: Gpr = { teams: {}, leagues: { ...LEAGUE0 }, snaps: [] };
+  const byLg: Record<string, Team[]> = {};
   for (const t of Object.values(S.teams)) (byLg[t.league] ??= []).push(t);
   for (const [lg, ts] of Object.entries(byLg)) {
     const avg = ts.reduce((s, t) => s + teamOvr(t), 0) / ts.length;
@@ -21,16 +26,16 @@ export function ensureGpr() {
   return g;
 }
 
-export const powerScore = (tid) => {
+export const powerScore = (tid: string): number => {
   const g = ensureGpr();
   const lg = S.teams[tid]?.league;
   return Math.round(W_TEAM * (g.teams[tid] ?? 1100) + (1 - W_TEAM) * (g.leagues[lg] ?? 1000));
 };
 
 // hệ số K theo bối cảnh trận (mô phỏng theo bảng K của GPR)
-function kFactor(comp, match) {
+function kFactor(comp: Comp, match: Match): number {
   const intl = comp.league === 'INTL';
-  const finalNode = ['UF', 'LF', 'GF', 'F', 'SF1', 'SF2'].includes(match.node);
+  const finalNode = ['UF', 'LF', 'GF', 'F', 'SF1', 'SF2'].includes(match.node ?? '');
   if (intl) {
     if (comp.stage === 'playin') return 12;
     if (comp.stage === 'knockout' || (comp.key === 'msi' && finalNode)) return 36;
@@ -42,7 +47,7 @@ function kFactor(comp, match) {
 }
 
 // gọi khi một loạt đấu kết thúc
-export function gprOnSeries(match) {
+export function gprOnSeries(match: Match): void {
   const comp = S.comps[match.comp];
   if (!comp || !match.winner) return;
   const g = ensureGpr();
@@ -64,7 +69,7 @@ export function gprOnSeries(match) {
 }
 
 // mùa mới: điểm đội hồi về gần điểm khu vực (thay đổi đội hình, phong độ cũ ít ý nghĩa hơn)
-export function gprNewSeason() {
+export function gprNewSeason(): void {
   const g = ensureGpr();
   for (const t of Object.values(S.teams)) {
     const lg = g.leagues[t.league] ?? 1000;
@@ -74,39 +79,39 @@ export function gprNewSeason() {
 }
 
 // ảnh chụp bảng xếp hạng cuối mỗi giai đoạn (để hiện mũi tên tăng/giảm hạng)
-export function gprSnapshot(phase) {
+export function gprSnapshot(phase: Phase): void {
   const g = ensureGpr();
   const rows = gprTable();
   g.snaps.push({ season: S.season, phase, day: S.day, ranks: Object.fromEntries(rows.map((r) => [r.team, r.rank])), scores: Object.fromEntries(rows.map((r) => [r.team, r.score])) });
 }
 
 // thứ hạng của đội ở một giải quốc tế trong mùa (null nếu không dự)
-function intlPlace(tid, keys) {
+function intlPlace(tid: string, keys: string[]): number | null {
   const comps = keys.map((k) => S.comps[`${S.season}-INTL-${k}`]).filter(Boolean);
   if (!comps.length || !comps.some((c) => c.teams.includes(tid))) return null;
-  const merged = [];
+  const merged: string[] = [];
   for (const c of comps) for (const t of compOrder(c)) if (!merged.includes(t)) merged.push(t);
   const i = merged.indexOf(tid);
   return i < 0 ? null : i + 1;
 }
 
-export function gprTable(snapIdx = null) {
+export function gprTable(snapIdx: number | null = null): GprRow[] {
   const g = ensureGpr();
   const snap = snapIdx == null ? null : g.snaps[snapIdx];
-  const wl = {};
+  const wl: Record<string, [number, number]> = {};
   for (const c of Object.values(S.comps)) {
     if (!c.id.startsWith(`${S.season}-`)) continue;
     for (const m of c.matches) { // thắng-thua theo loạt đấu
       if (!m.done) continue;
       (wl[m.a] ??= [0, 0]); (wl[m.b] ??= [0, 0]);
-      wl[m.winner][0]++; wl[m.winner === m.a ? m.b : m.a][1]++;
+      wl[m.winner!][0]++; wl[m.winner === m.a ? m.b : m.a][1]++;
     }
   }
-  const rows = Object.values(S.teams).map((t) => ({
+  const rows: GprRow[] = Object.values(S.teams).map((t) => ({
     team: t.id, league: t.league,
     score: snap ? snap.scores[t.id] ?? powerScore(t.id) : powerScore(t.id),
     wl: wl[t.id] || [0, 0],
-    intl: { fst: intlPlace(t.id, ['fst-ko', 'fst-a', 'fst-b']), msi: intlPlace(t.id, ['msi', 'msi-playin']), worlds: intlPlace(t.id, ['worlds-ko', 'worlds-swiss', 'worlds-playin']) },
+    intl: { fst: intlPlace(t.id, ['fst-ko', 'fst-a', 'fst-b']), msi: intlPlace(t.id, ['msi', 'msi-playin']), worlds: intlPlace(t.id, ['worlds-ko', 'worlds-swiss', 'worlds-playin']) }, rank: 0, delta: 0,
   }));
   rows.sort((x, y) => y.score - x.score);
   rows.forEach((r, i) => { r.rank = i > 0 && rows[i - 1].score === r.score ? rows[i - 1].rank : i + 1; });
@@ -117,4 +122,4 @@ export function gprTable(snapIdx = null) {
   return rows;
 }
 
-export const leagueStrength = () => Object.entries(ensureGpr().leagues).map(([lg, v]) => ({ lg, v: Math.round(v) })).sort((a, b) => b.v - a.v);
+export const leagueStrength = (): { lg: string; v: number }[] => Object.entries(ensureGpr().leagues).map(([lg, v]) => ({ lg, v: Math.round(v) })).sort((a, b) => b.v - a.v);

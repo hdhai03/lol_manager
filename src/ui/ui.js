@@ -1,20 +1,20 @@
-import { DB, champImg, champArt, champTile, champSplash, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from './data.js';
-import { t, cname, iname, getLang, setLang } from './i18n.js';
+import { DB, champImg, champArt, champTile, champSplash, itemImg, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from '../engine/data';
+import { t, cname, iname, getLang, setLang } from './i18n';
 import {
   S, setState, newGame, userTeam, teamPlayers, teamSalary, teamOvr, autoLineup, lineupPlayers,
   addNews, saveGame, listSaves, loadSave, deleteSave, exportSave, importSave,
-} from './state.js';
+} from '../engine/state';
 import {
   PHASES, startPhase, standings, advanceDay, userMatchToday, nextUserMatch, allPhaseMatches, leagueTeams,
   startNewSeason, makeOffer, acceptOffer, releasePlayer, renewCost, renewContract, askingPrice, seasonDate, setAutoSave, progressComps,
-} from './season.js';
-import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from './util.js';
-import { gprTable, leagueStrength, ensureGpr } from './gpr.js';
-import { AWARD_KEYS } from './awards.js';
-import { SERVERS, SERVER_OF, ladder as soloLadder, tierOf, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange, inviteToAcademy, promoteFromAcademy, releaseFromAcademy } from './academy.js';
-import { PHASE_WINDOW } from './formats.js';
-import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from './attrs.js';
-import { openMatchDay } from './match.js';
+} from '../engine/season';
+import { ROLES, ATTRS, ATTR_GROUPS, esc, money, clamp } from '../engine/util';
+import { gprTable, leagueStrength, ensureGpr } from '../engine/gpr';
+import { AWARD_KEYS } from '../engine/awards';
+import { SERVERS, SERVER_OF, ladder as soloLadder, tierOf, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange, inviteToAcademy, promoteFromAcademy, releaseFromAcademy } from '../engine/academy';
+import { PHASE_WINDOW } from '../engine/formats';
+import { traitsOf, BAD_TRAITS, groupScore, TACTIC_OPTS, PERSONAL_OPTS, defaultTactics } from '../engine/attrs';
+import { openMatchDay } from './match';
 
 const app = () => document.getElementById('app');
 export const view = { screen: 'menu', tab: 'dashboard', filters: {} };

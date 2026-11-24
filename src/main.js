@@ -1,6 +1,7 @@
-import { loadData, setOnAssets } from './data.js';
-import { setLang, getLang, t } from './i18n.js';
-import { render } from './ui.js';
+import './styles/style.css';
+import { loadData, setOnAssets } from './engine/data';
+import { setLang, getLang, t } from './ui/i18n';
+import { render } from './ui/ui';
 
 setLang(getLang());
 const boot = document.querySelector('.boot');

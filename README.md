@@ -23,13 +23,15 @@ Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt
 
 ## Chạy game
 
-Game là web tĩnh, không cần build, nhưng phải chạy qua một web server vì trình duyệt chặn `fetch` khi mở file trực tiếp:
+Dự án dùng **Vite + TypeScript**. Cần Node.js 20 trở lên.
 
 ```bash
-python3 -m http.server 8000
+npm install
+npm run dev          # chạy bản phát triển (http://localhost:5173)
+npm run build        # đóng gói vào dist/
+npm run preview      # xem bản đã đóng gói
+npm run build:artifact   # thêm dist/artifact.html dùng gói ảnh nhị phân
 ```
-
-Sau đó mở http://localhost:8000. Có thể deploy thẳng lên GitHub Pages, Cloudflare Pages hoặc Netlify.
 
 ## Cập nhật dữ liệu
 
@@ -67,36 +69,27 @@ Lệnh này gộp toàn bộ ảnh thành một file `data/assets-pack.json` (kh
 ## Kiểm thử
 
 ```bash
-node tests/sim-season.mjs "T1"
+npm run typecheck    # kiểm tra kiểu TypeScript (engine ở chế độ strict)
+npm test             # Vitest: một ván, cân bằng 300 ván, trọn một mùa giải + sang mùa mới
+npm run stats -- 400 # thống kê cân bằng engine: thời lượng, mạng, trụ, CS/sát thương/vàng theo vị trí, tỉ lệ thắng theo chênh OVR
 ```
-
-Lệnh này giả lập tự động 2 mùa giải và in nhà vô địch các giải, kích thước file save và các lỗi đội hình nếu có.
-
-```bash
-node tests/engine-stats.mjs 400
-```
-
-Lệnh này chạy 400 ván ngẫu nhiên rồi in thống kê của engine: thời lượng, số mạng, trụ, rồng, Baron, CS/sát thương/vàng mỗi phút theo vị trí, số lần xảy ra từng loại tình huống, và tỉ lệ thắng theo chênh lệch OVR.
 
 ## Cấu trúc
 
 ```
-index.html          trang chính
-css/style.css       giao diện
-js/i18n.js          bản dịch Việt / Anh
-js/data.js          tải dữ liệu
-js/state.js         trạng thái game, lưu/tải
-js/formats.js       thể thức 2026: vòng tròn nhiều bảng, Swiss, mẫu nhánh đấu, First Stand/MSI/CKTG
-js/gpr.js           BXH sức mạnh toàn cầu (Elo đội + điểm khu vực)
-js/season.js        ngày thi đấu, phát thưởng, chuyển nhượng, mùa mới
-js/attrs.js         hệ chỉ số chi tiết, đặc điểm, thể lực, chiến thuật
-js/engine.js        mô phỏng trong trận theo nhịp 15 giây
-js/sim.js           cấm/chọn AI, nối engine với mùa giải
-js/match.js         màn hình ngày thi đấu
-js/ui.js            các màn hình còn lại
-scripts/fetch-data.mjs  script lấy dữ liệu
+index.html               trang chính (Vite)
+public/data, public/assets   dữ liệu tĩnh và ảnh (copy nguyên vào bản build)
+src/main.js              khởi động
+src/engine/              engine TypeScript thuần, không phụ thuộc giao diện
+  index.ts               API công khai: mọi hàm nhận GameState (createGame, advanceDay, simulateGame, simSeason...)
+  types.ts               kiểu dữ liệu: Player, Team, Match, Comp, Draft, GameResult, GameState...
+  engine.ts              mô phỏng trong trận theo nhịp 15 giây
+  sim.ts                 cấm/chọn AI, loạt đấu, cập nhật thống kê
+  formats.ts             thể thức 2026: vòng tròn, Swiss, mẫu nhánh đấu, First Stand/MSI/CKTG
+  season.ts              ngày thi đấu, phát thưởng, chuyển nhượng, mùa mới
+  attrs.ts, gpr.ts, awards.ts, academy.ts, state.ts, data.ts, util.ts
+src/ui/                  giao diện (sẽ chuyển sang React + Tailwind ở các bước tiếp theo)
+src/styles/style.css
+tests/                   Vitest
+scripts/                 lấy dữ liệu (Leaguepedia, Data Dragon), làm sạch logo, đóng gói ảnh, thống kê cân bằng
 ```
-
----
-
-Rift Manager không được Riot Games xác nhận và không phản ánh quan điểm của Riot Games hay bất kỳ ai tham gia sản xuất hoặc quản lý League of Legends. League of Legends và Riot Games là thương hiệu hoặc thương hiệu đã đăng ký của Riot Games, Inc. Chỉ số tuyển thủ là ước tính của game, không phải đánh giá chính thức.

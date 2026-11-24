@@ -120,7 +120,7 @@ def whiten_mono_dark(path):
 
 
 for folder in ("league", "team"):
-    d = os.path.join(ROOT, "assets", folder)
+    d = os.path.join(ROOT, "public", "assets", folder)
     for name in sorted(os.listdir(d)):
         k = clean(os.path.join(d, name))
         if k:

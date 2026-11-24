@@ -1,25 +1,26 @@
 // Lịch thi đấu, bảng xếp hạng, playoffs, giải quốc tế, kỳ chuyển nhượng
-import { DB } from './data.js';
-import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, teamSalary, makeRookie, refreshValue, blankStats, userTeam } from './state.js';
-import { simSeries } from './sim.js';
-import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util.js';
+import { DB } from './data';
+import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, teamSalary, makeRookie, refreshValue, blankStats, userTeam } from './state';
+import { simSeries } from './sim';
+import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util';
 
-import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr.js';
-import { closeEvent, resetEventStats } from './awards.js';
-import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy.js';
-import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats.js';
+import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr';
+import { closeEvent, resetEventStats } from './awards';
+import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy';
+import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
+import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats';
 export { PHASES, standings, compOrder, runnerUp };
 // tiền thưởng (nghìn USD) theo hạng 1 / 2 / 3-4 / 5-8
-const PRIZE = {
+const PRIZE: Record<Trophy['tier'], number[]> = {
   cup: [250, 120, 60, 25], league: [400, 200, 80, 30], fst: [1000, 600, 250, 120],
   msi: [1000, 500, 250, 120], worlds: [2500, 1200, 600, 300, 120],
 };
 export { makeMatch, roundRobin };
 
-export const leagueTeams = (lg) => Object.values(S.teams).filter((t) => t.league === lg).map((t) => t.id);
+export const leagueTeams = (lg: string): string[] => Object.values(S.teams).filter((t) => t.league === lg).map((t) => t.id);
 
-const PHASE_NEWS = { kickoff: 'news.kickoff', fst: 'news.fstStart', spring: 'news.springStart', msi: 'news.msiStart', summer: 'news.summerStart', worlds: 'news.worldsStart', offseason: 'news.offseason' };
-export function startPhase(phase) {
+const PHASE_NEWS: Record<Phase, string> = { kickoff: 'news.kickoff', fst: 'news.fstStart', spring: 'news.springStart', msi: 'news.msiStart', summer: 'news.summerStart', worlds: 'news.worldsStart', offseason: 'news.offseason' };
+export function startPhase(phase: Phase): void {
   ensureGpr();
   ensureSoloq();
   S.phase = phase;
@@ -29,16 +30,16 @@ export function startPhase(phase) {
   addNews(PHASE_NEWS[phase], { season: S.season }, true);
 }
 
-export const allPhaseMatches = () => S.phaseComps.flatMap((id) => S.comps[id].matches);
-export const matchesOnDay = (day) => allPhaseMatches().filter((m) => m.day === day);
-export const userMatchToday = () => matchesOnDay(S.day).find((m) => !m.done && (m.a === S.userTeam || m.b === S.userTeam));
-export function nextUserMatch() {
+export const allPhaseMatches = (): Match[] => S.phaseComps.flatMap((id) => S.comps[id].matches);
+export const matchesOnDay = (day: number): Match[] => allPhaseMatches().filter((m) => m.day === day);
+export const userMatchToday = (): Match | undefined => matchesOnDay(S.day).find((m) => !m.done && (m.a === S.userTeam || m.b === S.userTeam));
+export function nextUserMatch(): Match | null {
   return allPhaseMatches().filter((m) => !m.done && (m.a === S.userTeam || m.b === S.userTeam)).sort((a, b) => a.day - b.day)[0] || null;
 }
-export const phaseFinished = () => S.phase !== 'offseason' && S.phaseComps.every((id) => S.comps[id].done);
+export const phaseFinished = (): boolean => S.phase !== 'offseason' && S.phaseComps.every((id) => S.comps[id].done);
 
 // Chuyển sang ngày tiếp theo. Trả về false nếu đội người chơi còn trận hôm nay.
-export function advanceDay() {
+export function advanceDay(): boolean {
   if (S.phase === 'offseason') return false;
   if (userMatchToday()) return false;
   for (const m of matchesOnDay(S.day)) if (!m.done) simSeries(m);
@@ -46,7 +47,7 @@ export function advanceDay() {
   dailyTick();
   if (phaseFinished()) {
     endPhase();
-    const i = PHASES.indexOf(S.phase);
+    const i = PHASES.indexOf(S.phase as Phase);
     S.day++;
     startPhase(PHASES[i + 1]);
   } else {
@@ -59,14 +60,14 @@ export function advanceDay() {
 }
 
 // sau mỗi ngày / mỗi trận của người chơi: cập nhật nhánh đấu, tạo giai đoạn kế tiếp
-export function progressComps() {
+export function progressComps(): void {
   const before = new Set(S.phaseComps.filter((id) => S.comps[id].done));
   progressStages();
   for (const id of S.phaseComps) if (S.comps[id].done && !before.has(id)) finishComp(S.comps[id]);
 }
 
 // phát thưởng / ghi danh hiệu khi một giai đoạn có cúp kết thúc
-function finishComp(c) {
+function finishComp(c: Comp): void {
   if (!c.trophy) return;
   const y = S.season;
   const ut = S.userTeam;
@@ -88,10 +89,10 @@ function finishComp(c) {
     if (p) (p.titles = p.titles || []).push(title);
   }
   const aw = closeEvent(c, order);
-  if (aw) addNews('news.awards', { title, mvp: aw.mvp.ign, mvpTeam: aw.mvp.team, fmvp: aw.fmvp ? aw.fmvp.ign : '—' }, aw.mvp.pid && S.players[aw.mvp.pid]?.teamId === S.userTeam);
+  if (aw) addNews('news.awards', { title, mvp: aw.mvp.ign, mvpTeam: aw.mvp.team, fmvp: aw.fmvp ? aw.fmvp.ign : '—' }, !!aw.mvp.pid && S.players[aw.mvp.pid]?.teamId === S.userTeam);
 }
 
-function dailyTick() {
+function dailyTick(): void {
   // xếp hạng đơn & học viện
   const playing = new Set(matchesOnDay(S.day).flatMap((m) => [m.a, m.b]));
   soloqDay(playing);
@@ -106,12 +107,12 @@ function dailyTick() {
     const gap = p.potential - p.ovr;
     if (p.age <= 25 && gap > 0 && rand() < (0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) * (isUser ? intensity : 1)) {
       // giáo án theo nhóm: chỉ số trong nhóm được ưu tiên, aggression không luyện được
-      const grp = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
+      const grp: Attr[] = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
       const a = pick(grp.filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] + 1, 30, 99);
       if (isUser && rand() < 0.15 * intensity) p.cond = clamp(p.cond - 4, 20, 100); // tập nặng hơi mệt
     } else if (p.age >= 28 && rand() < 0.02 * (p.age - 26)) {
-      const a = pick(['dodge', 'accuracy', 'stamina', 'farm', pick(ATTRS)].filter((x) => x !== 'aggression'));
+      const a = pick((['dodge', 'accuracy', 'stamina', 'farm', pick(ATTRS)] as Attr[]).filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] - 1, 30, 99);
     }
     p.ovr = computeOvr(p);
@@ -123,7 +124,7 @@ function dailyTick() {
   // AI: đề nghị mua cầu thủ đang rao bán
   for (const pid of [...(S.listed || [])]) {
     const p = S.players[pid];
-    if (!p || p.teamId !== S.userTeam) { S.listed = S.listed.filter((x) => x !== pid); continue; }
+    if (!p || p.teamId !== S.userTeam) { S.listed = (S.listed || []).filter((x) => x !== pid); continue; }
     if (rand() < 0.25) {
       const buyers = Object.values(S.teams).filter((x) => x.id !== S.userTeam && x.budget > p.value * 0.8);
       if (buyers.length) {
@@ -136,31 +137,31 @@ function dailyTick() {
   }
 }
 
-function addFinanceQuiet(cost, income) {
+function addFinanceQuiet(cost: number, income: number): void {
   const t = userTeam();
   t.budget += cost + income;
   S.dailyCost = (S.dailyCost || 0) + cost;
   S.dailyIncome = (S.dailyIncome || 0) + income;
 }
 
-function endPhase() {
+function endPhase(): void {
   const y = S.season;
   const ut = S.userTeam;
   // ghi tổng kết chi phí ngày
   if (S.dailyCost) {
     S.finance.unshift({ key: 'fin.salaries', amount: Math.round(S.dailyCost), day: S.day, season: y });
-    S.finance.unshift({ key: 'fin.sponsor', amount: Math.round(S.dailyIncome), day: S.day, season: y });
+    S.finance.unshift({ key: 'fin.sponsor', amount: Math.round(S.dailyIncome || 0), day: S.day, season: y });
     S.dailyCost = 0; S.dailyIncome = 0;
   }
-  gprSnapshot(S.phase);
-  autoSaveHook && autoSaveHook();
+  if (S.phase) gprSnapshot(S.phase);
+  autoSaveHook?.();
 }
 
-let autoSaveHook = null;
-export function setAutoSave(fn) { autoSaveHook = fn; }
+let autoSaveHook: (() => void) | null = null;
+export function setAutoSave(fn: () => void): void { autoSaveHook = fn; }
 
 // ----- Kỳ chuyển nhượng: bắt đầu mùa mới -----
-export function startNewSeason() {
+export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
   // phần thưởng/doanh thu tài trợ điều chỉnh theo kết quả
@@ -250,8 +251,8 @@ export function startNewSeason() {
   startPhase('kickoff');
 }
 
-export function removeFromTeam(p) {
-  const t = S.teams[p.teamId];
+export function removeFromTeam(p: Player): void {
+  const t = p.teamId ? S.teams[p.teamId] : undefined;
   if (t) {
     t.roster = t.roster.filter((x) => x !== p.id);
     for (const r of ROLES) if (t.lineup[r] === p.id) delete t.lineup[r];
@@ -259,7 +260,7 @@ export function removeFromTeam(p) {
   p.teamId = null;
 }
 
-export function signPlayer(t, p, until) {
+export function signPlayer(t: Team, p: Player, until: number): void {
   if (p.teamId) removeFromTeam(p);
   S.freeAgents = S.freeAgents.filter((x) => x !== p.id);
   p.teamId = t.id;
@@ -268,14 +269,14 @@ export function signPlayer(t, p, until) {
 }
 
 // ----- Chuyển nhượng của người chơi -----
-export function askingPrice(p) {
-  const t = S.teams[p.teamId];
+export function askingPrice(p: Player): number {
+  const t = p.teamId ? S.teams[p.teamId] : undefined;
   if (!t) return 0;
   const starter = Object.values(t.lineup).includes(p.id);
   return Math.round(p.value * (starter ? 1.35 : 1.0));
 }
 
-export function makeOffer(pid, amount) {
+export function makeOffer(pid: string, amount: number): { ok: boolean; reason?: string; [k: string]: unknown } {
   const p = S.players[pid];
   const ut = userTeam();
   if (ut.roster.length >= 10) return { ok: false, reason: 'tr.rosterFull' };
@@ -304,12 +305,12 @@ export function makeOffer(pid, amount) {
   return { ok: true };
 }
 
-export function acceptOffer(oid) {
+export function acceptOffer(oid: string): void {
   const o = (S.offers || []).find((x) => x.id === oid);
   if (!o) return;
   const p = S.players[o.pid];
   const buyer = S.teams[o.from];
-  if (!p || p.teamId !== S.userTeam) { S.offers = S.offers.filter((x) => x.id !== oid); return; }
+  if (!p || p.teamId !== S.userTeam) { S.offers = (S.offers || []).filter((x) => x.id !== oid); return; }
   buyer.budget -= o.amount;
   addFinance('fin.transferOut', o.amount, { player: p.ign });
   const old = S.teams[p.teamId];
@@ -321,12 +322,12 @@ export function acceptOffer(oid) {
     if (extra) { removeFromTeam(extra); S.freeAgents.push(extra.id); }
   }
   autoLineup(buyer);
-  S.offers = S.offers.filter((x) => x.pid !== p.id);
+  S.offers = (S.offers || []).filter((x) => x.pid !== p.id);
   S.listed = (S.listed || []).filter((x) => x !== p.id);
   addNews('news.transfer', { player: p.ign, from: old.name, to: buyer.name, fee: o.amount }, true);
 }
 
-export function releasePlayer(pid) {
+export function releasePlayer(pid: string): void {
   const p = S.players[pid];
   const years = Math.max(1, p.contractUntil - S.season + 1);
   const cost = Math.round(p.salary * 0.5 * years);
@@ -336,8 +337,8 @@ export function releasePlayer(pid) {
   addNews('news.released', { player: p.ign }, false);
 }
 
-export function renewCost(p) { return Math.round(p.salary * (1 + Math.max(0, p.ovr - 70) * 0.012 + rand() * 0.05)); }
-export function renewContract(pid, salary, years) {
+export function renewCost(p: Player): number { return Math.round(p.salary * (1 + Math.max(0, p.ovr - 70) * 0.012 + rand() * 0.05)); }
+export function renewContract(pid: string, salary: number, years: number): void {
   const p = S.players[pid];
   p.salary = salary;
   p.contractUntil = S.season + years;
@@ -346,10 +347,10 @@ export function renewContract(pid, salary, years) {
 }
 
 // ngày tháng theo lịch thật 2026 của từng pha (day: số ngày tính từ đầu mùa)
-export function seasonDate(day) {
+export function seasonDate(day: number): Date {
   const abs = +day + (S.seasonStartDay || 0);
-  const starts = Object.entries(S.phaseStart || {}).filter(([, d]) => d <= abs).sort((a, b) => b[1] - a[1]);
-  const [ph, d0] = starts[0] || ['kickoff', S.seasonStartDay || 0];
+  const starts = (Object.entries(S.phaseStart || {}) as [Phase, number][]).filter(([, d]) => d <= abs).sort((a, b) => b[1] - a[1]);
+  const [ph, d0]: [Phase, number] = starts[0] || ['kickoff', S.seasonStartDay || 0];
   const [[m1, d1], [m2, d2], len] = PHASE_WINDOW[ph] || PHASE_WINDOW.kickoff;
   const from = Date.UTC(S.season, m1, d1), to = Date.UTC(S.season, m2, d2);
   // mỗi ngày thi đấu cách nhau ít nhất 1 ngày lịch (không bao giờ trùng ngày)

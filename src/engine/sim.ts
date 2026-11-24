@@ -1,14 +1,17 @@
 // Mô phỏng cấm/chọn và trận đấu
-import { DB } from './data.js';
-import { S, lineupPlayers, fillLineup } from './state.js';
-import { ROLES, rand, clamp, logistic, gauss } from './util.js';
-import { runGame } from './engine.js';
-import { aiTactics, drainCondition } from './attrs.js';
-import { gprOnSeries } from './gpr.js';
-import { archiveGame } from './awards.js';
+import { DB } from './data';
+import { S, lineupPlayers, fillLineup } from './state';
+import { ROLES, rand, clamp, logistic, gauss } from './util';
+import { runGame } from './engine';
+import { aiTactics, drainCondition } from './attrs';
+import { gprOnSeries } from './gpr';
+import { archiveGame } from './awards';
+import type { Draft, GameRecord, GameResult, Match, Player, Role, Side, Picks } from './types';
+
+type Line = Partial<Record<Role, Player | null>>;
 
 // Thứ tự cấm/chọn chuẩn giải chuyên nghiệp
-export const DRAFT_ORDER = [
+export const DRAFT_ORDER: [Side, 'ban' | 'pick'][] = [
   ['B', 'ban'], ['R', 'ban'], ['B', 'ban'], ['R', 'ban'], ['B', 'ban'], ['R', 'ban'],
   ['B', 'pick'], ['R', 'pick'], ['R', 'pick'], ['B', 'pick'], ['B', 'pick'], ['R', 'pick'],
   ['R', 'ban'], ['B', 'ban'], ['R', 'ban'], ['B', 'ban'],
@@ -16,8 +19,8 @@ export const DRAFT_ORDER = [
 ];
 
 // Độ hợp tướng của tuyển thủ (0-100)
-export function champFit(p, champId, role) {
-  const c = DB.champions[champId];
+export function champFit(p: Player | null | undefined, champId: string | undefined, role: Role): number {
+  const c = champId ? DB.champions[champId] : undefined;
   if (!c || !p) return 30;
   let fit = 22 + c.power * 0.5;
   const pe = p.pool.find((x) => x.c === champId);
@@ -26,15 +29,15 @@ export function champFit(p, champId, role) {
   return clamp(fit, 0, 100);
 }
 
-export function effRating(p, champId, role) {
+export function effRating(p: Player | null | undefined, champId: string | undefined, role: Role): number {
   if (!p) return 35;
   let r = p.ovr + (champFit(p, champId, role) - 60) * 0.12 + (p.form || 0) * 0.5;
   if (p.role !== role) r -= 8;
   return r;
 }
 
-export function compScore(champIds) {
-  const cs = champIds.map((id) => DB.champions[id]).filter(Boolean);
+export function compScore(champIds: (string | undefined)[]): number {
+  const cs = champIds.map((id) => DB.champions[id ?? '']).filter(Boolean);
   if (!cs.length) return 0;
   const tanks = cs.filter((c) => c.tags.includes('Tank')).length;
   const ap = cs.reduce((s, c) => s + c.info.magic, 0);
@@ -46,8 +49,8 @@ export function compScore(champIds) {
   return sc;
 }
 
-export function compTraits(champIds) {
-  const cs = champIds.map((id) => DB.champions[id]).filter(Boolean);
+export function compTraits(champIds: (string | undefined)[]): { tanks: number; apShare: number; score: number } {
+  const cs = champIds.map((id) => DB.champions[id ?? '']).filter(Boolean);
   const tanks = cs.filter((c) => c.tags.includes('Tank')).length;
   const ap = cs.reduce((s, c) => s + c.info.magic, 0);
   const ad = cs.reduce((s, c) => s + c.info.attack, 0);
@@ -56,19 +59,19 @@ export function compTraits(champIds) {
 
 // ----- AI cấm chọn -----
 // locked: tướng đã dùng ở các ván trước trong loạt (Hard Fearless Draft — mỗi tướng chỉ được chọn một lần trong cả loạt)
-export function newDraft(blueTeamId, redTeamId, locked = []) {
+export function newDraft(blueTeamId: string, redTeamId: string, locked: string[] = []): Draft {
   return { blue: blueTeamId, red: redTeamId, step: 0, bans: { B: [], R: [] }, picks: { B: {}, R: {} }, log: [], locked: [...locked] };
 }
-export const draftTaken = (d) => new Set([...d.bans.B, ...d.bans.R, ...Object.values(d.picks.B), ...Object.values(d.picks.R), ...(d.locked || [])]);
-export const openRoles = (d, side) => ROLES.filter((r) => !d.picks[side][r]);
+export const draftTaken = (d: Draft): Set<string> => new Set<string>([...d.bans.B, ...d.bans.R, ...(Object.values(d.picks.B) as string[]), ...(Object.values(d.picks.R) as string[]), ...(d.locked || [])]);
+export const openRoles = (d: Draft, side: Side): Role[] => ROLES.filter((r) => !d.picks[side][r]);
 
-function lineupMap(teamId) {
-  const m = {};
+function lineupMap(teamId: string): Line {
+  const m: Line = {};
   for (const { role, p } of lineupPlayers(S.teams[teamId])) m[role] = p;
   return m;
 }
 
-export function aiChoose(d, sideTeam) {
+export function aiChoose(d: Draft): { champ: string; role?: Role } {
   const [side, type] = DRAFT_ORDER[d.step];
   const taken = draftTaken(d);
   const me = side === 'B' ? d.blue : d.red;
@@ -78,7 +81,7 @@ export function aiChoose(d, sideTeam) {
     const oppSide = side === 'B' ? 'R' : 'B';
     const oppLine = lineupMap(opp);
     const roles = openRoles(d, oppSide);
-    let best = null, bestS = -1e9;
+    let best: string | null = null, bestS = -1e9;
     for (const c of DB.champList) {
       if (taken.has(c.id)) continue;
       let s = -1e9;
@@ -90,7 +93,7 @@ export function aiChoose(d, sideTeam) {
       s += rand() * 8;
       if (s > bestS) { bestS = s; best = c.id; }
     }
-    return { champ: best };
+    return { champ: best ?? DB.champList.find((x) => !taken.has(x.id))!.id };
   }
   const roles = openRoles(d, side);
   const current = Object.values(d.picks[side]);
@@ -104,13 +107,13 @@ export function aiChoose(d, sideTeam) {
     }
   }
   if (!best) { // dự phòng: tướng bất kỳ
-    const c = DB.champList.find((x) => !taken.has(x.id));
+    const c = DB.champList.find((x) => !taken.has(x.id))!;
     best = { champ: c.id, role: roles[0] };
   }
   return best;
 }
 
-export function applyDraftAction(d, champ, role) {
+export function applyDraftAction(d: Draft, champ: string, role?: Role | null): void {
   const [side, type] = DRAFT_ORDER[d.step];
   if (type === 'ban') d.bans[side].push(champ);
   else {
@@ -118,24 +121,24 @@ export function applyDraftAction(d, champ, role) {
     if (!role || d.picks[side][role]) role = bestOpenRole(d, side, champ);
     d.picks[side][role] = champ;
   }
-  d.log.push({ side, type, champ, role });
+  d.log.push({ side, type, champ, role: role ?? null });
   d.step++;
 }
 
-export function bestOpenRole(d, side, champ) {
+export function bestOpenRole(d: Draft, side: Side, champ: string): Role {
   const line = lineupMap(side === 'B' ? d.blue : d.red);
   const roles = openRoles(d, side);
   return roles.sort((a, b) => champFit(line[b], champ, b) - champFit(line[a], champ, a))[0];
 }
 
 // đổi tướng giữa 2 vị trí của cùng một đội
-export function swapPicks(d, side, r1, r2) {
+export function swapPicks(d: Draft, side: Side, r1: Role, r2: Role): void {
   const p = d.picks[side];
   [p[r1], p[r2]] = [p[r2], p[r1]];
   for (const r of [r1, r2]) if (!p[r]) delete p[r];
 }
 
-export function autoDraft(blueId, redId, locked = []) {
+export function autoDraft(blueId: string, redId: string, locked: string[] = []): Draft {
   const d = newDraft(blueId, redId, locked);
   while (d.step < DRAFT_ORDER.length) {
     const ch = aiChoose(d);
@@ -146,18 +149,18 @@ export function autoDraft(blueId, redId, locked = []) {
 
 // ----- Mô phỏng ván đấu -----
 // Ước lượng sức mạnh trước trận (hiển thị tỉ lệ thắng); kết quả thật do engine.js mô phỏng nhịp-theo-nhịp
-export function teamPower(teamId, picks) {
+export function teamPower(teamId: string, picks: Picks[Side]): number {
   const line = lineupMap(teamId);
   let sum = 0;
   for (const r of ROLES) sum += effRating(line[r], picks[r], r);
   return sum / 5 + compScore(Object.values(picks));
 }
 
-export function simulateGame(d, opts = {}) {
-  const lines = { B: lineupMap(d.blue), R: lineupMap(d.red) };
-  const fits = { B: {}, R: {} };
-  for (const sd of ['B', 'R']) for (const r of ROLES) fits[sd][r] = champFit(lines[sd][r], d.picks[sd][r], r);
-  const tac = (sd) => {
+export function simulateGame(d: Draft, opts: { record?: boolean; series?: number } = {}): GameResult {
+  const lines: Record<Side, Line> = { B: lineupMap(d.blue), R: lineupMap(d.red) };
+  const fits: Record<Side, Partial<Record<Role, number>>> = { B: {}, R: {} };
+  for (const sd of ['B', 'R'] as Side[]) for (const r of ROLES) fits[sd][r] = champFit(lines[sd][r], d.picks[sd][r], r);
+  const tac = (sd: Side) => {
     const tid = sd === 'B' ? d.blue : d.red;
     const base = tid === S.userTeam && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
     return { ...base, day: gauss() * 2.6 }; // phong độ chung của cả đội trong ngày
@@ -168,12 +171,12 @@ export function simulateGame(d, opts = {}) {
 }
 
 // cập nhật phong độ/thống kê sau ván
-export function applyGameResult(g) {
+export function applyGameResult(g: GameResult): void {
   for (const x of g.players) {
-    const p = S.players[x.pid];
+    const p = x.pid ? S.players[x.pid] : undefined;
     if (!p) continue;
     const win = x.side === g.winner;
-    for (const k of ['season', 'career']) {
+    for (const k of ['season', 'career'] as const) {
       const st = p[k];
       st.g++; if (win) st.w++;
       st.k += x.k; st.d += x.d; st.a += x.a; st.cs += x.cs;
@@ -192,7 +195,7 @@ export function applyGameResult(g) {
 }
 
 // Chơi cả loạt Bo (tự động hoặc với các ván đã có)
-export function simSeries(match) {
+export function simSeries(match: Match): void {
   fillLineup(S.teams[match.a]);
   fillLineup(S.teams[match.b]);
   const need = Math.ceil(match.bo / 2);
@@ -205,13 +208,13 @@ export function simSeries(match) {
   }
 }
 
-export function recordGame(match, g, detailed) {
+export function recordGame(match: Match, g: GameResult, detailed: boolean): void {
   applyGameResult(g);
   archiveGame(match, g);
-  if (match.bo > 1) match.fearless = [...(match.fearless || []), ...Object.values(g.picks.B), ...Object.values(g.picks.R)];
+  if (match.bo > 1) match.fearless = [...(match.fearless || []), ...(Object.values(g.picks.B) as string[]), ...(Object.values(g.picks.R) as string[])];
   if (g.winnerId === match.a) match.winsA++; else match.winsB++;
   // lưu gọn để giảm dung lượng lưu trữ
-  const keep = { winner: g.winnerId, dur: g.dur };
+  const keep: GameRecord = { winner: g.winnerId, dur: g.dur };
   if (detailed) Object.assign(keep, { blue: g.blue, red: g.red, kills: g.kills, mvp: g.mvp, picks: g.picks, bans: g.bans, towers: g.towers, players: g.players });
   match.games.push(keep);
   const need = Math.ceil(match.bo / 2);
