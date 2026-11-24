@@ -91,7 +91,16 @@ export class Timeline {
     // tướng đi tối đa ~2.4 đơn vị bản đồ/giây (≈ 350 tốc chạy); đoạn ngắn thì đến sớm rồi đứng
     const need = dist / 2.4;
     const ff = need >= span ? f : Math.min(1, (gt - a.t) / Math.max(need, 0.001));
-    const x = a.x + dx * ff, y = a.y + dy * ff;
+    let x = a.x + dx * ff, y = a.y + dy * ff;
+    // giai đoạn đi đường: hai bên đứng tách nhau quanh đợt lính (engine chỉ lệch rất ít)
+    if (gt < 840 && !k.endsWith('Jungle') && Math.hypot(x - base[0], y - base[1]) > 18) {
+      const fade = gt > 780 ? (840 - gt) / 60 : 1;
+      const off = (k.endsWith('Support') ? 4.2 : 3.4) * fade;
+      // hướng về nhà dọc theo đường đang đứng
+      const [ux, uy] = x < 20 && y < 84 && y > 18 ? [0, 1] : y < 20 ? [-1, 0] : y > 80 && x > 18 ? [-1, 0] : x > 80 ? [0, 1] : [-0.707, 0.707];
+      const sg = sd === 'B' ? 1 : -1;
+      x += ux * off * sg; y += uy * off * sg;
+    }
     return { x, y, hp: a.hp + ((b.alive ? b.hp : a.hp) - a.hp) * f, alive: true, recall: -1, moving: ff < 1 && dist > 0.5, dx: dist ? dx / dist : 0, dy: dist ? dy / dist : 0, deadSince: 0 };
   }
 }

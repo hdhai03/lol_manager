@@ -147,3 +147,4 @@
 .u3 span { width: auto; height: auto; background: none; border-radius: 0; box-shadow: none; overflow: visible; }
 .u3 .u3-lv { min-width: 17px; height: 17px; background: rgba(8, 10, 16, .9); border-radius: 2px; }
 .u3 .u3-hp { width: 62px; height: 7px; background: rgba(0, 0, 0, .75); overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, .6); }
+.f3 { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; font-family: var(--cond); font-weight: 800; font-size: 1.05rem; color: #ffd75e; text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, .8); }

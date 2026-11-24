@@ -318,6 +318,21 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
   const grubIv = ivs(['grubs'], 480, 1e9, 885);
   const inIv = (iv: [number, number][], gt: number) => iv.find(([a, b]) => gt >= a && gt < b);
 
+  // ----- bãi quái rừng (mỗi bên 5 bãi + 2 cua sông): hồi sinh theo mốc thật -----
+  interface Camp { p: P2; g: any; hp: number; next: number; respawn: number; buff: boolean }
+  const CAMP_B: [P2, boolean][] = [[[30, 55], true], [[55, 78], true], [[18, 38], false], [[22, 62], false], [[44, 70], false]];
+  const camps: Camp[] = [];
+  const campMat = (c: number) => new THREE.MeshStandardMaterial({ color: c, roughness: .6, flatShading: true });
+  const mkCamp = (p: P2, buff: boolean, color: number, first: number, respawn: number) => {
+    const w = W(p); const g = new THREE.Group();
+    if (buff) { const b = new THREE.Mesh(new THREE.DodecahedronGeometry(2.2, 0), campMat(color)); b.position.y = 2.2; b.castShadow = true; g.add(b); const gl = new THREE.Mesh(new THREE.SphereGeometry(.9, 10, 8), new THREE.MeshBasicMaterial({ color })); gl.position.y = 4.8; g.add(gl); }
+    else for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.DodecahedronGeometry(1 + (i === 0 ? .4 : 0), 0), campMat(color)); b.position.set((i - 1) * 2, 1.1, (i % 2) * 1.6); b.castShadow = true; g.add(b); }
+    g.position.set(w.x, 0, w.z); g.visible = false; scene.add(g);
+    camps.push({ p, g, hp: 0, next: first, respawn, buff });
+  };
+  for (const sd of ['B', 'R'] as Side[]) CAMP_B.forEach(([p, buff], i) => mkCamp(sd === 'B' ? p : MIR(p), buff, buff ? (i === 0 ? 0x4aa8ff : 0xff5a3a) : [0x8a7a5a, 0x9ad06a, 0x7a6a9a][i % 3], 90, buff ? 300 : 135));
+  mkCamp([36, 42], false, 0x5ac8c0, 210, 150); mkCamp([64, 58], false, 0x5ac8c0, 210, 150);
+
   // ----- tướng -----
   interface U { k: string; side: Side; model: Model; kind: { cls: Cls; ranged: boolean }; label: HTMLElement; hpEl: HTMLElement; lvEl: HTMLElement; x: number; z: number; face: number; walk: number; atk: number; cast: number; cd: number; skillCd: number; dead: boolean; deathT: number; recallFx: Fx | null; target: { x: number; z: number } | null }
   const units: U[] = [];
@@ -338,6 +353,7 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
 
   // ----- hiệu ứng -----
   const fxs: Fx[] = [];
+  const floats: { el: HTMLElement; x: number; z: number; t: number }[] = [];
   const add = (f: Fx) => { scene.add(f.m); fxs.push(f); };
   const basic = (color: number, opacity = .9) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
   const sphereG = new THREE.SphereGeometry(1, 12, 10);
@@ -372,6 +388,10 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
   const pillar = (p: { x: number; z: number }, color: number, life = .9, h = 22) => {
     const m = new THREE.Mesh(cylG, basic(color, .6)); m.position.set(p.x, h / 2, p.z); m.scale.set(2.2, h, 2.2);
     add({ m, t: 0, life, upd: (f, k) => { f.m.scale.x = f.m.scale.z = 2.2 * (1 - k * .7); f.m.material.opacity = .6 * (1 - k); } });
+  };
+  const floatText = (u: { x: number; z: number }, txt: string) => {
+    const el = document.createElement('div'); el.className = 'f3'; el.textContent = txt; container.appendChild(el);
+    floats.push({ el, x: u.x, z: u.z, t: 0 });
   };
   const boom = (p: { x: number; z: number }, color: number, size: number) => { spark(p, color, size, 4); ringFx(p, color, size * 1.2, .8); };
 
@@ -477,6 +497,12 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
       if (gt - e.d > 4) continue; // tua nhanh: bỏ qua hiệu ứng cũ
       const p = evPos(e);
       const col = e.side === 'B' ? TEAM_L.B : TEAM_L.R;
+      if ((e.type === 'kill' || e.type === 'firstblood') && e.killer) {
+        const os = e.side === 'B' ? 'R' : 'B';
+        const kU = units.find((x) => x.k === e.side + e.killer), vU = units.find((x) => x.k === os + e.victim);
+        if (kU && vU && !kU.dead) { kU.atk = 1; kU.cast = 1; beam({ x: kU.x, z: kU.z }, 4, { x: vU.x, z: vU.z }, e.side === 'B' ? 0x9cd0ff : 0xff9c9c, .35, .6); floatText(kU, e.type === 'firstblood' ? '+400' : '+300'); }
+      }
+      if (e.type === 'teamfight') for (const x of units) if (!x.dead && x.side === e.side) { x.cast = 1; ringFx({ x: x.x, z: x.z }, TEAM_L[x.side], 10, .9); pillar({ x: x.x, z: x.z }, TEAM_L[x.side], .7, 14); }
       if (!p) continue;
       const w = W(p);
       if (['dragon', 'soul', 'elder', 'baron', 'herald', 'grubs'].includes(e.type)) { boom(w, col, 9); pillar(w, col, 1.4, 30); }
@@ -524,6 +550,11 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
     heraldM.g.visible = !!inIv(heraldIv, gt) && !baronM.g.visible; grubs.forEach((gq) => { gq.g.visible = !!inIv(grubIv, gt); });
     for (const mo of [dragonM, elderM, baronM, heraldM, ...grubs]) { mo.body.position.y = mo.body.geometry.parameters.radius + bob; mo.g.rotation.y += rdt * .2; }
 
+    // bãi quái rừng
+    for (const c of camps) {
+      if (c.hp <= 0 && gt >= c.next) { c.hp = 1; c.g.visible = true; c.g.scale.setScalar(1); }
+      if (c.hp > 0) c.g.rotation.y += rdt * .3;
+    }
     // tướng
     for (const u of units) {
       const s = tl.unit(u.k, gt);
@@ -555,7 +586,8 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
         for (const mn of minions) if (!mn.dead && mn.side !== u.side) { const p = mn.m.position; const d = Math.hypot(p.x - u.x, p.z - u.z); if (d < md) { md = d; tgtMinion = mn; } }
         if (tgtMinion) { target = { x: tgtMinion.m.position.x, z: tgtMinion.m.position.z }; tgtKind = 'minion'; }
         else {
-          for (const [mo, iv] of [[dragonM, dragonIv], [elderM, elderIv], [baronM, baronIv], [heraldM, heraldIv]] as [ReturnType<typeof mkMonster>, [number, number][]][]) {
+          for (const c of camps) if (c.hp > 0) { const cw = W(c.p); if (Math.hypot(cw.x - u.x, cw.z - u.z) < 11) { target = cw; tgtKind = 'mon'; c.hp -= dt * (c.buff ? .22 : .32); if (c.hp <= 0) { c.g.visible = false; c.next = gt + c.respawn; spark(cw, 0xffe28a, 3); } } }
+          if (!target) for (const [mo, iv] of [[dragonM, dragonIv], [elderM, elderIv], [baronM, baronIv], [heraldM, heraldIv]] as [ReturnType<typeof mkMonster>, [number, number][]][]) {
             if (!mo.g.visible) continue;
             const end = inIv(iv, gt)?.[1] ?? 0;
             const d = Math.hypot(mo.g.position.x - u.x, mo.g.position.z - u.z);
@@ -643,6 +675,13 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
       u.label.style.display = off ? 'none' : '';
       u.label.style.transform = `translate(${(tmpV.x * .5 + .5) * w2}px, ${(-tmpV.y * .5 + .5) * h2}px) translate(-50%, -100%)`;
     }
+    for (let i = floats.length - 1; i >= 0; i--) {
+      const f = floats[i]; f.t += rdt;
+      tmpV.set(f.x, 11 + f.t * 4, f.z).project(camera);
+      f.el.style.transform = `translate(${(tmpV.x * .5 + .5) * w2}px, ${(-tmpV.y * .5 + .5) * h2}px) translate(-50%, -100%)`;
+      f.el.style.opacity = String(Math.max(0, 1 - f.t / 1.6));
+      if (f.t > 1.6) { f.el.remove(); floats.splice(i, 1); }
+    }
   };
 
   return {
@@ -651,7 +690,7 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
     dispose() {
       ro.disconnect();
       el.removeEventListener('pointerdown', onDown); window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); el.removeEventListener('wheel', onWheel);
-      renderer.dispose(); container.querySelectorAll('.u3').forEach((x) => x.remove()); el.remove();
+      renderer.dispose(); container.querySelectorAll('.u3, .f3').forEach((x) => x.remove()); el.remove();
     },
   };
 }
