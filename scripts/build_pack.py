@@ -5,8 +5,11 @@ cắt ra từng ảnh (Blob) theo chỉ mục. Ảnh giữ nguyên chất lượ
 Game dùng gói khi trang đặt window.RIFT_PACK = true; nếu không sẽ đọc từng file ảnh như bình thường.
 Chạy: python3 scripts/build_pack.py
 """
+import io
 import json
 import os
+
+from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "bin")
@@ -30,10 +33,16 @@ for g in GROUPS:
         if ext not in MIME:
             continue
         data = open(os.path.join(d, name), "rb").read()
+        mime = MIME[ext]
+        if ext == ".png":  # icon PNG nặng: nén lại sang WebP chất lượng cao (giữ nguyên đường dẫn)
+            im = Image.open(io.BytesIO(data)).convert("RGBA")
+            buf = io.BytesIO()
+            im.save(buf, "WEBP", quality=90, method=4)
+            data, mime = buf.getvalue(), "image/webp"
         if cur and len(cur) + len(data) > CHUNK:
             chunks.append(cur)
             cur = bytearray()
-        files[f"assets/{g}/{name}"] = [len(chunks), len(cur), len(data), MIME[ext]]
+        files[f"assets/{g}/{name}"] = [len(chunks), len(cur), len(data), mime]
         cur += data
     if cur:
         chunks.append(cur)
