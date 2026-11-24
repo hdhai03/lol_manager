@@ -199,7 +199,10 @@ export function runGame(input: RunInput): GameResult {
     const cu: CUnit[] = all.map((u) => {
       let mult = coord[u.side] * (behind[u.side] ? (u.tr.has('clutch') ? 1.06 : u.tr.has('tilter') ? 0.92 : 1 + (u.at.composure - 75) / 600) : 1);
       if (minute() > 30 || series >= 3) mult *= 1 - Math.max(0, 72 - u.at.stamina) / 380 - (series >= 3 ? 0.01 : 0);
-      return { key: u.k, side: u.side, cls: u.cls, ranged: u.ranged, line: u.line, healer: u.healer, at: u.at, tr: u.tr, lvl: u.lvl, hp: u.fhp, maxHp: hpOf(u), atk: atkOf(u), mult, caught: u.caught, x: u.pos[0], y: u.pos[1] };
+      const ch = DB.champions[u.champ];
+      const sub = ch?.tags[1];
+      const range = u.ranged ? ({ Marksman: 5.2, Mage: 4.6, Support: 4.2 } as Record<string, number>)[u.cls] ?? 4.4 : (u.cls === 'Fighter' && sub === 'Marksman' ? 3.5 : undefined);
+      return { sub, range, key: u.k, side: u.side, cls: u.cls, ranged: u.ranged, line: u.line, healer: u.healer, at: u.at, tr: u.tr, lvl: u.lvl, hp: u.fhp, maxHp: hpOf(u), atk: atkOf(u), mult, caught: u.caught, x: u.pos[0], y: u.pos[1] };
     });
     const center = opts.at || [avg(all, (u) => u.pos[0]), avg(all, (u) => u.pos[1])] as Pt;
     const co = simulateCombat(cu, { center, maxT: rounds * 2.2, initiative, focus: { B: tac.B.focus, R: tac.R.focus }, record: !!frames });
@@ -449,6 +452,7 @@ export function runGame(input: RunInput): GameResult {
   const objUp = (k: ObjKey): boolean => sec >= obj[k] && (k !== 'grubs' || sec < 885) && (k !== 'herald' || sec < 1185);
   let grubFight = false;
   function contestObj(k: ObjKey): void {
+    if (k === 'baron' && rand() > 0.13) return; // Baron chỉ được cân nhắc khi có tầm nhìn & thời cơ, không phải mỗi nhịp
     const pos = k === 'dragon' || k === 'elder' ? PIT.dragon : PIT.baron;
     const nearRoles = k === 'dragon' || k === 'elder' ? ['Jungle', 'Bot', 'Support', 'Mid'] : k === 'baron' ? ROLES : ['Jungle', 'Top', 'Mid'];
     const grp = (sd: Side): Unit[] => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : nearRoles.map((r) => U[sd + r]).filter((u) => !u.dead))
@@ -459,14 +463,16 @@ export function runGame(input: RunInput): GameResult {
       if (!mine.some((u) => u.role === 'Jungle') && k !== 'baron' && k !== 'elder') { want[sd] = false; continue; }
       if (!mine.length) { want[sd] = false; continue; }
       const t = tac[sd];
-      let thr = k === 'baron' ? 1.2 : k === 'elder' ? 1.0 : 1.05;
+      let thr = k === 'baron' ? 1.38 : k === 'elder' ? 1.0 : 1.05;
       if ((k === 'dragon' || k === 'elder') && t.obj === 'dragon') thr -= 0.15;
       if ((k === 'grubs' || k === 'herald' || k === 'baron') && t.obj === 'top') thr -= 0.15;
       if ((k === 'grubs' || k === 'herald') && t.obj === 'dragon') thr += 0.15;
       thr -= (avg(mine, (u) => u.at.aggression) - 62) / 250 + (t.tempo === 'early' && sec < 900 ? 0.08 : 0);
-      thr -= clamp((sec - Math.max(obj[k], objSeen[k])) / 600, 0, 0.35); // để lâu thì dễ đánh hơn
+      thr -= clamp((sec - Math.max(obj[k], objSeen[k])) / 600, 0, k === 'baron' ? 0.15 : 0.35); // để lâu thì dễ đánh hơn
       const ratio = estimate(sd, mine, theirs.filter((u) => !u.dead));
-      want[sd] = ratio > thr || (theirs.filter((u) => !u.dead).length <= 2 && mine.length >= 3);
+      const liveT = theirs.filter((u) => !u.dead).length;
+      // Baron rất rủi ro: chỉ đánh khi hơn người hoặc áp đảo hẳn (như thi đấu chuyên nghiệp)
+      want[sd] = (ratio > thr && (k !== 'baron' || mine.length > liveT || ratio > 1.7)) || (liveT <= 2 && mine.length >= 3 && (k !== 'baron' || rand() < 0.45));
     }
     if (!want.B && !want.R) return;
     let takerSide: Side;

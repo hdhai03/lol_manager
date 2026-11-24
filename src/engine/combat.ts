@@ -8,7 +8,7 @@ import type { Attr, Side } from './types';
 
 export type Cls = 'Fighter' | 'Tank' | 'Assassin' | 'Mage' | 'Marksman' | 'Support';
 export interface CUnit {
-  key: string; side: Side; cls: Cls; ranged: boolean; line: 'front' | 'dive' | 'back'; healer: boolean;
+  key: string; side: Side; cls: Cls; ranged: boolean; sub?: string; range?: number; line: 'front' | 'dive' | 'back'; healer: boolean;
   at: Record<Attr, number>; tr: Set<string>; lvl: number;
   hp: number; maxHp: number; atk: number; mult: number; caught: boolean;
   x: number; y: number;
@@ -128,10 +128,10 @@ export function simulateCombat(units: CUnit[], o: CombatOpts): CombatOut {
       const tg = a.tgt;
       if (!tg) continue;
       const d = dist(a, tg);
-      const range = RANGE[a.cls];
+      const range = a.range ?? RANGE[a.cls];
       const m = a.mult * (t < 1.5 && a.side === o.initiative ? 1.2 : 1);
       // hồi máu / khiên đồng minh yếu nhất (hỗ trợ)
-      if (a.healer && a.qcd <= 0) {
+      if ((a.healer || (a.sub === 'Support' && a.cls === 'Mage')) && a.qcd <= 0 && alliesOf(a).some((x) => x.hp / x.maxHp < .6)) {
         const ally = alliesOf(a).filter((x) => dist(x, a) < 6).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0];
         if (ally && ally.hp / ally.maxHp < .75) { const v = a.atk * DPS_K * 5 * m; ally.hp = Math.min(ally.maxHp, ally.hp + v * .6); ally.shield += v * .5; a.qcd = 7; act({ t, s: a.key, k: 'heal', tg: ally.key }); }
       }
@@ -157,7 +157,7 @@ export function simulateCombat(units: CUnit[], o: CombatOpts): CombatOut {
       }
       // kỹ năng di chuyển: sát thủ/đấu sĩ lao vào, xạ thủ lùi lại thả diều
       if (a.ecd <= 0) {
-        if ((a.cls === 'Assassin' || a.cls === 'Fighter') && d > range + 1 && d < 7 && rand() < (.4 + a.at.aggression / 200) * DT * 4) {
+        if ((a.cls === 'Assassin' || a.cls === 'Fighter' || a.sub === 'Assassin') && d > range + 1 && d < 7 && rand() < (.4 + a.at.aggression / 200) * DT * 4) {
           const k = (d - range * .8) / d; a.x += (tg.x - a.x) * k; a.y += (tg.y - a.y) * k; a.ecd = 10; act({ t, s: a.key, k: 'dash', x: a.x, y: a.y }); continue;
         }
         if (a.ranged && dist(a, near) < 1.8 && !near.ranged) {
@@ -177,13 +177,17 @@ export function simulateCombat(units: CUnit[], o: CombatOpts): CombatOut {
         const dx = a.x - near.x, dy = a.y - near.y, n = Math.hypot(dx, dy) || 1; a.x = clamp(a.x + dx / n * SPEED * DT, 1, 99); a.y = clamp(a.y + dy / n * SPEED * DT, 1, 99);
       }
       // chiêu Q: sát thương lớn có thể trượt; đỡ đòn/hỗ trợ có khống chế
-      if (a.qcd <= 0 && !a.healer) {
+      if (a.qcd <= 0 && !(a.healer && a.cls === 'Support')) {
         a.qcd = a.cls === 'Mage' ? 5 : 7;
         const hit = rand() < hitChance(a, tg);
+        const cc = a.cls === 'Tank' || a.cls === 'Support' || a.sub === 'Tank';
+        const aoe = a.cls === 'Mage' || a.sub === 'Mage';
         if (hit) {
-          deal(a, tg, a.atk * DPS_K * (a.cls === 'Mage' ? 3.2 : a.cls === 'Assassin' ? 2.8 : 2) * m, t);
-          if (a.cls === 'Tank' || a.cls === 'Support') tg.stun = Math.max(tg.stun, .9);
-          act({ t, s: a.key, k: a.cls === 'Tank' || a.cls === 'Support' ? 'stun' : 'q', tg: tg.key });
+          const qd = a.atk * DPS_K * (a.cls === 'Mage' ? 3.2 : a.cls === 'Assassin' ? 2.8 : 2) * m * (a.sub === 'Mage' && a.cls !== 'Mage' ? 1.15 : 1);
+          deal(a, tg, qd, t);
+          if (aoe) for (const e of foesOf(a)) if (e !== tg && dist(e, tg) < 1.8) deal(a, e, qd * .5, t); // chiêu lan
+          if (cc) tg.stun = Math.max(tg.stun, a.cls === 'Tank' ? 1 : .75);
+          act({ t, s: a.key, k: cc ? 'stun' : 'q', tg: tg.key });
         } else act({ t, s: a.key, k: 'q', x: tg.x + gauss(), y: tg.y + gauss() });
         continue;
       }
