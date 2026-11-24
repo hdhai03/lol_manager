@@ -152,11 +152,11 @@ function renderMenu() {
       <div class="brand"><div class="mono">RM</div><div><div class="brand-name">Rift Manager</div>
         <div class="brand-tag"><span class="beta">${t('app.beta')}</span> ${t('app.tagline')}</div></div></div>
       <div class="menu-list">
-        ${saves.length ? `<button class="menu-item sel" data-act="continue"><span class="ico">${ICON.play}</span><span><b>${t('menu.continue')}</b><span class="d">${esc(saves[0].manager)} · ${esc(saves[0].team)} · ${t('season', { y: saves[0].season })}</span></span></button>` : ''}
-        <button class="menu-item ${saves.length ? '' : 'sel'}" data-act="new"><span class="ico">${ICON.users}</span><span><b>${t('menu.new')}</b><span class="d">${t('menu.newDesc')}</span></span></button>
-        <button class="menu-item" data-act="load"><span class="ico">${ICON.load}</span><span><b>${t('menu.load')}</b><span class="d">${t('menu.loadDesc')}</span></span></button>
-        <button class="menu-item" disabled><span class="ico">${ICON.users}</span><span><b>${t('menu.multiplayer')} <em class="soon">${t('menu.soon')}</em></b></span></button>
-        <button class="menu-item" data-act="about"><span class="ico">${ICON.info}</span><span><b>${t('menu.about')}</b></span></button>
+        ${saves.length ? `<button class="menu-item sel" data-act="continue"><span><b>${t('menu.continue')}</b><span class="d">${esc(saves[0].manager)} · ${esc(saves[0].team)} · ${t('season', { y: saves[0].season })}</span></span></button>` : ''}
+        <button class="menu-item ${saves.length ? '' : 'sel'}" data-act="new"><span><b>${t('menu.new')}</b><span class="d">${t('menu.newDesc')}</span></span></button>
+        <button class="menu-item" data-act="load"><span><b>${t('menu.load')}</b><span class="d">${t('menu.loadDesc')}</span></span></button>
+        <button class="menu-item" disabled><span><b>${t('menu.multiplayer')} <em class="soon">${t('menu.soon')}</em></b></span></button>
+        <button class="menu-item" data-act="about"><span><b>${t('menu.about')}</b></span></button>
       </div>
     </div>
     <div class="card feature">
@@ -395,7 +395,7 @@ const tabFn = (x) => ({ standings: 'standingsTab', meta: 'metaTab' }[x] || x);
 async function topAction(a) {
   if (a === 'save') {
     const m = modal(`<h3>${t('top.save')}</h3><div class="list">${[1, 2, 3].map((n) => `<button class="btn" data-slot="${n}">${t('load.slot', { n })}</button>`).join('')}</div>
-      <hr><button class="btn ghost" data-export>⬇ ${t('set.export')}</button>`);
+      <hr><button class="btn ghost" data-export>${t('set.export')}</button>`);
     m.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => { saveGame(b.dataset.slot); saveGame('auto'); closeModal(); toast(t('top.saved'), 'ok'); });
     m.querySelector('[data-export]').onclick = () => {
       const blob = new Blob([exportSave()], { type: 'application/json' });
@@ -486,9 +486,9 @@ function postHtml(n) {
   const ago = S.day - n.day <= 0 ? t('feed.today') : t('feed.daysAgo', { n: S.day - n.day });
   const scale = n.important ? 6 : 1;
   return `<div class="post"><div class="av">${av}</div><div class="grow">
-    <div class="who">${esc(author)} <span class="ck">✔</span><small>${handle} · ${ago}</small></div>
+    <div class="who">${esc(author)}<small>${handle} · ${ago}</small></div>
     <p>${esc(text)}</p>
-    <div class="eng"><span>💬 ${kfmt((h % 180 + 12) * scale)}</span><span>🔁 ${kfmt((h % 90 + 5) * scale * 3)}</span><span>♡ ${kfmt((h % 400 + 40) * scale * 4)}</span></div></div></div>`;
+    <div class="eng"><span>${t('feed.likes', { n: kfmt((h % 400 + 40) * scale * 4) })}</span><span>${t('feed.comments', { n: kfmt((h % 180 + 12) * scale) })}</span></div></div></div>`;
 }
 
 // thẻ tin lớn kiểu mạng xã hội (ảnh + chú thích)
@@ -510,10 +510,10 @@ function socialCard(n) {
   return `<article class="social" style="--h:${hueTeam.hue}">
     <div class="s-img" style="background-image:url('${art}')"></div><div class="s-shade"></div>
     ${n.day >= S.day - 1 ? `<span class="new-flag">${t('menu.new2')}</span>` : ''}
-    <div class="s-head"><span class="s-av">${badge(hueTeam.id, 'md')}</span><div><b>${esc(author)} <span class="ck">✔</span></b><small>${n.day >= S.day ? t('feed.today') : t('feed.daysAgo', { n: S.day - n.day })}</small></div></div>
+    <div class="s-head"><span class="s-av">${badge(hueTeam.id, 'md')}</span><div><b>${esc(author)}</b><small>${n.day >= S.day ? t('feed.today') : t('feed.daysAgo', { n: S.day - n.day })}</small></div></div>
     <div class="s-visual">${visual}</div>
     <div class="s-cap"><p>${esc(text)}</p>
-      <div class="s-eng"><span>♡ ${kfmt((h % 400 + 60) * 12)}</span><span>💬 ${kfmt(h % 180 + 20)}</span><span class="grow"></span><button class="btn sm ghost" data-tab-go="world">${t('dash.showMore')}</button></div></div>
+      <div class="s-eng"><span>${t('feed.likes', { n: kfmt((h % 400 + 60) * 12) })}</span><span>${t('feed.comments', { n: kfmt(h % 180 + 20) })}</span><span class="grow"></span><button class="btn sm ghost" data-tab-go="world">${t('dash.showMore')}</button></div></div>
   </article>`;
 }
 
@@ -596,7 +596,7 @@ function dashboard(c) {
   // Tiền
   const payroll = teamSalary(ut);
   const moneyPanel = `${pHead(t('dash.money'))}
-    <div class="money-big"><span>💰</span><span class="${ut.budget < 0 ? 'neg' : ''}">${fullMoney(ut.budget)}</span></div>
+    <div class="money-big"><span class="${ut.budget < 0 ? 'neg' : ''}">${fullMoney(ut.budget)}</span></div>
     <div class="money-rows"><div><span>${t('fin.payroll')}</span><b>${fullMoney(payroll)}</b></div>
       <div><span>${t('fin.sponsorY')}</span><b>${fullMoney(ut.sponsor)}</b></div>
       <div><span>${t('fin.net')}</span><b class="${ut.sponsor - payroll < 0 ? 'neg' : 'pos'}">${fullMoney(ut.sponsor - payroll)}</b></div></div>
@@ -612,9 +612,9 @@ function dashboard(c) {
       </tbody></table>` : `<p class="muted">${t('st.notStarted')}</p>`}</div>`;
 
   const alerts = [
-    ...offers.map((o) => `<div class="alert-row"><span>${ICON.mail.replace('<svg', '<svg width="22" height="22" fill="currentColor"')}</span>${badge(o.from, 'sm')}<span class="grow">${t('dash.offerLine', { team: esc(S.teams[o.from].name), player: `<b>${esc(S.players[o.pid].ign)}</b>`, fee: `<b>${money(o.amount)}</b>` })}</span>
+    ...offers.map((o) => `<div class="alert-row">${badge(o.from, 'sm')}<span class="grow">${t('dash.offerLine', { team: esc(S.teams[o.from].name), player: `<b>${esc(S.players[o.pid].ign)}</b>`, fee: `<b>${money(o.amount)}</b>` })}</span>
       <button class="btn primary sm" data-accept="${o.id}">${t('dash.accept')}</button><button class="btn ghost sm" data-decline="${o.id}">${t('dash.decline')}</button></div>`),
-    ...(S.phase === 'offseason' ? expiring.map((p) => `<div class="alert-row"><span>${ICON.contract.replace('<svg', '<svg width="22" height="22" fill="currentColor"')}</span>${face(p, 'sm')}<span class="grow">${t('dash.expiringLine', { player: `<b>${esc(p.ign)}</b>` })}</span>
+    ...(S.phase === 'offseason' ? expiring.map((p) => `<div class="alert-row">${face(p, 'sm')}<span class="grow">${t('dash.expiringLine', { player: `<b>${esc(p.ign)}</b>` })}</span>
       <button class="btn sm" data-renew="${esc(p.id)}">${t('p.renew')}</button></div>`) : []),
   ];
 
@@ -642,9 +642,9 @@ function dashboard(c) {
     <div class="c-left">
       <div class="c-date">${today.toLocaleDateString(getLang(), { weekday: 'long', day: '2-digit', month: 'short', timeZone: 'UTC' })}</div>
       <div class="c-next">${S.phase === 'offseason' ? t('phase.offseason') : nm ? (daysTo <= 0 ? t('dash.today') : t('dash.nextIn', { n: daysTo })) : t('dash.noMatch')}</div>
-      <div class="c-event"><span class="c-ico">${evIcon}</span><div class="c-title">${evTitle}</div></div>
+      <div class="c-event"><div class="c-title">${evTitle}</div></div>
       <button class="btn pill c-adv" data-act="${pa.act}">${pa.label}</button>
-      <div class="c-actions">${actions.map((a, i) => `<button class="c-row ${i === 0 ? 'sel' : ''}" ${a.act ? `data-act="${a.act}"` : ''} ${a.tab ? `data-tab-go="${a.tab}"` : ''} ${a.go ? `data-scroll="${a.go}"` : ''}><span class="c-ri">${a.ico}</span>${a.label}</button>`).join('')}</div>
+      <div class="c-actions">${actions.map((a, i) => `<button class="c-row ${i === 0 ? 'sel' : ''}" ${a.act ? `data-act="${a.act}"` : ''} ${a.tab ? `data-tab-go="${a.tab}"` : ''} ${a.go ? `data-scroll="${a.go}"` : ''}>${a.label}</button>`).join('')}</div>
     </div>
     <div class="c-right">${ni ? socialCard(ni) : ''}
       <div class="dots"><button data-news="-1" aria-label="prev">‹</button>${newsList.map((_, i) => `<i class="${i === view.newsIdx ? 'on' : ''}"></i>`).join('')}<button data-news="1" aria-label="next">›</button></div>
@@ -756,7 +756,7 @@ function playerDetail(p) {
     ${mine ? `<div class="pd-sub" style="margin-top:1.2rem">${t('p.dev')}</div>
       <div class="pd-row2"><span>${t('p.plan')}</span><span class="chips" style="margin:0">${Object.keys(ATTR_GROUPS).map((g) => `<button class="chip sm ${S.training === g ? 'on' : ''}" data-train="${g}">${t('train.' + g)}</button>`).join('')}</span>
       <span>${t('p.progress')}</span><div class="prog-line"><b>${p.ovr}</b><div class="bar"><i style="width:${clamp(((p.ovr - 40) / Math.max(p.potential - 40, 1)) * 100, 4, 100)}%"></i></div><b>${p.potential}</b></div></div>` : ''}
-    ${(p.titles || []).length ? `<div class="pd-sub" style="margin-top:1rem">${t('p.titles')}</div><div class="small">${p.titles.map((x) => `🏆 ${esc(x)}`).join(' · ')}</div>` : ''}
+    ${(p.titles || []).length ? `<div class="pd-sub" style="margin-top:1rem">${t('p.titles')}</div><div class="small">${p.titles.map((x) => esc(x)).join(' · ')}</div>` : ''}
     <div class="pd-actions">${actions}</div>`;
 }
 
@@ -883,7 +883,7 @@ function schedule(c) {
   const spoil = f.schSpoil !== false;
   const row = ({ m, comp, time }) => {
     const mine = m.a === S.userTeam || m.b === S.userTeam;
-    const score = m.done ? (spoil ? `<b class="${m.winner === m.a ? 'w' : ''}">${m.winsA}</b><i>-</i><b class="${m.winner === m.b ? 'w' : ''}">${m.winsB}</b>` : '<span class="eye">◉</span>') : '<span class="vs">VS</span>';
+    const score = m.done ? (spoil ? `<b class="${m.winner === m.a ? 'w' : ''}">${m.winsA}</b><i>-</i><b class="${m.winner === m.b ? 'w' : ''}">${m.winsB}</b>` : `<span class="eye">${t('sch.hidden')}</span>`) : '<span class="vs">VS</span>';
     const team = (tid, side) => `<div class="sm-team ${side} ${m.done && spoil && m.winner !== tid ? 'lost' : ''}">${side === 'r' ? badge(tid, 'md') : ''}<span><b>${esc(S.teams[tid].short)}</b><small>${rec(comp, tid)}</small></span>${side === 'l' ? badge(tid, 'md') : ''}</div>`;
     const live = !m.done && m.day === S.day;
     return `<div class="sm-row ${mine ? 'me' : ''} ${live ? 'live' : ''}">

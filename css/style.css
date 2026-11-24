@@ -1196,3 +1196,6 @@ body > .bg-art { z-index: 0; }
   .tn-ctl .lang { margin-left: auto; }
   .topnav .sect { border-right: 0; }
 }
+.kf .kf-sep { width: 10px; height: 2px; background: currentColor; opacity: .5; }
+.kf.B .kf-sep { color: #6fb8ff; }
+.kf.R .kf-sep { color: #ff7b7b; }

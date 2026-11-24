@@ -148,7 +148,7 @@ function renderDraft() {
       <div class="dr-panel">
         <div class="dr-ph"><h3>${t('dr.champions')}</h3>
           <div class="dr-roles">${['all', ...ROLES].map((r) => `<button class="${dfilter === r ? 'on' : ''}" data-f="${r}">${r === 'all' ? t('tr.all') : t('roleS.' + r)}</button>`).join('')}</div>
-          <label class="dr-search">⌕<input type="search" placeholder="${t('meta.search')}" value="${esc(dq)}" data-q></label></div>
+          <label class="dr-search"><input type="search" placeholder="${t('meta.search')}" value="${esc(dq)}" data-q></label></div>
         <div class="dr-grid">${champs.map((c) => {
           const dis = taken.has(c.id);
           const fl = draft.locked.includes(c.id);
@@ -227,7 +227,7 @@ function mapSvg() {
     <g class="jg"><circle cx="30" cy="55" r="9"/><circle cx="55" cy="78" r="8"/><circle cx="70" cy="45" r="9"/><circle cx="45" cy="22" r="8"/><circle cx="18" cy="38" r="6"/><circle cx="82" cy="62" r="6"/></g>
     <path class="lane" d="M9 84 L9 10 L84 10"/><path class="lane" d="M16 91 L90 91 L90 16"/><path class="lane" d="M16 84 L84 16"/>
     <circle class="pit" cx="${PIT.dragon[0]}" cy="${PIT.dragon[1]}" r="3.4"/><circle class="pit" cx="${PIT.baron[0]}" cy="${PIT.baron[1]}" r="3.6"/>
-    <text class="pit-t" x="${PIT.dragon[0]}" y="${PIT.dragon[1] + 1.2}">🐉</text><text class="pit-t" x="${PIT.baron[0]}" y="${PIT.baron[1] + 1.2}">👑</text>
+    
     <circle class="base base-B" cx="${BASE.B[0]}" cy="${BASE.B[1]}" r="6"/><circle class="base base-R" cx="${BASE.R[0]}" cy="${BASE.R[1]}" r="6"/>
     ${tw('B')}${tw('R')}
   </svg>`;
@@ -410,7 +410,7 @@ function liveGame(d, opts = {}) {
     r.querySelector('#tDr').textContent = live.nextDr <= sec ? 'LIVE' : mmss(live.nextDr);
     r.querySelector('#tBa').textContent = live.nextBa <= sec ? 'LIVE' : mmss(live.nextBa);
     const kf = r.querySelector('#kfeed');
-    kf.innerHTML = kfeed.slice(-5).map((x) => `<div class="kf ${x.sd}">${champIcon(x.kc, 30)}<span>⚔</span>${champIcon(x.vc, 30)}</div>`).join('');
+    kf.innerHTML = kfeed.slice(-5).map((x) => `<div class="kf ${x.sd}">${champIcon(x.kc, 30)}<span class="kf-sep"></span>${champIcon(x.vc, 30)}</div>`).join('');
   };
   const load = (i) => {
     const f = F[i];
@@ -494,7 +494,7 @@ function postGame(g) {
     return `<tr class="${g.mvp === x.pid ? 'mvp' : ''}"><td>${champIcon(x.champ, 28)}</td><td class="row gap">${face(p, 'xs')}${roleTag(x.role)} <b>${p ? esc(p.ign) : '?'}</b>${g.mvp === x.pid ? ` <em class="tagx">${t('m.mvp')}</em>` : ''}</td>
       <td>${x.k}/${x.d}/${x.a}</td><td>${x.cs}</td><td>${(x.gold / 1000).toFixed(1)}k</td><td>${(x.dmg / 1000).toFixed(1)}k</td></tr>`;
   };
-  const table = (s) => `<table class="tbl sb"><thead><tr><th></th><th>${badge(s === 'B' ? g.blue : g.red, 'sm')} ${esc(S.teams[s === 'B' ? g.blue : g.red].short)} ${g.winner === s ? '🏆' : ''}</th><th>KDA</th><th>CS</th><th>${t('p.gpm').split('/')[0]}</th><th>DMG</th></tr></thead>
+  const table = (s) => `<table class="tbl sb"><thead><tr><th></th><th>${badge(s === 'B' ? g.blue : g.red, 'sm')} ${esc(S.teams[s === 'B' ? g.blue : g.red].short)} ${g.winner === s ? `<em class="tagx">${t('m.winner')}</em>` : ''}</th><th>KDA</th><th>CS</th><th>${t('p.gpm').split('/')[0]}</th><th>DMG</th></tr></thead>
     <tbody>${g.players.filter((x) => x.side === s).map(row).join('')}</tbody></table>`;
   const over = match.done;
   root().innerHTML = `<div class="md-inner">${header()}

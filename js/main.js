@@ -12,5 +12,5 @@ loadData((p) => { if (boot) boot.textContent = `Rift Manager · ${Math.round(p *
   })
   .catch((e) => {
     console.error(e);
-    document.getElementById('app').innerHTML = `<div class="page narrow"><h1>⚠️</h1><p>${t('err.data')}</p><pre class="muted small">${String(e)}</pre></div>`;
+    document.getElementById('app').innerHTML = `<div class="page narrow"><h1>Rift Manager</h1><p>${t('err.data')}</p><pre class="muted small">${String(e)}</pre></div>`;
   });
