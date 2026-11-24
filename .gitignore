@@ -1,6 +1,6 @@
 scripts/.cache/
-data/assets-pack.json
-data/pack-*.json
-data/bin/
+public/data/assets-pack.json
+public/data/pack-*.json
+public/data/bin/
 node_modules/
 dist/
