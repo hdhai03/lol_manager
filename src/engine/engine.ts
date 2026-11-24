@@ -7,7 +7,8 @@
 import { DB } from './data';
 import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util';
 import { traitsOf } from './attrs';
-import type { Attr, Bans, FrameUnit, GameEvent, GameResult, ObjTally, Picks, Player, PlayerLine, Role, Side, Tactics, PersonalTactic } from './types';
+import { simulateCombat, type CUnit, type Cls } from './combat';
+import type { FightRec, Attr, Bans, FrameUnit, GameEvent, GameResult, ObjTally, Picks, Player, PlayerLine, Role, Side, Tactics, PersonalTactic } from './types';
 
 export type Pt = [number, number];
 type Lane = 'top' | 'mid' | 'bot';
@@ -19,7 +20,7 @@ interface Unit {
   atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
   lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
   hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
-  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt;
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean;
 }
 interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
 interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
@@ -98,6 +99,8 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
     fhp: 0, out: false, hitBy: new Set(), caught: false,
+    cls: (['Fighter', 'Tank', 'Assassin', 'Mage', 'Marksman', 'Support'].includes(main) ? main : 'Fighter') as Cls,
+    ranged: c.tags.includes('Marksman') || c.tags.includes('Mage') || (c.tags.includes('Support') && !c.tags.includes('Tank') && !c.tags.includes('Fighter')),
   };
 }
 
@@ -132,6 +135,7 @@ export function runGame(input: RunInput): GameResult {
   const kills: Record<Side, number> = { B: 0, R: 0 };
   const events: GameEvent[] = [];
   const frames: Record<string, FrameUnit>[] | null = record ? [] : null;
+  const fightLog: FightRec[] | null = record ? [] : null;
   let tick = 0, sec = 0, firstBlood = false, firstTower = false;
   let winner: Side | null = null, soulType: string | null = null;
   const tac = tactics;
@@ -191,59 +195,33 @@ export function runGame(input: RunInput): GameResult {
     const initiative = ini(A) >= ini(B) ? A[0].side : B[0].side;
     const res: FightRes = { kills: { B: 0, R: 0 }, dead: [], win: null };
     const rounds = opts.rounds || 7;
-    for (let r = 0; r < rounds; r++) {
-      const live = (sd: Side): Unit[] => sideOf[sd].filter((u) => u.fhp > 0 && !u.out);
-      const sA = A[0].side, sB = B[0].side;
-      if (!live(sA).length || !live(sB).length) break;
-      // rút lui cả đội khi đọc ra thế thua
-      if (r >= 1) for (const sd of [sA, sB]) {
-        const mine = live(sd), theirs = live(OPP[sd]);
-        const ratio = power(mine, true) / Math.max(power(theirs, true), 0.01);
-        const j = avg(mine, (u) => u.at.judgment) + (mine.some((u) => u.tr.has('calm')) ? 8 : 0) - (mine.some((u) => u.tr.has('hothead')) ? 10 : 0);
-        if (ratio < 0.6 && rand() < j / 150) {
-          for (const u of mine) if (rand() < 0.45 + (u.at.dodge - avg(theirs, (e) => e.at.accuracy)) / 120 + (u.line === 'back' ? 0.05 : 0)) u.out = true;
-          if (mine.filter((u) => u.out).length >= 2) note('disengage', sd);
-        }
-      }
-      // rút lui cá nhân khi máu thấp
-      for (const u of all) if (u.fhp > 0 && !u.out && u.fhp / hpOf(u) < 0.22 && rand() < u.at.judgment / 170) {
-        const foes = live(OPP[u.side]);
-        if (rand() < 0.45 + (u.at.dodge - avg(foes, (e) => e.at.accuracy)) / 120) u.out = true;
-      }
-      const hits: [Unit, Unit, number][] = [];
-      for (const u of all) {
-        if (u.fhp <= 0 || u.out) continue;
-        const foes = live(OPP[u.side]);
-        if (!foes.length) continue;
-        let mult = coord[u.side] * (behind[u.side] ? (u.tr.has('clutch') ? 1.06 : u.tr.has('tilter') ? 0.92 : 1 + (u.at.composure - 75) / 600) : 1);
-        if (minute() > 30 || series >= 3) mult *= 1 - Math.max(0, 72 - u.at.stamina) / 380 - (series >= 3 ? 0.01 : 0);
-        if (u.healer && rand() < 0.5) { // hồi máu/khiên đồng đội yếu nhất
-          const ally = sideOf[u.side].filter((x) => x.fhp > 0).sort((a, b) => a.fhp / hpOf(a) - b.fhp / hpOf(b))[0];
-          if (ally) ally.fhp = Math.min(hpOf(ally), ally.fhp + atkOf(u) * DMG * 0.9 * mult);
-          mult *= 0.5;
-        }
-        const tgt = chooseTarget(u, foes);
-        const hit = clamp(0.62 + (u.at.accuracy - tgt.at.dodge) / 150 + (u.line === 'back' && u.atkB > 1 ? 0.1 : 0), 0.3, 0.95);
-        let dmg = atkOf(u) * DMG * hit * (0.75 + rand() * 0.5) * mult;
-        if (tgt.caught && r < 2) dmg *= 1.35;
-        if (r === 0 && u.side === initiative) dmg *= 1.2;
-        dmg *= 1 - (tgt.at.positioning - 70) / 350; // đứng đúng chỗ: ít dính sát thương lan
-        if (rand() < (u.at.creativity - 55) / 500) { dmg *= 1.6; u.outplay = true; }
-        hits.push([u, tgt, dmg]);
-      }
-      if (!hits.length) break;
-      for (const [u, tgt, dmg] of hits) {
-        if (tgt.fhp <= 0) continue;
-        tgt.fhp -= dmg; u.dealt += dmg; if (sec < 840) u.dealtEarly += dmg; tgt.hitBy.add(u);
-        if (tgt.fhp <= 0) {
-          // né cú chí mạng nhờ outplay
-          if (tgt.outplay && rand() < 0.25) { tgt.fhp = hpOf(tgt) * 0.05; note('outplay', tgt.side, { who: tgt.role }); continue; }
-          res.dead.push(tgt);
-          die(tgt, u, [...tgt.hitBy].filter((x) => x !== u), opts.at || u.pos);
-          res.kills[u.side]++;
-        }
-      }
+    // giao tranh thời gian thực: mỗi tướng là một tác tử (combat.ts)
+    const cu: CUnit[] = all.map((u) => {
+      let mult = coord[u.side] * (behind[u.side] ? (u.tr.has('clutch') ? 1.06 : u.tr.has('tilter') ? 0.92 : 1 + (u.at.composure - 75) / 600) : 1);
+      if (minute() > 30 || series >= 3) mult *= 1 - Math.max(0, 72 - u.at.stamina) / 380 - (series >= 3 ? 0.01 : 0);
+      return { key: u.k, side: u.side, cls: u.cls, ranged: u.ranged, line: u.line, healer: u.healer, at: u.at, tr: u.tr, lvl: u.lvl, hp: u.fhp, maxHp: hpOf(u), atk: atkOf(u), mult, caught: u.caught, x: u.pos[0], y: u.pos[1] };
+    });
+    const center = opts.at || [avg(all, (u) => u.pos[0]), avg(all, (u) => u.pos[1])] as Pt;
+    const co = simulateCombat(cu, { center, maxT: rounds * 2.2, initiative, focus: { B: tac.B.focus, R: tac.R.focus }, record: !!frames });
+    // thời điểm thật trong nhịp 15 giây hiện tại
+    const ts = Math.min(1, 14.2 / Math.max(co.dur, 0.1));
+    const s0 = sec - TICK + 0.5 + rand() * Math.max(0, 14.2 - co.dur * ts);
+    if (fightLog && co.rec) fightLog.push({ s0, ts, keys: co.rec.keys, frames: co.rec.frames, acts: co.rec.acts });
+    const byKey = Object.fromEntries(all.map((u) => [u.k, u]));
+    for (const dth of co.deaths) {
+      const v = byKey[dth.key], k = byKey[dth.killer];
+      if (!v || !k || v.dead) continue;
+      res.dead.push(v);
+      die(v, k, dth.assists.map((x) => byKey[x]).filter(Boolean), [dth.x, dth.y], s0 + dth.t * ts);
+      res.kills[k.side]++;
     }
+    for (const u of all) {
+      u.dealt += co.dealt[u.k] || 0; if (sec < 840) u.dealtEarly += co.dealt[u.k] || 0;
+      if (!u.dead) u.fhp = co.hp[u.k] * hpOf(u);
+      u.out = co.out.has(u.k);
+    }
+    for (const sd of co.disengaged) note('disengage', sd);
+    for (const k of co.outplays) if (byKey[k] && !byKey[k].dead) note('outplay', byKey[k].side, { who: byKey[k].role });
     for (const u of all) { if (!u.dead) u.hp = clamp(u.fhp / hpOf(u), 0.04, 1); u.outplay = false; }
     const left = (grp: Unit[]): number => grp.filter((u) => !u.dead && !u.out).length;
     res.win = left(A) > left(B) ? A[0].side : left(B) > left(A) ? B[0].side : (res.kills[A[0].side] >= res.kills[B[0].side] ? A[0].side : B[0].side);
@@ -272,19 +250,17 @@ export function runGame(input: RunInput): GameResult {
     return weighted(foes, w);
   }
 
-  function die(v: Unit, killer: Unit, assists: Unit[], at: Pt): void {
-    // điểm hạ gục chia đều hơn: đồng đội góp sát thương đôi khi là người kết liễu
-    if (assists.length && rand() < 0.3) { const k2 = assists[Math.floor(rand() * assists.length)]; assists = [...assists.filter((x) => x !== k2), killer]; killer = k2; }
+  function die(v: Unit, killer: Unit, assists: Unit[], at: Pt, ft?: number): void {
     const bounty = 300 + (v.streak >= 2 ? Math.min(700, 150 * (v.streak - 1)) : 0);
     v.dead = respawnTicks(v); v.hp = 0; v.deaths++; v.streak = 0; v.recall = 0; v.task = 'dead';
     killer.kills++; killer.streak++;
     giveGold(killer, bounty); giveXp(killer, 150 + v.lvl * 25);
     for (const a of assists) { a.assists++; giveGold(a, Math.round(bounty * 0.5 / Math.max(assists.length, 1)) + 25); giveXp(a, 60 + v.lvl * 10); }
     kills[killer.side]++;
-    const pos = jit(at, 3);
+    const pos: Pt = [clamp(at[0], 2, 98), clamp(at[1], 2, 98)];
     v.mv = tick;
-    if (!firstBlood) { firstBlood = true; giveGold(killer, 100); ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos }); }
-    else ev('kill', killer.side, { killer: killer.role, victim: v.role, at: pos, assists: assists.map((a) => a.role) });
+    if (!firstBlood) { firstBlood = true; giveGold(killer, 100); ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos, ft }); }
+    else ev('kill', killer.side, { killer: killer.role, victim: v.role, at: pos, assists: assists.map((a) => a.role), ft });
     v.pos = pos; v.diedAt = pos;
   }
 
@@ -755,6 +731,6 @@ export function runGame(input: RunInput): GameResult {
   return {
     winner, winnerId: winner === 'B' ? blue : red, blue, red, dur, durS: sec, gold, events, kills, towers: taken,
     drakes: { B: buff.B.drakes, R: buff.R.drakes }, soul: buff.B.soul ? 'B' : buff.R.soul ? 'R' : null, obj: tally,
-    players, mvp: mvp ? mvp.pid : null, picks, bans, frames,
+    players, mvp: mvp ? mvp.pid : null, picks, bans, frames, fights: fightLog || undefined,
   };
 }

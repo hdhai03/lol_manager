@@ -221,20 +221,46 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
   }
   const segs = Object.values(LANES).flatMap((pts) => pts.slice(1).map((b, i) => [pts[i], b] as [P2, P2]));
   const onRiver = (p: P2) => { for (let i = 0; i <= 24; i++) { const t = i / 24; const bx = (1 - t) ** 3 * 4 + 3 * (1 - t) ** 2 * t * 30 + 3 * (1 - t) * t * t * 70 + t ** 3 * 96; const by = (1 - t) ** 3 * 8 + 3 * (1 - t) ** 2 * t * 30 + 3 * (1 - t) * t * t * 70 + t ** 3 * 92; if (Math.hypot(p[0] - bx, p[1] - by) < 7) return true; } return false; };
-  const ok = (p: P2) => segs.every(([a, b]) => distSeg(p, a, b) > 6) && !onRiver(p) && Math.hypot(p[0] - 9, p[1] - 91) > 17 && Math.hypot(p[0] - 91, p[1] - 9) > 17 && Math.hypot(p[0] - PIT.dragon[0], p[1] - PIT.dragon[1]) > 9 && Math.hypot(p[0] - PIT.baron[0], p[1] - PIT.baron[1]) > 9;
+  const ok = (p: P2) => segs.every(([a, b]) => distSeg(p, a, b) > 6) && !onRiver(p) && Math.hypot(p[0] - 9, p[1] - 91) > 17 && Math.hypot(p[0] - 91, p[1] - 9) > 17 && Math.hypot(p[0] - PIT.dragon[0], p[1] - PIT.dragon[1]) > 9 && Math.hypot(p[0] - PIT.baron[0], p[1] - PIT.baron[1]) > 9
+    && [[30, 55], [55, 78], [18, 38], [22, 62], [44, 70], [70, 45], [45, 22], [82, 62], [78, 38], [56, 30], [36, 42], [64, 58]].every((c) => Math.hypot(p[0] - c[0], p[1] - c[1]) > 5.5);
   const spots: P2[] = [];
   for (let i = 0; i < 4000 && spots.length < 520; i++) { const p: P2 = [3 + Math.random() * 94, 3 + Math.random() * 94]; if (ok(p)) spots.push(p); }
   const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(.5, .75, 3, 6), new THREE.MeshStandardMaterial({ color: 0x4a3524, roughness: 1 }), spots.length);
   const crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2.6, 0), new THREE.MeshStandardMaterial({ color: 0x2a5a33, roughness: .9, flatShading: true }), spots.length);
   crown.castShadow = true; trunk.castShadow = true;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pv = new THREE.Vector3();
+  const treeK: number[] = [], treeRot: number[] = [], treeDuck: number[] = [];
   spots.forEach((p, i) => {
-    const w = W(p); const k = .6 + Math.random() * .5;
+    const w = W(p); const k = .6 + Math.random() * .5; treeK.push(k); treeDuck.push(1);
     sc.set(k, k, k); pv.set(w.x, 1.5 * k, w.z); m4.compose(pv, q, sc); trunk.setMatrixAt(i, m4);
-    sc.set(k, k * 1.1, k); pv.set(w.x, 3.9 * k, w.z); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * 6); m4.compose(pv, q, sc); crown.setMatrixAt(i, m4);
+    sc.set(k, k * 1.1, k); pv.set(w.x, 3.9 * k, w.z); const rr = Math.random() * 6; treeRot.push(rr); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rr); m4.compose(pv, q, sc); crown.setMatrixAt(i, m4);
     crown.setColorAt(i, new THREE.Color().setHSL(.3 + Math.random() * .08, .45, .2 + Math.random() * .1));
   });
   scene.add(trunk, crown);
+  // trụ pha lê rải rác (đặc trưng riêng của đấu trường)
+  const crySpots = spots.filter((_, i) => i % 7 === 3);
+  const crystal = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x7fe9ff, emissive: 0x1aa6c8, emissiveIntensity: .6, roughness: .2, metalness: .1, flatShading: true }), crySpots.length);
+  crySpots.forEach((p, i) => { const w = W([p[0] + 1.6, p[1] - 1.2]); sc.set(.7, 2.4, .7); pv.set(w.x, 2, w.z); q.setFromEuler(new THREE.Euler(.15, i, .1)); m4.compose(pv, q, sc); crystal.setMatrixAt(i, m4); });
+  scene.add(crystal);
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  /** cây gần tướng tự thu nhỏ để không che giao tranh */
+  const duckTrees = (rdt: number, pts: { x: number; z: number }[]) => {
+    let dirty = false;
+    spots.forEach((p, i) => {
+      const w = W(p);
+      let near = false;
+      for (const u of pts) if (Math.abs(u.x - w.x) < 13 && Math.abs(u.z - w.z) < 13 && Math.hypot(u.x - w.x, u.z - w.z) < 12) { near = true; break; }
+      const want = near ? .28 : 1;
+      if (Math.abs(treeDuck[i] - want) > .01) {
+        treeDuck[i] += (want - treeDuck[i]) * Math.min(1, rdt * 5);
+        const k = treeK[i] * treeDuck[i];
+        q.setFromAxisAngle(yAxis, 0); sc.set(k, k, k); pv.set(w.x, 1.5 * k, w.z); m4.compose(pv, q, sc); trunk.setMatrixAt(i, m4);
+        q.setFromAxisAngle(yAxis, treeRot[i]); sc.set(k, k * 1.1, k); pv.set(w.x, 3.9 * k, w.z); m4.compose(pv, q, sc); crown.setMatrixAt(i, m4);
+        dirty = true;
+      }
+    });
+    if (dirty) { trunk.instanceMatrix.needsUpdate = true; crown.instanceMatrix.needsUpdate = true; }
+  };
   // bụi cỏ ven đường
   const bushM = new THREE.MeshStandardMaterial({ color: 0x3f7a3a, roughness: .9, flatShading: true });
   for (const p of [[20, 22], [22, 80], [78, 20], [80, 78], [44, 44], [56, 56], [30, 70], [70, 30], [60, 38], [40, 62]] as P2[]) {
@@ -461,6 +487,16 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
     const now = performance.now();
     if (now < cam.userUntil) return;
     const look = 7 + speed * .6;
+    // pha giao tranh đã giả lập: bám tâm cụm tướng đang đánh (pha đông người được ưu tiên)
+    let bestF: { f: NonNullable<typeof tl.g.fights>[number]; n: number } | null = null;
+    for (const f of tl.g.fights || []) {
+      const end = f.s0 + (f.frames.length ? f.frames[f.frames.length - 1][0] : 0) * f.ts;
+      if (gt >= f.s0 - Math.min(look, 6) && gt <= end + 1.5 && (!bestF || f.keys.length > bestF.n)) bestF = { f, n: f.keys.length };
+    }
+    if (bestF) {
+      const ps = bestF.f.keys.map((k) => units.find((u) => u.k === k)).filter((u): u is U => !!u && !u.dead);
+      if (ps.length) { cam.tx = ps.reduce((s2, u) => s2 + u.x, 0) / ps.length; cam.tz = ps.reduce((s2, u) => s2 + u.z, 0) / ps.length + 4; cam.th = bestF.n >= 6 ? 74 : 60; cam.hold = now + 1200; return; }
+    }
     const up = tl.evs.find((e) => e.d >= gt - 2.5 && e.d <= gt + look && e.type !== 'note' && evPos(e));
     if (up) { const p = W(evPos(up)!); cam.tx = p.x; cam.tz = p.z + 4; cam.th = ['kill', 'firstblood', 'teamfight'].includes(up.type) ? 62 : 72; cam.hold = now + 1500; return; }
     if (now < cam.hold) return;
@@ -484,7 +520,7 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
   const tmpV = new THREE.Vector3();
   let lastGt = -1;
   let slow = 0, lowQ = false;
-  let evCursor = 0;
+  let evCursor = 0, actCursor = 0;
 
   const render = (gt: number, rdt: number, speed: number) => {
     const dt = lastGt < 0 ? 0 : Math.max(0, Math.min(gt - lastGt, 3));
@@ -580,7 +616,8 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
       const reach = u.kind.ranged ? 15 : 9;
       let target: { x: number; z: number } | null = null, tgtKind: 'champ' | 'minion' | 'tower' | 'mon' | null = null;
       let tgtMinion: Minion | null = null;
-      if (foe && fd < reach + 4) { target = foe; tgtKind = 'champ'; }
+      if (s.fight) { target = null; tgtKind = null; }
+      else if (foe && fd < reach + 4 && !(tl.g.fights && tl.g.fights.length)) { target = foe; tgtKind = 'champ'; }
       else {
         let md = reach - 2;
         for (const mn of minions) if (!mn.dead && mn.side !== u.side) { const p = mn.m.position; const d = Math.hypot(p.x - u.x, p.z - u.z); if (d < md) { md = d; tgtMinion = mn; } }
@@ -649,6 +686,39 @@ export function createArena(container: HTMLElement, init: ArenaInit): Arena {
       if (fr) u.lvEl.textContent = String(fr[4]);
     }
 
+    duckTrees(rdt, units.filter((u) => !u.dead));
+    // phát lại hành động trong giao tranh đã giả lập
+    while (actCursor < tl.acts.length && tl.acts[actCursor].at <= gt) {
+      const a = tl.acts[actCursor++];
+      if (gt - a.at > 1.5) continue;
+      const su = units.find((x) => x.k === a.s); if (!su || su.dead) continue;
+      const tu = a.tg ? units.find((x) => x.k === a.tg) : null;
+      const tp = tu ? { x: tu.x, z: tu.z } : a.x != null ? W([a.x, a.y as number]) : null;
+      const team = su.side === 'B' ? 0xbfe0ff : 0xffc8c0;
+      if (tp) su.face = Math.atan2(tp.x - su.x, tp.z - su.z);
+      const c = su.kind.cls;
+      if (a.k === 'aa' && tp) {
+        su.atk = 1;
+        if (su.kind.ranged) { su.model.weaponTip.getWorldPosition(tmpV); projectile(tmpV.clone(), tp, c === 'Mage' ? 0xc79bff : c === 'Marksman' ? 0xffe28a : 0x8fffd0, .38, .2); }
+        else slash({ x: su.x + Math.sin(su.face) * 2, z: su.z + Math.cos(su.face) * 2 }, su.face, team);
+      } else if (a.k === 'q' && tp) {
+        su.cast = 1;
+        if (c === 'Mage') projectile(new THREE.Vector3(su.x, 5, su.z), tp, 0xb07bff, .8, .35, () => boom(tp, 0xb07bff, 4));
+        else if (c === 'Marksman') { beam({ x: su.x, z: su.z }, 3, tp, 0xffd27a, .25, .45); spark(tp, 0xffd27a, 2); }
+        else if (c === 'Assassin') { spark(tp, 0xff5a7a, 3); slash(tp, su.face, 0xff5a7a); }
+        else { ringFx({ x: su.x, z: su.z }, 0xff9a5a, 6, .45); slash({ x: su.x + Math.sin(su.face) * 2, z: su.z + Math.cos(su.face) * 2 }, su.face, 0xff9a5a); }
+      } else if (a.k === 'stun' && tp) {
+        su.cast = 1; beam({ x: su.x, z: su.z }, 3, tp, 0xffe08a, .3, .4); ringFx(tp, 0xffe08a, 3, .9); spark({ x: tp.x, z: tp.z }, 0xffe08a, 1.5, 7);
+      } else if (a.k === 'ult' && tp) {
+        su.cast = 1; su.atk = 1;
+        if (c === 'Mage') { pillar(tp, 0xb07bff, .9, 26); boom(tp, 0xb07bff, 9); }
+        else if (c === 'Tank' || c === 'Support') { ringFx(tp, c === 'Tank' ? 0xffe0a0 : 0x7dffcf, 12, 1); boom(tp, c === 'Tank' ? 0xffe0a0 : 0x7dffcf, 6); }
+        else if (c === 'Marksman') { beam({ x: su.x, z: su.z }, 4, tp, 0xffe28a, .45, 1.1); boom(tp, 0xffe28a, 6); }
+        else { boom(tp, 0xff5a7a, 7); slash(tp, su.face, 0xff5a7a); slash(tp, su.face + 1.5, 0xff5a7a); }
+      } else if (a.k === 'dash') { ringFx({ x: su.x, z: su.z }, team, 4, .4); spark({ x: su.x, z: su.z }, team, 2, 2); }
+      else if (a.k === 'heal' && tu) { ringFx({ x: tu.x, z: tu.z }, 0x7dffb0, 5, .8); pillar({ x: tu.x, z: tu.z }, 0x7dffb0, .6, 8); }
+      else if (a.k === 'dodge') { spark({ x: su.x, z: su.z }, 0xffffff, 3, 4); floatText(su, 'OUTPLAY'); }
+    }
     // hiệu ứng
     for (let i = fxs.length - 1; i >= 0; i--) {
       const f = fxs[i]; f.t += rdt;

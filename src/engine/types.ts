@@ -153,5 +153,7 @@ export interface GameResult {
   events: GameEvent[]; kills: Record<Side, number>; towers: Record<Side, number>;
   drakes: Record<Side, string[]>; soul: Side | null; obj: Record<Side, ObjTally>;
   players: PlayerLine[]; mvp: string | null; picks: Picks; bans: Bans; frames: Record<string, FrameUnit>[] | null;
-  pWinB?: number; recorded?: boolean;
+  pWinB?: number; recorded?: boolean; fights?: FightRec[];
 }
+/** một pha giao tranh ghi lại để phát lại: s0 = giây bắt đầu, ts = hệ số nén thời gian; frames: [t, x,y,hp × mỗi tướng] */
+export interface FightRec { s0: number; ts: number; keys: string[]; frames: number[][]; acts: { t: number; s: string; k: string; tg?: string; x?: number; y?: number }[] }
