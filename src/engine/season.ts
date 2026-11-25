@@ -8,6 +8,8 @@ import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr';
 import { closeEvent, resetEventStats } from './awards';
 import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy';
 import { lifeDay, chemNewcomer } from './life';
+import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
+import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats';
 export { PHASES, standings, compOrder, runnerUp };
@@ -72,8 +74,6 @@ function finishComp(c: Comp): void {
   if (!c.trophy) return;
   const y = S.season;
   const ut = S.userTeam;
-  // nghỉ hè: độ ăn ý quay về mức trung bình một phần
-  for (const k of Object.keys(S.chem || {})) S.chem![k] = +(S.chem![k] - (S.chem![k] - 55) * 0.25).toFixed(2);
   const order = compOrder(c);
   const tiers = PRIZE[c.trophy.tier];
   order.forEach((t, i) => {
@@ -91,6 +91,7 @@ function finishComp(c: Comp): void {
     const p = S.players[pid];
     if (p) (p.titles = p.titles || []).push(title);
   }
+  careerOnComp(c, order);
   const aw = closeEvent(c, order);
   if (aw) addNews('news.awards', { title, mvp: aw.mvp.ign, mvpTeam: aw.mvp.team, fmvp: aw.fmvp ? aw.fmvp.ign : '—' }, !!aw.mvp.pid && S.players[aw.mvp.pid]?.teamId === S.userTeam);
 }
@@ -101,6 +102,8 @@ function dailyTick(): void {
   soloqDay(playing);
   academyDay();
   lifeDay(playing);
+  brandDay();
+  t2Day(playing);
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
   // tập luyện & phát triển
   for (const p of Object.values(S.players)) {
@@ -144,6 +147,8 @@ function dailyTick(): void {
 function addFinanceQuiet(cost: number, income: number): void {
   const t = userTeam();
   t.budget += cost + income;
+  ledgerAdd('salary', cost);
+  ledgerAdd('sponsor', income);
   S.dailyCost = (S.dailyCost || 0) + cost;
   S.dailyIncome = (S.dailyIncome || 0) + income;
 }
@@ -168,6 +173,10 @@ export function setAutoSave(fn: () => void): void { autoSaveHook = fn; }
 export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
+  careerNewSeason();
+  t2NewSeason();
+  // nghỉ hè: độ ăn ý quay về mức trung bình một phần
+  for (const k of Object.keys(S.chem || {})) S.chem![k] = +(S.chem![k] - (S.chem![k] - 55) * 0.25).toFixed(2);
   // phần thưởng/doanh thu tài trợ điều chỉnh theo kết quả
   for (const t of Object.values(S.teams)) {
     const titles = t.trophies.filter((x) => x.endsWith(String(y))).length;

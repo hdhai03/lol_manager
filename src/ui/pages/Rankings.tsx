@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { openTeam } from './TeamProfile';
 import { DB } from '../../engine/data';
 import { S } from '../../engine/state';
 import { gprTable, leagueStrength } from '../../engine/gpr';
@@ -44,7 +45,7 @@ export function Power() {
           <div className="gp-b">
             <table className="gt gpr-t"><thead><tr><th>#</th><th>{t('team')}</th><th>{t('gpr.score')}</th><th>{t('gpr.wl')}</th><th>{t('gpr.intl')}</th></tr></thead>
               <tbody>{rows.map((r) => (
-                <tr key={r.team} className={r.team === S.userTeam ? 'me' : ''}>
+                <tr key={r.team} className={`click ${r.team === S.userTeam ? 'me' : ''}`} data-team={r.team} onClick={() => openTeam(r.team)}>
                   <td className="gp-rank"><b>{r.rank}</b>{r.delta ? <span className={r.delta > 0 ? 'up' : 'down'}>{r.delta > 0 ? '▲' : '▼'}{Math.abs(r.delta)}</span> : null}</td>
                   <td><div className="gp-team"><Badge id={r.team} size="md" /><span><b>{S.teams[r.team].short}</b><small>{r.league}</small></span></div></td>
                   <td className="gp-score">{t('gpr.pts', { n: r.score })}</td>

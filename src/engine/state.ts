@@ -1,4 +1,5 @@
 import { DB } from './data';
+import { ledgerAdd, ledgerCatOf } from './career';
 import { ROLES, ATTRS, computeOvr, randInt, pick, clamp, hue } from './util';
 import { deriveAttrs, defaultTactics, migratePlayer } from './attrs';
 import type { GameState, Team, Player, Role, LeagueId, SeasonStats, Stats, AttrGroup } from './types';
@@ -102,6 +103,7 @@ export function addNews(key: string, params: Record<string, unknown> = {}, impor
 export function addFinance(key: string, amount: number, params: Record<string, unknown> = {}): void {
   const t = userTeam();
   t.budget += amount;
+  ledgerAdd(ledgerCatOf(key), amount);
   S.finance.unshift({ key, amount, params, day: S.day, season: S.season });
   if (S.finance.length > 200) S.finance.length = 200;
 }

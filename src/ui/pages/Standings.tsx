@@ -7,13 +7,37 @@ import { Badge, LeagueBadge, Ovr } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import type { BracketComp, Comp, LeagueComp, SwissComp } from '../../engine/types';
 import type { StandRow } from '../../engine/formats';
+import { openTeam } from './TeamProfile';
+import { t2Table, ensureT2 } from '../../engine/tier2';
+
+function T2View({ lg }: { lg: string }) {
+  const L = ensureT2()[lg];
+  if (!L) return <p className="muted">—</p>;
+  const rows = t2Table(lg);
+  return (
+    <div className="gp">
+      <div className="gp-h"><h3 className="k-title flex items-center gap-2"><LeagueBadge id={lg} size="sm" />{L.name} {S.season}</h3><span className="gp-r">{t('t2.tag')}</span></div>
+      <div className="gp-b" style={{ overflowX: 'auto' }}>
+        <p className="muted text-sm mt-0">{t('t2.hint')}</p>
+        <table className="gt standings"><thead><tr><th>{t('st.rank')}</th><th>{t('team')}</th><th>{t('st.w')}</th><th>{t('st.l')}</th><th>{t('st.diff')}</th><th>OVR</th></tr></thead>
+          <tbody>{rows.map((r, i) => (
+            <tr key={r.id} className={`${r.parent === S.userTeam ? 'me' : ''} ${i < 4 ? 'q' : ''}`}>
+              <td className="n"><span className="rk">{i + 1}</span></td>
+              <td><div className="nm2"><span className="t2-b"><Badge id={r.parent} size="sm" /></span><span className="uppercase">{r.name}</span></div></td>
+              <td className="n">{r.w}</td><td className="n">{r.l}</td><td className="n">{r.gw - r.gl > 0 ? '+' : ''}{r.gw - r.gl}</td><td><Ovr v={Math.round(r.ovr)} /></td>
+            </tr>
+          ))}</tbody></table>
+      </div>
+    </div>
+  );
+}
 
 export function StandTable({ st, compact = false }: { st: StandRow[]; compact?: boolean }) {
   if (!st.length) return <p className="muted">{t('st.notStarted')}</p>;
   return (
     <table className="gt standings"><thead><tr><th>{t('st.rank')}</th><th>{t('team')}</th><th>{t('st.w')}</th><th>{t('st.l')}</th>{!compact && <><th>{t('st.diff')}</th><th>{t('st.form')}</th><th>OVR</th></>}</tr></thead>
       <tbody>{st.map((r, i) => (
-        <tr key={r.team} className={`${r.team === S.userTeam ? 'me' : ''} ${i < 4 ? 'q' : ''}`}>
+        <tr key={r.team} className={`click ${r.team === S.userTeam ? 'me' : ''} ${i < 4 ? 'q' : ''}`} data-team={r.team} onClick={() => openTeam(r.team)}>
           <td className="n"><span className="rk">{i + 1}</span></td>
           <td><div className="nm2"><Badge id={r.team} size="sm" /><span className="uppercase">{compact ? S.teams[r.team].short : S.teams[r.team].name}</span></div></td>
           <td className="n">{r.w}</td><td className="n">{r.l}</td>
@@ -78,6 +102,8 @@ export function Standings() {
       <div className="chips">{tabs.map((x) => (
         <button key={x} className={`chp ${x === lg ? 'on' : ''}`} data-lg={x} onClick={() => { ui.filters.stLeague = x; refresh(); }}><LeagueBadge id={x} size="xs" />{x === 'INTL' ? 'First Stand / MSI / Worlds' : x}</button>
       ))}</div>
+      {lg !== 'INTL' && <div className="chips">{(['1', '2'] as const).map((x) => <button key={x} className={`chp sm ${(ui.filters.stTier || '1') === x ? 'on' : ''}`} data-tier={x} onClick={() => { ui.filters.stTier = x; refresh(); }}>{t('t2.tier' + x)}</button>)}</div>}
+      {lg !== 'INTL' && ui.filters.stTier === '2' ? <T2View lg={lg} /> : <>
       <div className="gp"><div className="gp-b"><b className="k-title" style={{ fontSize: '.9rem' }}>{t('fmt.title')}</b><p className="muted text-sm mb-0">{t('fmt.' + lg)}</p></div></div>
       {comps.length ? [...comps].reverse().map((c) => (
         <div key={c.id} className="gp">
@@ -85,6 +111,7 @@ export function Standings() {
           <div className="gp-b" style={{ overflowX: 'auto' }}>{body(c)}</div>
         </div>
       )) : <p className="muted">{t('st.notStarted')}</p>}
+      </>}
     </div>
   );
 }

@@ -54,3 +54,25 @@ describe('đời sống đội tuyển', () => {
     }
   }));
 });
+
+import { simSeason, startNewSeason } from '../src/engine';
+import { ensureT2, t2Table } from '../src/engine/tier2';
+describe('sự nghiệp, thương hiệu, hạng 2', () => {
+  it('một mùa: có sổ tuần, người hâm mộ, hạng 2 và lịch sử HLV', () => {
+    const g = createGame({ teamId: 'Gen.G', manager: 'Test' });
+    simSeason(g);
+    withState(g, () => {
+      expect(S.ledger!.length).toBeGreaterThan(3);
+      expect(S.brand!.fans).toBeGreaterThan(0);
+      const lg = S.teams[S.userTeam].league;
+      const tb = t2Table(lg);
+      expect(tb.reduce((s, x) => s + x.w, 0)).toBeGreaterThan(10);
+      expect(S.career!.w + S.career!.l).toBeGreaterThan(5);
+    });
+    startNewSeason(g);
+    withState(g, () => {
+      expect(S.career!.hist.length).toBe(1);
+      expect(ensureT2()).toBeTruthy();
+    });
+  });
+});

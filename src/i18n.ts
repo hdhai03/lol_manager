@@ -4,6 +4,21 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'nav.career': 'Sự nghiệp', 'tp.season': 'Mùa này', 'tp.trophies': 'Danh hiệu', 'tp.h2h': 'Đối đầu với đội bạn', 'tp.recent': 'Kết quả gần đây', 'tp.noTrophy': 'Chưa có danh hiệu.',
+  't2.tier1': 'Hạng 1', 't2.tier2': 'Hạng 2 (học viện)', 't2.tag': 'Hạng 2', 't2.hint': 'Đội học viện của các CLB thi đấu vào những ngày giải chính có trận. Đội học viện của bạn mạnh lên theo các tuyển thủ trong Academy.', 'news.t2Champ': '{team} vô địch {league}!',
+  'car.rep': 'Uy tín HLV', 'car.conf': 'Niềm tin ban lãnh đạo', 'car.obj': 'Mục tiêu mùa giải', 'car.objRank': 'Cần xếp hạng {n} trở lên ở giải quốc nội', 'car.record': 'Thành tích (loạt trận)', 'car.titles': '{n} danh hiệu',
+  'car.repElite': 'HLV hàng đầu thế giới', 'car.repGood': 'Được đánh giá cao', 'car.repMid': 'Đang khẳng định mình', 'car.repLow': 'Chưa có tên tuổi',
+  'car.confHi': 'Ban lãnh đạo rất hài lòng', 'car.confMid': 'Ban lãnh đạo đang theo dõi', 'car.confLo': 'Ghế HLV đang lung lay!',
+  'car.sackedT': 'Bạn đã bị sa thải', 'car.sackedD': 'Ban lãnh đạo {team} quyết định chấm dứt hợp đồng. Hãy chọn một bến đỗ mới để tiếp tục sự nghiệp.', 'car.offersT': 'Lời mời dẫn dắt', 'car.offersD': 'Uy tín của bạn thu hút các đội khác. Nhận lời sẽ chuyển sang dẫn dắt đội mới.', 'car.accept': 'Nhận lời', 'car.joined': 'Bạn là HLV mới của {team}!', 'car.offseasonOnly': 'Chỉ chuyển đội được trong kỳ nghỉ giữa mùa.',
+  'car.history': 'Lịch sử sự nghiệp', 'car.season': 'Mùa', 'car.best': 'Hạng tốt nhất', 'car.series': 'Loạt trận', 'car.hint': 'Thắng đội mạnh hơn tăng nhiều uy tín và niềm tin; thua đội yếu hơn thì ngược lại. Cuối mùa, niềm tin dưới 20 sẽ bị sa thải; uy tín từ 58 trở lên có thể nhận lời mời từ đội mạnh hơn.',
+  'news.boardWarn': 'Ban lãnh đạo bắt đầu mất kiên nhẫn với kết quả gần đây.', 'news.sacked': 'Bạn đã bị {team} sa thải.', 'news.jobOffer': 'Bạn nhận được {n} lời mời dẫn dắt (xem mục Sự nghiệp).', 'news.newJob': 'Bạn rời {from} để dẫn dắt {team}.',
+  'fin.weekly': 'Thu chi theo tuần', 'fin.noWeeks': 'Chưa có dữ liệu — qua vài ngày để xem.', 'fin.week': 'Tuần {n}', 'fin.wk': 'T{n}', 'fin.weekH': 'Tuần', 'fin.netH': 'Ròng',
+  'fin.cat.sponsor': 'Tài trợ', 'fin.cat.merch': 'Bán hàng', 'fin.cat.prize': 'Tiền thưởng', 'fin.cat.transfer': 'Chuyển nhượng', 'fin.cat.salary': 'Lương', 'fin.cat.staff': 'Vận hành', 'fin.cat.other': 'Khác',
+  'fin.brandMerch': 'Nâng cấp cửa hàng (cấp {n})', 'fin.brandFest': 'Tổ chức lễ hội người hâm mộ',
+  'br.title': 'Thương hiệu & người hâm mộ', 'br.fans': 'Người hâm mộ', 'br.hype': 'Độ nóng', 'br.merch': 'Doanh thu bán hàng', 'br.perSeason': '/ mùa (ước tính)', 'br.season': 'mùa',
+  'br.content': 'Đội ngũ nội dung', 'br.contentD': 'Video, stream, mạng xã hội: tăng người hâm mộ và độ nóng mỗi ngày.', 'br.lv0': 'Không', 'br.lv1': 'Cơ bản', 'br.lv2': 'Chuyên nghiệp', 'br.lv3': 'Hàng đầu',
+  'br.store': 'Cửa hàng (cấp {n}/3)', 'br.storeD': 'Mở rộng cửa hàng áo đấu, vật phẩm: tăng doanh thu bán hàng.', 'br.upgrade': 'Nâng cấp · {cost}', 'br.max': 'Tối đa', 'br.storeOk': 'Đã nâng cấp cửa hàng!',
+  'br.fest': 'Lễ hội người hâm mộ', 'br.festD': 'Tăng mạnh độ nóng, người hâm mộ và tinh thần đội (30 ngày/lần).', 'br.festGo': 'Tổ chức · {cost}', 'br.festWait': 'Còn {n} ngày', 'br.festOk': 'Lễ hội rất thành công!',
   'nav.practice': 'Luyện tập', 'task.event': 'Có {n} sự kiện cần bạn quyết định',
   'news.boostGot': 'Nhận thẻ tăng cường "{kind}" ({why}).',
   'pr.chem': 'Độ ăn ý', 'pr.chemHint': 'Độ ăn ý tăng khi các tuyển thủ đánh giải, scrim và duo xếp hạng cùng nhau; người mới về đội bắt đầu thấp. Ô viền sáng là các cặp đi cùng nhau (Rừng–Giữa, Xạ thủ–Hỗ trợ). Ăn ý cao giúp phối hợp, phán đoán và nhận thức bản đồ tốt hơn trong trận.',
@@ -275,6 +290,21 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'nav.career': 'Career', 'tp.season': 'This season', 'tp.trophies': 'Trophies', 'tp.h2h': 'Head-to-head vs your team', 'tp.recent': 'Recent results', 'tp.noTrophy': 'No trophies yet.',
+  't2.tier1': 'Tier 1', 't2.tier2': 'Tier 2 (academy)', 't2.tag': 'Tier 2', 't2.hint': 'Club academy teams play on days when the main league has matches. Your academy team gets stronger with the players in your Academy.', 'news.t2Champ': '{team} won {league}!',
+  'car.rep': 'Coach reputation', 'car.conf': 'Board confidence', 'car.obj': 'Season objective', 'car.objRank': 'Finish {n} or better domestically', 'car.record': 'Record (series)', 'car.titles': '{n} titles',
+  'car.repElite': 'World-class coach', 'car.repGood': 'Highly rated', 'car.repMid': 'Making a name', 'car.repLow': 'Unknown',
+  'car.confHi': 'The board is delighted', 'car.confMid': 'The board is watching', 'car.confLo': 'Your job is at risk!',
+  'car.sackedT': 'You have been sacked', 'car.sackedD': 'The {team} board ended your contract. Pick a new club to continue your career.', 'car.offersT': 'Job offers', 'car.offersD': 'Your reputation attracts other teams. Accepting moves you to the new team.', 'car.accept': 'Accept', 'car.joined': 'You are the new head coach of {team}!', 'car.offseasonOnly': 'You can only change teams during the off-season.',
+  'car.history': 'Career history', 'car.season': 'Season', 'car.best': 'Best finish', 'car.series': 'Series', 'car.hint': 'Beating stronger teams builds reputation and confidence; losing to weaker ones costs it. At season end, confidence under 20 gets you sacked; reputation 58+ can bring offers from stronger teams.',
+  'news.boardWarn': 'The board is losing patience with recent results.', 'news.sacked': 'You were sacked by {team}.', 'news.jobOffer': 'You received {n} job offer(s) (see Career).', 'news.newJob': 'You left {from} to coach {team}.',
+  'fin.weekly': 'Weekly income & costs', 'fin.noWeeks': 'No data yet — play a few days.', 'fin.week': 'Week {n}', 'fin.wk': 'W{n}', 'fin.weekH': 'Week', 'fin.netH': 'Net',
+  'fin.cat.sponsor': 'Sponsors', 'fin.cat.merch': 'Merch', 'fin.cat.prize': 'Prize money', 'fin.cat.transfer': 'Transfers', 'fin.cat.salary': 'Salaries', 'fin.cat.staff': 'Operations', 'fin.cat.other': 'Other',
+  'fin.brandMerch': 'Store upgrade (level {n})', 'fin.brandFest': 'Fan festival',
+  'br.title': 'Brand & fanbase', 'br.fans': 'Fans', 'br.hype': 'Hype', 'br.merch': 'Merch revenue', 'br.perSeason': '/ season (est.)', 'br.season': 'season',
+  'br.content': 'Content team', 'br.contentD': 'Videos, streams, social: grows fans and hype daily.', 'br.lv0': 'None', 'br.lv1': 'Basic', 'br.lv2': 'Pro', 'br.lv3': 'Elite',
+  'br.store': 'Store (level {n}/3)', 'br.storeD': 'Expand jerseys and merchandise: more merch revenue.', 'br.upgrade': 'Upgrade · {cost}', 'br.max': 'Maxed', 'br.storeOk': 'Store upgraded!',
+  'br.fest': 'Fan festival', 'br.festD': 'Big boost to hype, fans and team morale (every 30 days).', 'br.festGo': 'Host · {cost}', 'br.festWait': '{n} days left', 'br.festOk': 'Great festival!',
   'nav.practice': 'Practice', 'task.event': '{n} event(s) need your decision',
   'news.boostGot': 'Got boost card "{kind}" ({why}).',
   'pr.chem': 'Chemistry', 'pr.chemHint': 'Chemistry grows when players compete, scrim and duo queue together; new signings start low. Highlighted cells are lane pairs (Jungle–Mid, ADC–Support). High chemistry improves teamwork, judgment and map awareness in games.',

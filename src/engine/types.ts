@@ -138,6 +138,10 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  ledger?: { key: string; season: number; week: number; [cat: string]: number | string }[];
+  brand?: { fans: number; hype: number; content: number; merch: number; fansStart: number }; festDay?: number;
+  career?: { rep: number; conf: number; obj: 'title' | 'contend' | 'playoffs' | 'develop'; w: number; l: number; sw: number; sl: number; hist: { season: number; team: string; league: string; best: number | null; w: number; l: number; titles: string[]; conf: number }[]; offers: { team: string; day: number }[]; sacked?: boolean; best?: number | null };
+  t2?: Record<string, { name: string; teams: { id: string; name: string; short: string; parent: string; ovr: number; w: number; l: number; gw: number; gl: number }[]; champ?: string }>;
   events?: { id: string; kind: 'tension' | 'scandal' | 'sick' | 'stream' | 'bootcamp' | 'fanmeet' | 'reschedule'; day: number; pid?: string; pid2?: string; amount?: number; done?: string; out?: string }[]; seqE?: number;
 }
 

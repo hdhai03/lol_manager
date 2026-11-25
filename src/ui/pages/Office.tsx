@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { openTeam } from './TeamProfile';
 import { DB, itemImg, champArt, refreshOpgg } from '../../engine/data';
 import { opgg, opggPos, tierList, TIER_L } from '../../engine/runes';
 import { S, userTeam, teamOvr, teamPlayers, teamSalary } from '../../engine/state';
@@ -144,7 +145,7 @@ export function World() {
       <div className="gp">
         <div className="gp-h"><h3 className="k-title">{t('world.powerRank')}</h3></div>
         <div className="gp-b"><table className="gt"><tbody>{ranks.map((r, i) => (
-          <tr key={r.id} className={r.id === S.userTeam ? 'me' : ''}><td className="n">{i + 1}</td><td><div className="nm2"><Badge id={r.id} size="sm" />{S.teams[r.id].name}</div></td><td><LeagueBadge id={S.teams[r.id].league} size="xs" /></td><td><Ovr v={r.ovr} /></td></tr>
+          <tr key={r.id} className={`click ${r.id === S.userTeam ? 'me' : ''}`} data-team={r.id} onClick={() => openTeam(r.id)}><td className="n">{i + 1}</td><td><div className="nm2"><Badge id={r.id} size="sm" />{S.teams[r.id].name}</div></td><td><LeagueBadge id={S.teams[r.id].league} size="xs" /></td><td><Ovr v={r.ovr} /></td></tr>
         ))}</tbody></table></div>
       </div>
       <div className="flex flex-col gap-4">
@@ -168,37 +169,3 @@ export function World() {
 }
 
 // ---------- Tài chính ----------
-export function Finance() {
-  const ut = userTeam();
-  const pay = teamSalary(ut);
-  const Big = ({ l, v, cls = '' }: { l: string; v: string; cls?: string }) => (
-    <div className="gp"><div className="gp-b"><span className="k-label">{l}</span><b className={`k-disp mt-1 ${cls}`} style={{ fontSize: 'clamp(1.2rem, 2vw, 1.8rem)' }}>{v}</b></div></div>
-  );
-  return (
-    <div className="flex flex-col gap-4 stag">
-      <div className="grid md:grid-cols-4 gap-3">
-        <Big l={t('fin.balance')} v={fullMoney(ut.budget)} cls={ut.budget < 0 ? 'neg' : ''} />
-        <Big l={t('fin.payroll')} v={fullMoney(pay)} />
-        <Big l={t('fin.sponsorY')} v={fullMoney(ut.sponsor)} />
-        <Big l={t('fin.net')} v={fullMoney(ut.sponsor - pay)} cls={ut.sponsor - pay < 0 ? 'neg' : 'pos'} />
-      </div>
-      <div className="grid lg:grid-cols-2 gap-4">
-        <div className="gp">
-          <div className="gp-h"><h3 className="k-title">{t('fin.log')}</h3></div>
-          <div className="gp-b">{S.finance.filter((x) => x.amount).slice(0, 60).map((x, i) => (
-            <div key={i} className="flex items-center gap-3 py-2 border-b border-line"><span className="grow">{t(x.key, x.params || {})}</span><span className="muted text-xs">{t('season', { y: x.season })}</span><b className={`k-num ${x.amount < 0 ? 'neg' : 'pos'}`}>{x.amount > 0 ? '+' : ''}{money(x.amount)}</b></div>
-          ))}{!S.finance.some((x) => x.amount) && <p className="muted">—</p>}</div>
-        </div>
-        <div className="gp">
-          <div className="gp-h"><h3 className="k-title">{t('fin.contracts')}</h3></div>
-          <div className="gp-b"><table className="gt"><thead><tr><th>{t('player')}</th><th>{t('role')}</th><th>{t('salary')}</th><th>{t('contract')}</th><th>{t('value')}</th></tr></thead>
-            <tbody>{teamPlayers(ut).map((p) => (
-              <tr key={p.id} className="click" data-player={p.id} onClick={() => openPlayer(p.id)}>
-                <td><div className="nm2"><Face p={p} size="xs" />{p.ign}</div></td><td><RoleTag r={p.role} /></td><td className="n">{money(p.salary)}</td><td className="n">{p.contractUntil}</td><td className="n">{money(p.value)}</td>
-              </tr>
-            ))}</tbody></table></div>
-        </div>
-      </div>
-    </div>
-  );
-}

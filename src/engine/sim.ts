@@ -5,6 +5,7 @@ import { ROLES, rand, clamp, logistic, gauss } from './util';
 import { runGame } from './engine';
 import { opggAdj } from './runes';
 import { lineChem, chemPairs, boostMods } from './life';
+import { careerOnSeries } from './career';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
 import { archiveGame } from './awards';
@@ -232,5 +233,6 @@ export function recordGame(match: Match, g: GameResult, detailed: boolean): void
     match.winner = match.winsA > match.winsB ? match.a : match.b;
     delete match.fearless;
     gprOnSeries(match);
+    careerOnSeries(match);
   }
 }

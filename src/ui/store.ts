@@ -6,7 +6,7 @@ import type { Match, Role } from '../engine/types';
 export type Screen = 'menu' | 'new' | 'load' | 'about' | 'game';
 export interface Filters {
   schLeagues?: string[] | null; schBack?: number; schFwd?: number; schDay?: number | null; schMine?: boolean; schSpoil?: boolean;
-  stLeague?: string; gprSnap?: number | null; gprLeague?: string | null;
+  stLeague?: string; stTier?: '1' | '2'; gprSnap?: number | null; gprLeague?: string | null;
   recTab?: string; recLg?: string; recEv?: string; recSort?: string;
   trRole?: 'all' | Role; trLeague?: string; trSort?: 'ovr' | 'pot' | 'val' | 'age'; trQ?: string; trPage?: number;
   mRole?: 'all' | Role; mQ?: string; mView?: 'solo' | 'pro'; mSel?: string | null; inCat?: string; lsv?: string;

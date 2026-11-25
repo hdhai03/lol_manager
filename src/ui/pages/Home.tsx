@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { openTeam } from './TeamProfile';
 import { DB, champSplash } from '../../engine/data';
 import { S, userTeam, teamOvr, lineupPlayers, teamSalary } from '../../engine/state';
 import { standings, nextUserMatch, acceptOffer } from '../../engine/season';
@@ -254,7 +255,7 @@ function MiniStandings() {
         {st.length ? (
           <table className="mst"><thead><tr><th>#</th><th>{t('team')}</th><th className="n">{getLang() === 'vi' ? 'T' : 'W'}</th><th className="n">{getLang() === 'vi' ? 'B' : 'L'}</th></tr></thead>
             <tbody>{st.map((r, i) => (
-              <tr key={r.team} className={`${r.team === ut.id ? 'me' : ''} ${i < 4 ? 'q' : ''}`}>
+              <tr key={r.team} className={`click ${r.team === ut.id ? 'me' : ''} ${i < 4 ? 'q' : ''}`} data-team={r.team} onClick={() => openTeam(r.team)}>
                 <td><span className="rk">{i + 1}</span></td><td><div className="tn"><Badge id={r.team} size="xs" />{S.teams[r.team].short}</div></td><td className="n">{r.w}</td><td className="n">{r.l}</td>
               </tr>
             ))}</tbody></table>

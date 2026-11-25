@@ -16,12 +16,13 @@ import { Training, Youth, Ladder } from '../pages/Academy';
 import { Schedule } from '../pages/Schedule';
 import { Standings } from '../pages/Standings';
 import { Power, Records } from '../pages/Rankings';
-import { Meta, World, Finance } from '../pages/Office';
+import { Meta, World } from '../pages/Office';
+import { Career, Finance } from '../pages/Career';
 
 const PAGES: Record<string, () => ReactElement> = {
   dashboard: Home, inbox: Inbox, roster: Roster, tactics: Tactics, practice: Practice, transfers: Transfers,
   training: Training, youth: Youth, ladder: Ladder,
-  schedule: Schedule, standings: Standings, power: Power, records: Records, meta: Meta, world: World, finance: Finance,
+  schedule: Schedule, standings: Standings, power: Power, records: Records, meta: Meta, world: World, finance: Finance, career: Career,
 };
 /** trang tự cuộn (danh sách dài); còn lại vừa đúng một màn hình */
 const SCROLLS = new Set(['schedule', 'standings', 'records', 'meta', 'world', 'finance', 'power']);
