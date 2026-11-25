@@ -1,5 +1,6 @@
 // Màn tổng kết ván (kiểu bảng kết quả phát sóng): chỉ số trận, sát thương lên tướng trước/sau 14 phút, chênh lệch vàng.
 import { useState } from 'react';
+import { TeamTalk, talkCtx } from './MatchX';
 import { DB, champSplash, itemImg, spellImg } from '../../engine/data';
 import { S } from '../../engine/state';
 import { recordGame } from '../../engine/sim';
@@ -95,7 +96,10 @@ export function PostGame({ m, g, onNext, onFinish }: { m: Match; g: GameResult; 
             <Row label={t('pg.elders')} l={cnt(ob.B.elders)} r={cnt(ob.R.elders)} />
             <Row label={t('pg.barons')} l={cnt(ob.B.barons)} r={cnt(ob.R.barons)} />
             <Row label={t('pg.bans')} l={bans('B')} r={bans('R')} />
+            {g.early && <Row label={t('ep.res')} l={<>{t('ep.lvl1.' + g.early.plans.B.lvl1)}{g.early.lvl1 === 'B' ? ' ✓' : ''}</>} r={<>{g.early.lvl1 === 'R' ? '✓ ' : ''}{t('ep.lvl1.' + g.early.plans.R.lvl1)}</>} />}
+            {g.flex && (g.flex.B?.length || g.flex.R?.length) ? <Row label={t('fx.title')} l={String(g.flex.B?.length || 0)} r={String(g.flex.R?.length || 0)} /> : null}
           </div>
+          {!over && (m.a === S.userTeam || m.b === S.userTeam) && <TeamTalk m={m} ctx={talkCtx(m)} />}
           <div className="pg-actions">
             {over ? <button className="pg-cont" data-fin onClick={onFinish}>{t('pg.continue')}</button> : (
               <>

@@ -57,10 +57,11 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
   const [tl] = useState(() => new Timeline(g));
   const [speed, setSpeedS] = useState<number>(() => { try { return +(localStorage.getItem(KEY_SPEED) || 8); } catch { return 8; } });
   const [paused, setPaused] = useState(false);
+  const [dec, setDec] = useState<{ key: string; opts: OrderKind[] } | null>(null);
   const [ordLeft, setOrdLeft] = useState(MAX_ORDERS);
   const mySide: Side | null = replay ? null : g.blue === S.userTeam ? 'B' : g.red === S.userTeam ? 'R' : null;
   const root = useRef<HTMLDivElement>(null);
-  const ctl = useRef<{ order: (k: OrderKind) => void; setSpeed: (x: number) => void; pause: (p: boolean) => void; toggleView: () => void; skip: () => void; skipAll: () => void } | null>(null);
+  const ctl = useRef<{ decide: (k: OrderKind | null) => void; order: (k: OrderKind) => void; setSpeed: (x: number) => void; pause: (p: boolean) => void; toggleView: () => void; skip: () => void; skipAll: () => void } | null>(null);
   const comp = S.comps[m.comp];
   const teamOf = (s: Side) => (s === 'B' ? g.blue : g.red);
   const tShort = (s: Side) => S.teams[teamOf(s)].short;
@@ -77,6 +78,20 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
     let cur = g;
     let F = g.frames || [];
     const orders: Order[] = [];
+    let paidOrders = 0;
+    // khoảnh khắc quyết định: tối đa 3 lần/ván, mỗi tình huống một lần
+    const decUsed = new Set<string>();
+    const goldDiff = (): number => { const fr = F[tl.frameIdx(gt)]; if (!fr || !mySide) return 0; let d = 0; for (const k of keys) d += (k[0] === mySide ? 1 : -1) * fr[k][5]; return d; };
+    const askDecision = (key: string, opts: OrderKind[]) => { decUsed.add(key); isPaused = true; setPaused(true); setDec({ key, opts }); };
+    const checkDecision = () => {
+      if (!mySide || isPaused || decUsed.size >= 3 || gt >= tl.end - 45 || gt < 60) return;
+      const os: Side = mySide === 'B' ? 'R' : 'B';
+      const gd = goldDiff();
+      if (!decUsed.has('soul') && (live.dk[mySide].length === 3 || live.dk[os].length === 3) && gt >= live.nextDr - 40 && gt < live.nextDr) return askDecision('soul', ['dragon', 'fight', 'defend']);
+      if (!decUsed.has('baron') && gt >= 1185 && gt < 1260) return askDecision('baron', ['baron', 'push', 'defend']);
+      if (!decUsed.has('behind') && gt > 840 && gd <= -3500) return askDecision('behind', ['defend', 'fight', 'push']);
+      if (!decUsed.has('ahead') && gt > 840 && gd >= 4500) return askDecision('ahead', ['push', 'baron', 'fight']);
+    };
     let ordUntil = 0, ordKind = '';
     const map = $('#map');
     let alive = true, raf = 0, spd = speed, isPaused = false;
@@ -250,10 +265,16 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
     };
 
     // bình luận viên: giới thiệu đội hình, cập nhật thế trận mỗi 5 phút, lật kèo
-    let introDone = false, lastStatus = 0, leader: Side | null = null;
+    let introDone = false, earlyDone = false, lastStatus = 0, leader: Side | null = null;
     const synName = (sd: Side) => { const s = synergies(Object.values(cur.picks[sd]) as string[]); return s.length ? s.map((x) => t('syn.' + x.kind)).join(', ') : t('cm.noSyn'); };
     const commentate = () => {
       if (!introDone && gt > 4) { introDone = true; castText('B', gt, t('cm.intro', { a: tShort('B'), sa: synName('B'), b: tShort('R'), sb: synName('R') })); return; }
+      // kết quả kế hoạch cấp 1
+      if (!earlyDone && gt > 14) {
+        earlyDone = true;
+        const e = cur.early;
+        if (e?.lvl1) { castText(e.lvl1, gt, t('ep.cast.' + e.plans[e.lvl1].lvl1, { team: tShort(e.lvl1), opp: tShort(e.lvl1 === 'B' ? 'R' : 'B') })); return; }
+      }
       const fr = F[tl.frameIdx(gt)];
       if (!fr) return;
       let gB = 0, gR = 0;
@@ -277,6 +298,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
       if (!isPaused && gt < tl.end) gt = Math.min(tl.end, gt + rdt * spd);
       while (evIdx < tl.evs.length && tl.evs[evIdx].d <= gt) applyEv(tl.evs[evIdx++]);
       commentate();
+      checkDecision();
       const fi = tl.frameIdx(gt);
       if (fi !== lastFrame) { lastFrame = fi; drawFrame(fi); }
       drawLive();
@@ -302,11 +324,10 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
     };
     let want3D = true;
     try { want3D = localStorage.getItem('lolm_view') !== '2d'; } catch { /* */ }
-    ctl.current = {
-      // lệnh trong trận: mô phỏng lại từ cùng seed, có hiệu lực từ nhịp kế tiếp
-      order: (k) => {
-        if (!mySide || orders.length >= MAX_ORDERS || gt >= tl.end - 20) return;
-        const t0 = (Math.floor(gt / 15) + 2) * 15;
+    // lệnh trong trận: mô phỏng lại từ cùng seed, có hiệu lực từ nhịp kế tiếp (quyết định ở khoảnh khắc then chốt không tính vào số lệnh)
+    const issue = (k: OrderKind, free: boolean) => {
+      if (!mySide || (!free && paidOrders >= MAX_ORDERS) || gt >= tl.end - 20) return;
+      const t0 = (Math.floor(gt / 15) + 2) * 15;
         orders.push({ t: t0, side: mySide, kind: k });
         const n = resimGame(cur, [...orders]);
         cur = n;
@@ -318,9 +339,17 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
         // bản 3D tính trước lịch trụ/quái từ dòng thời gian → dựng lại theo diễn biến mới
         if (arena) { arena.dispose(); arena = null; void start3D(); }
         ordUntil = t0 + 150; ordKind = k;
-        setOrdLeft(MAX_ORDERS - orders.length);
-        banner(t('ord.' + k), t('ord.issued'), mySide);
+        if (!free) paidOrders++;
+        setOrdLeft(MAX_ORDERS - paidOrders);
+        banner(t('ord.' + k), t(free ? 'dc.called' : 'ord.issued'), mySide);
+    };
+    ctl.current = {
+      decide: (k) => {
+        setDec(null);
+        isPaused = false; setPaused(false);
+        if (k) issue(k, true);
       },
+      order: (k) => issue(k, false),
       setSpeed: (x) => { spd = x; try { localStorage.setItem(KEY_SPEED, String(x)); } catch { /* */ } },
       pause: (p) => { isPaused = p; },
       toggleView: async () => {
@@ -395,6 +424,15 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
       </div>
       <div className="bc-mini"><img src={mapImg()} alt="" /><i className="vp" id="vp" />{keys.map((k) => <i key={k} className={`md md-${k[0]}`} id={`md-${k}`}><Champ id={pk(k[0] as Side, k.slice(1))} size={22} /></i>)}</div>
       <div className="banner" id="banner" />
+      {dec && (
+        <div className="dc-card" data-decision={dec.key}>
+          <small className="k-label">{t('dc.title')}</small>
+          <b className="k-disp">{t('dc.' + dec.key)}</b>
+          <p className="muted text-sm">{t('dc.' + dec.key + 'D')}</p>
+          <div className="dc-o">{dec.opts.map((k) => <button key={k} className="gb" data-dc={k} onClick={() => ctl.current?.decide(k)}><b>{t('ord.' + k)}</b><small>{t('ord.' + k + 'D')}</small></button>)}</div>
+          <button className="gb ghost sm" data-dc-skip onClick={() => ctl.current?.decide(null)}>{t('dc.trust')}</button>
+        </div>
+      )}
       {mySide && (
         <div className="bc-ord">
           <small className="k-label">{t('ord.title')} · {ordLeft}/{MAX_ORDERS}</small>

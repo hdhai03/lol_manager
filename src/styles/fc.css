@@ -389,3 +389,22 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .imp-strip { font-size: .75rem; color: var(--t3, #8a8d93); white-space: nowrap; }
 .imp-strip.bad { color: #ff8f8f; }
 select.gin.sm { padding: .3rem .5rem; font-size: .8rem; max-width: 100%; }
+
+/* trận đấu: nói chuyện với đội, xu hướng đối thủ, khoảnh khắc quyết định */
+.talk { display: flex; flex-direction: column; gap: .45rem; padding: .7rem .9rem; background: var(--s1); border-radius: 4px; margin: .6rem 0; }
+.talk-h { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; }
+.talk-o { display: flex; gap: .4rem; flex-wrap: wrap; }
+.talk-r { display: flex; gap: .5rem; flex-wrap: wrap; }
+.talk-p { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .55rem; border-radius: 3px; background: var(--s2); font-size: .8rem; font-weight: 600; }
+.talk-p small { color: var(--t3, #8a8d93); font-weight: 500; font-size: .68rem; }
+.talk-p i { font-style: normal; font-size: .7rem; }
+.talk-p.up i { color: var(--fc); } .talk-p.down i { color: #ff6b6b; } .talk-p.flat i { color: var(--t3, #8a8d93); }
+.opp-tend { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; justify-content: center; margin: .4rem 0; }
+.habit-w { display: inline-flex; align-items: center; gap: .25rem; margin-left: .6rem; color: #ffb36b; font-weight: 600; }
+.dc-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 40; width: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; gap: .5rem; padding: 1.2rem 1.3rem; background: rgba(16, 17, 19, .97); border-radius: 6px; text-align: center; }
+.dc-card .k-disp { font-size: 1.35rem; }
+.dc-card p { margin: 0; }
+.dc-o { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: .3rem; }
+.dc-o .gb { display: flex; flex-direction: column; align-items: center; gap: .15rem; min-height: 4.2rem; padding: .5rem; white-space: normal; }
+.dc-o .gb small { font-size: .68rem; color: var(--t3, #8a8d93); font-weight: 500; line-height: 1.25; }
+@media (max-width: 560px) { .dc-o { grid-template-columns: 1fr; } }

@@ -16,6 +16,7 @@ import { openScout, Press } from '../pages/Scout';
 import { teamChem } from '../../engine/life';
 import { LiveGame } from './Live';
 import { PostGame } from './PostGame';
+import { TeamTalk, OppTendency, talkCtx } from './MatchX';
 import type { Draft, GameResult, Match } from '../../engine/types';
 
 type Phase = { k: 'pre' } | { k: 'draft' } | { k: 'load'; d: Draft; g: GameResult } | { k: 'live'; d: Draft; g?: GameResult } | { k: 'post'; g: GameResult } | { k: 'end' };
@@ -79,6 +80,8 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
         {m.games.length === 0 && S.pressDay !== S.day && <button className="gb sm" data-press-open onClick={() => openModal(() => <Press ctx="pre" opp={m.a === S.userTeam ? m.b : m.a} seed={S.day} />)}>{t('pc.open')}</button>}
         {(!!S.boosts?.length || !!S.boostActive) && <><span className="k-label">{t('bst.title')}</span><Boosts compact /></>}
       </div>
+      <OppTendency opp={m.a === S.userTeam ? m.b : m.a} />
+      <TeamTalk m={m} ctx={m.games.length === 0 ? 'pre' : talkCtx(m)} />
       <div className="md-actions">
         <button className="gb primary" data-a="manual" style={{ minHeight: '3rem', padding: '0 2rem' }} onClick={() => go('manual')}>{t('m.manualDraft')}</button>
         <button className="gb" data-a="auto" style={{ minHeight: '3rem' }} onClick={() => go('auto')}>{t('m.autoDraft')}</button>

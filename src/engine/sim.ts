@@ -1,5 +1,6 @@
 // Mô phỏng cấm/chọn và trận đấu
 import { DB } from './data';
+import { isFlex, aiEarly, defaultEarly, earlyEdge, flexBonus, counterTempo, habitBan, trackHabits, type EarlyPlan } from './matchx';
 import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
 import { runGame, type RunInput, type Order } from './engine';
@@ -15,7 +16,7 @@ import { analystDay } from './staff';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
 import { archiveGame } from './awards';
-import type { Draft, GameRecord, GameResult, Match, Player, Role, Side, Picks } from './types';
+import type { Draft, GameRecord, GameResult, Match, Player, Role, Side, Picks, Tactics } from './types';
 
 type Line = Partial<Record<Role, Player | null>>;
 
@@ -100,7 +101,7 @@ export function aiChoose(d: Draft): { champ: string; role?: Role } {
         // cấm nhắm vào tuyển thủ: tướng tủ của người giỏi bị cấm trước; tướng mạnh sau bản cập nhật cũng vậy
         const p = oppLine[r];
         const w = p ? clamp((p.ovr - 70) / 18, 0.4, 1.4) : 0.6;
-        s = Math.max(s, champFit(p, c.id, r) * w + c.power * 0.25 + patchMod(c.id) * 300 + opggAdj(c.id, r) * 150);
+        s = Math.max(s, champFit(p, c.id, r) * w + c.power * 0.25 + patchMod(c.id) * 300 + opggAdj(c.id, r) * 150 + habitBan(c.id, opp));
       }
       if (s < -1e8) continue;
       // không để đối thủ hoàn thành combo
@@ -146,6 +147,8 @@ export function pickScores(d: Draft, side: Side): { champ: string; role: Role; s
       if (vs && opggPos(vs, r)?.counters?.includes(c.id)) { s += 7; why.push('counter'); }
       if (patchMod(c.id) > 0.01) { why.push('buff'); }
       if (myLine[r]?.pool.slice(0, 3).some((x) => x.c === c.id)) why.push('comfort');
+      // chọn sớm tướng đa vị trí: giấu ý đồ
+      if (d.log.filter((x) => x.side === side && x.type === 'pick').length < 3 && isFlex(c.id, me)) { s += 2; why.push('flex'); }
       out.push({ champ: c.id, role: r, s, why });
     }
   }
@@ -204,23 +207,34 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
   const lines: Record<Side, Line> = { B: lineupMap(d.blue), R: lineupMap(d.red) };
   const fits: Record<Side, Partial<Record<Role, number>>> = { B: {}, R: {} };
   for (const sd of ['B', 'R'] as Side[]) for (const r of ROLES) fits[sd][r] = champFit(lines[sd][r], d.picks[sd][r], r);
+  // kế hoạch đầu trận & tướng đa vị trí
+  const plan = (sd: Side): EarlyPlan => { const tid = sd === 'B' ? d.blue : d.red; return tid === S.userTeam ? (S.tactics?.early ?? defaultEarly()) : aiEarly(tid, sd === 'B' ? d.red : d.blue); };
+  const plans = { B: plan('B'), R: plan('R') };
+  const edge = earlyEdge(plans.B, plans.R);
+  const flex = { B: flexBonus(d, 'B'), R: flexBonus(d, 'R') };
   const tac = (sd: Side) => {
     const tid = sd === 'B' ? d.blue : d.red;
     const mine = tid === S.userTeam;
     const other = sd === 'B' ? d.red : d.blue;
     const base = mine && S.tactics ? S.tactics : styleTactics(tid, aiTactics(d.picks[sd], lines[sd]));
+    // AI bắt bài nhịp độ quen thuộc của người chơi
+    const ct = mine ? null : counterTempo(other);
+    if (ct) { base.tempo = ct; if (base.phase) base.phase = { early: ct, mid: ct, late: base.phase.late }; }
     const bm = mine ? boostMods() : { day: 0, chem: 0, rune: 0, fresh: false };
     if (mine) bm.day += analystDay();
     const chem = lineChem(tid);
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
-    return { ...base, day: gauss() * 2.6 + bm.day + derbySwing(tid, other) + teamColor(S.teams[tid]).bonus, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) }; // phong độ chung của cả đội trong ngày
+    return { ...base, day: gauss() * 2.6 + bm.day + derbySwing(tid, other) + teamColor(S.teams[tid]).bonus, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) + flex[sd].bonus, dayE: edge[sd] }; // phong độ chung của cả đội trong ngày
   };
   // ảnh chụp tuyển thủ lúc vào trận (để phát lại / ra lệnh giữa trận cho đúng diễn biến)
   const snap = (p: Player | null | undefined): Player | null => (p ? ({ id: p.id, ign: p.ign, role: p.role, stats: { ...p.stats }, cond: p.cond, morale: p.morale, form: p.form } as Player) : null);
   const snapLines = { B: Object.fromEntries(ROLES.map((r) => [r, snap(lines.B[r])])), R: Object.fromEntries(ROLES.map((r) => [r, snap(lines.R[r])])) } as RunInput['lines'];
   const rin: RunInput = { blue: d.blue, red: d.red, picks: d.picks, bans: d.bans, lines: snapLines, fits, tactics: { B: tac('B'), R: tac('R') }, record: !!opts.record, series: opts.series || 0, seed: Math.floor(rand() * 2 ** 31) };
+  for (const sd of ['B', 'R'] as Side[]) { const tt = rin.tactics[sd] as Tactics & { dayE?: number }; tt.day = (tt.day || 0) + (tt.dayE || 0); delete tt.dayE; }
   const g = runGame(rin);
   g.rin = rin;
+  g.early = { ...edge, plans };
+  g.flex = { B: flex.B.champs, R: flex.R.champs };
   g.pWinB = +logistic((teamPower(d.blue, d.picks.B) - teamPower(d.red, d.picks.R)) / 5.5).toFixed(3);
   return g;
 }
@@ -237,6 +251,7 @@ export function resimGame(g: GameResult, orders: Order[]): GameResult {
 
 // cập nhật phong độ/thống kê sau ván
 export function applyGameResult(g: GameResult): void {
+  trackHabits(g);
   // đánh giải cùng nhau: tăng độ ăn ý
   chemPairs(g.blue, 0.35);
   chemPairs(g.red, 0.35);

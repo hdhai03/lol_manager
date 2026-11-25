@@ -94,7 +94,7 @@ export const BAD_TRAITS = new Set(['hothead', 'tilter', 'glass']);
 export const groupScore = (p: Player, g: AttrGroup): number => Math.round(ATTR_GROUPS[g].filter((a) => a !== 'aggression').reduce((s, a) => s + p.stats[a], 0) / ATTR_GROUPS[g].filter((a) => a !== 'aggression').length);
 
 // Chiến thuật
-export const TACTIC_OPTS: { [K in Exclude<keyof Tactics, 'personal' | 'day' | 'chem' | 'runeB' | 'fresh' | 'phase' | 'roleIns' | 'synB'>]: Tactics[K][] } = {
+export const TACTIC_OPTS: { [K in Exclude<keyof Tactics, 'personal' | 'day' | 'chem' | 'runeB' | 'fresh' | 'phase' | 'roleIns' | 'synB' | 'early'>]: Tactics[K][] } = {
   tempo: ['early', 'balanced', 'late'],
   obj: ['dragon', 'balanced', 'top'],
   style: ['teamfight', 'pick', 'split'],

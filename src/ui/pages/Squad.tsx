@@ -3,6 +3,7 @@ import { topMastery } from '../../engine/lolx';
 import { Mastery, HonorBadge } from '../components';
 import { ClubStrip } from './SquadX';
 import { PlayerX, ImportStrip } from './SquadY';
+import { EarlyPlanBox } from '../match/MatchX';
 import { lineupOk, isImport } from '../../engine/squad2';
 import { InjTag } from './Club';
 import { Spark } from './Stats';
@@ -209,6 +210,7 @@ export function Tactics() {
               ))}</div>
             </div>
           ))}
+          <EarlyPlanBox />
           <div className="flex flex-col gap-2 pb-3">
             <div><b className="k-title" style={{ fontSize: '.92rem' }}>{t('tac.phase')}</b><div className="muted text-sm">{t('tac.h.phase')}</div></div>
             <label className="tg"><input type="checkbox" data-phase checked={!!T.phase} onChange={(e) => { T.phase = e.target.checked ? { early: T.tempo, mid: T.tempo, late: T.tempo } : undefined; refresh(); }} /> {t('tac.phaseOn')}</label>

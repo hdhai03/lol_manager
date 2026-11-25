@@ -77,6 +77,8 @@ export interface Tactics {
   phase?: { early: 'early' | 'balanced' | 'late'; mid: 'early' | 'balanced' | 'late'; late: 'early' | 'balanced' | 'late' };
   /** chỉ đạo riêng từng vị trí */
   roleIns?: Partial<Record<Role, string>>;
+  /** kế hoạch đầu trận */
+  early?: { lvl1: 'invade' | 'standard' | 'defend'; path: 'top' | 'bot'; ward: 'river' | 'deep' | 'lane' };
 }
 export interface NewsItem { id?: number; key: string; params: Record<string, unknown>; day: number; season: number; important: boolean }
 export interface FinanceEntry { key: string; amount: number; params?: Record<string, unknown>; day: number; season: number }
@@ -148,6 +150,8 @@ export interface GameState {
   msiDirect?: string[]; worldsQ?: { byLeague: Record<string, string[]>; slots: Record<string, number>; extra: string[] }; worldsSwiss?: string[];
   pendingSwap?: { up: string; down: string } | null;
   suitors?: Record<string, { team: string; pull: number; day: number }>;
+  habits?: { picks: Record<string, number>; lvl1: Record<string, number>; tempo: Record<string, number> };
+  talks?: Record<string, number>;
   importsInit?: boolean; mentor?: Record<string, string>; swap?: Record<string, { to: Role; prog: number }>;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
   inboxSeen?: number; goal?: string;
@@ -206,6 +210,8 @@ export interface GameResult {
   pWinB?: number; recorded?: boolean; fights?: FightRec[];
   /** đầu vào để mô phỏng lại (chỉ trong bộ nhớ / bản phát lại) */
   rin?: import('./engine').RunInput;
+  early?: { B: number; R: number; lvl1: Side | null; path: Partial<Record<Side, 'top' | 'bot'>>; read: Partial<Record<Side, boolean>>; plans: Record<Side, { lvl1: string; path: string; ward: string }> };
+  flex?: Partial<Record<Side, string[]>>;
   runes?: Record<string, { p: number; pr: number[]; s: number; sr: number[]; sh: number[]; kind: string; bonus: number; wr?: number }>;
 }
 /** một pha giao tranh ghi lại để phát lại: s0 = giây bắt đầu, ts = hệ số nén thời gian; frames: [t, x,y,hp × mỗi tướng] */
