@@ -4,7 +4,7 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
-  'bn.fbT': 'Chiến công đầu', 'bn.tfT': 'Giao tranh tổng', 'bn.dragonT': 'Hạ rồng', 'bn.soulT': 'Linh hồn rồng', 'bn.elderT': 'Rồng Ngàn Tuổi', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Phá nhà lính', 'bn.ftT': 'Trụ đầu tiên', 'bn.stealT': 'Cướp mục tiêu',
+  'tr.noGames': 'Chưa thi đấu', 'bn.fbT': 'Chiến công đầu', 'bn.tfT': 'Giao tranh tổng', 'bn.dragonT': 'Hạ rồng', 'bn.soulT': 'Linh hồn rồng', 'bn.elderT': 'Rồng Ngàn Tuổi', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Phá nhà lính', 'bn.ftT': 'Trụ đầu tiên', 'bn.stealT': 'Cướp mục tiêu',
   'app.title': 'Rift Manager',
   'app.tagline': 'Giả lập HLV Liên Minh Huyền Thoại chuyên nghiệp',
   'app.beta': 'BETA',
@@ -247,7 +247,7 @@ const vi: Dict = {
 };
 
 const en: Dict = {
-  'bn.fbT': 'First blood', 'bn.tfT': 'Teamfight', 'bn.dragonT': 'Dragon slain', 'bn.soulT': 'Dragon soul', 'bn.elderT': 'Elder dragon', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Inhibitor down', 'bn.ftT': 'First tower', 'bn.stealT': 'Steal',
+  'tr.noGames': 'No games yet', 'bn.fbT': 'First blood', 'bn.tfT': 'Teamfight', 'bn.dragonT': 'Dragon slain', 'bn.soulT': 'Dragon soul', 'bn.elderT': 'Elder dragon', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Inhibitor down', 'bn.ftT': 'First tower', 'bn.stealT': 'Steal',
   'app.title': 'Rift Manager',
   'app.tagline': 'Professional League of Legends coach simulator',
   'app.beta': 'BETA',

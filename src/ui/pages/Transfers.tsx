@@ -5,7 +5,7 @@ import { askingPrice } from '../../engine/season';
 import { ROLES, clamp, money } from '../../engine/util';
 import { t } from '../../i18n';
 import { ui, refresh } from '../store';
-import { Cc, RoleIcon, faceSrc } from '../components';
+import { Badge, Cc, RoleIcon, faceSrc } from '../components';
 import { pct, simLine } from '../helpers';
 import { offerModal, openPlayer } from './Squad';
 import type { Player } from '../../engine/types';
@@ -20,17 +20,25 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
 function PCard({ p, rank }: { p: Player; rank: number }) {
   const rec = simLine(p.season) || simLine(p.career);
   const fs = faceSrc(p);
+  const free = !p.teamId;
   return (
-    <div className="pcard" data-player={p.id} onClick={() => openPlayer(p.id)}>
-      <div className="ph">{fs ? <img src={fs} alt="" /> : <span className="ini">{p.ign.slice(0, 2).toUpperCase()}</span>}<span className="o">{p.ovr}</span></div>
-      <div className="bd">
-        <div className="flex items-center gap-2"><span className="k-label" style={{ fontSize: '.7rem' }}>#{rank}</span><span className="grow" /><span className="flex items-center gap-1 text-sm"><RoleIcon r={p.role} />{p.teamId ? S.teams[p.teamId].short : t('p.freeAgent')}</span></div>
-        <b className="n">{p.ign}</b>
-        <div className="m"><Cc country={p.country} />{t('age')} {p.age} · POT {p.potential}</div>
-        <div className="m">{rec ? `${rec.g} ${t('p.games').toLowerCase()} · ${pct(rec.wr)} · KDA ${rec.kda}` : p.rookie ? t('p.rookie') : '—'}</div>
-        <div className="price">
-          <b>{!p.teamId && <span className="muted text-xs mr-1">{t('salary')}</span>}{money(p.teamId ? askingPrice(p) : p.salary)}</b>
-          <button className="gb primary xs" data-offer={p.id} onClick={(e) => { e.stopPropagation(); offerModal(p.id); }}>{p.teamId ? t('tr.offer') : t('p.sign')}</button>
+    <div className="pc2" data-player={p.id} onClick={() => openPlayer(p.id)}>
+      <div className="pc2-top">
+        {fs ? <img src={fs} alt="" /> : <span className="ini">{p.ign.slice(0, 2).toUpperCase()}</span>}
+        <div className="pc2-ovr"><b>{p.ovr}</b><span><RoleIcon r={p.role} /></span></div>
+        <div className="pc2-club">{free ? <span className="tagx">{t('p.freeAgent')}</span> : <Badge id={p.teamId!} size="sm" />}</div>
+        <span className="pc2-rank">#{rank}</span>
+      </div>
+      <div className="pc2-body">
+        <div className="pc2-name"><b>{p.ign}</b><Cc country={p.country} /></div>
+        <div className="pc2-chips"><span>{t('age')} <b>{p.age}</b></span><span>POT <b>{p.potential}</b></span>{p.rookie && <span className="new">{t('p.rookie')}</span>}</div>
+        <div className="pc2-stats">
+          {rec ? <><div><b>{rec.g}</b><small>{t('p.games')}</small></div><div><b>{pct(rec.wr)}</b><small>{t('st.wr')}</small></div><div><b>{rec.kda}</b><small>KDA</small></div></>
+            : <div className="none">{t('tr.noGames')}</div>}
+        </div>
+        <div className="pc2-foot">
+          <div><small>{free ? t('salary') : t('p.asking')}</small><b>{money(free ? p.salary : askingPrice(p))}</b></div>
+          <button className="gb primary sm" data-offer={p.id} onClick={(e) => { e.stopPropagation(); offerModal(p.id); }}>{free ? t('p.sign') : t('tr.offer')}</button>
         </div>
       </div>
     </div>
@@ -48,7 +56,7 @@ export function Transfers() {
   if (q) list = list.filter((p) => p.ign.toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q) || (p.teamId || '').toLowerCase().includes(q));
   const key = { ovr: (p: Player) => -p.ovr, pot: (p: Player) => -p.potential, val: (p: Player) => -(p.teamId ? askingPrice(p) : p.value), age: (p: Player) => p.age }[f.trSort];
   list.sort((a, b) => key(a) - key(b));
-  const per = 12;
+  const per = 18;
   const pages = Math.max(1, Math.ceil(list.length / per));
   f.trPage = clamp(f.trPage, 0, pages - 1);
   const shown = list.slice(f.trPage * per, f.trPage * per + per);

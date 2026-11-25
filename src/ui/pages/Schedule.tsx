@@ -45,7 +45,11 @@ export function Schedule() {
   const curI = S.phase ? PHASES.indexOf(S.phase) : -1;
   const head = relDay(anchor);
   const todayRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { todayRef.current?.scrollIntoView({ block: 'nearest' }); }, []);
+  useEffect(() => {
+    // chỉ cuộn khi ngày hôm nay nằm ngoài vùng nhìn thấy (giữ thanh ngày & bộ lọc ở đầu trang)
+    const el = todayRef.current, box = el?.closest('.view');
+    if (el && box && el.getBoundingClientRect().bottom > box.getBoundingClientRect().bottom) el.scrollIntoView({ block: 'start' });
+  }, []);
   const setF = (patch: Partial<typeof f>) => { Object.assign(f, patch); refresh(); };
 
   const Team = ({ m, tid, side, comp }: { m: Match; tid: string; side: 'l' | 'r'; comp: Comp }) => (
