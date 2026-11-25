@@ -2,10 +2,12 @@ import { S, userTeam, teamPlayers } from '../../engine/state';
 import { loanModal } from './Staff';
 import { ATTR_GROUPS, money } from '../../engine/util';
 import {
-  SERVERS, SERVER_OF, ladder as soloLadder, tierOf, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange,
+  SERVERS, SERVER_OF, ladder as soloLadder, accTier, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange,
   inviteToAcademy, promoteFromAcademy, releaseFromAcademy,
 } from '../../engine/academy';
-import { t } from '../../i18n';
+import { t, getLang } from '../../i18n';
+import { ladderData, refreshLadder } from '../../engine/ladder';
+import { useState } from 'react';
 import { ui, refresh, toast } from '../store';
 import { Champ, CondMini, Face, RoleTag, RankTxt } from '../components';
 import { isMine, pct, vClass } from '../helpers';
@@ -90,7 +92,7 @@ export function Youth() {
                   <td className="n">{rank}</td>
                   <td><b>{a.name}</b><div className="flex gap-1 mt-1">{Object.keys(a.ch).slice(0, 3).map((ch) => <Champ key={ch} id={ch} size={20} />)}</div></td>
                   <td><RoleTag r={a.pr!.role} /></td><td className="n">{a.pr!.age}</td>
-                  <td><RankTxt tier={tierOf(a.lp)} lp={a.lp} /></td>
+                  <td><RankTxt tier={accTier(sv, a)} lp={a.lp} /></td>
                   <td className="n">{lo}-{hi}</td><td className="n">{money(inviteCost(a))}</td>
                   <td><button className="gb xs" data-invite={a.id} onClick={() => {
                     const r = inviteToAcademy(sv, a.id);
@@ -109,12 +111,18 @@ export function Ladder() {
   const f = ui.filters;
   ensureSoloq();
   f.lsv ??= SERVER_OF[userTeam().league] || 'KR';
-  const list = soloLadder(f.lsv).slice(0, 50);
+  const list = soloLadder(f.lsv).slice(0, 150);
+  const ld = ladderData(), real = !!ld?.servers[f.lsv]?.length;
+  const [busy, setBusy] = useState(false);
   return (
     <div className="gp fill stag">
       <div className="gp-h"><h3 className="k-title">{t('ac.ladder', { server: f.lsv })}</h3>
         <div className="chips">{SERVERS.map((x) => <button key={x} className={`chp sm ${x === f.lsv ? 'on' : ''}`} data-lsv={x} onClick={() => { f.lsv = x; refresh(); }}>{x}</button>)}</div></div>
       <div className="gp-b scroll" style={{ paddingTop: '.4rem' }}>
+        <div className="lad-src">
+          <span className="muted text-sm">{real ? t('ac.realSrc', { n: ld!.servers[f.lsv].length, time: new Date(ld!.fetched).toLocaleString(getLang() === 'vi' ? 'vi-VN' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }) }) : f.lsv === 'CN' ? t('ac.noCn') : t('ac.simOnly')}</span>
+          <button className="gb ghost xs" data-lsync disabled={busy} onClick={() => { setBusy(true); void refreshLadder(true).finally(() => { setBusy(false); refresh(); }); }}>{busy ? '…' : t('ac.sync')}</button>
+        </div>
         <p className="muted text-sm mt-0">{t('ac.ladderHint')}</p>
         <table className="gt ladder-t"><thead><tr><th>#</th><th>{t('ac.account')}</th><th>{t('role')}</th><th>{t('ac.tierH')}</th><th>LP</th><th>{t('ac.wl')}</th><th>{t('st.wr')}</th><th>{t('ac.champs')}</th></tr></thead>
           <tbody>{list.map((a, i) => {
@@ -124,9 +132,11 @@ export function Ladder() {
             return (
               <tr key={a.id} className={`${isMine(p) ? 'me' : ''} ${p ? 'click' : ''}`} data-player={p?.id} onClick={() => p && openPlayer(p.id)}>
                 <td className="n">{i + 1}</td>
-                <td>{p ? <b>{tag && <span className="muted">{tag} </span>}{p.ign}</b> : <><b>{a.name}</b> <span className="muted text-xs">{t('ac.amateur')}</span></>}</td>
+                <td>{p ? <><b>{tag && <span className="muted">{tag} </span>}{p.ign}</b>{a.real && <span className="lad-acc">{a.name}#{a.tag}</span>}</>
+                  : a.real ? <><b>{a.name}</b><span className="lad-acc">#{a.tag}</span>{a.pro && <span className="lad-pro">{a.pro.team ? `${a.pro.team} · ` : ''}{a.pro.nick}</span>}</>
+                  : <><b>{a.name}</b> <span className="muted text-xs">{t('ac.amateur')}</span></>}</td>
                 <td><RoleTag r={p ? p.role : a.pr!.role} /></td>
-                <td><RankTxt tier={tierOf(a.lp)} /></td>
+                <td><RankTxt tier={accTier(f.lsv!, a)} /></td>
                 <td className="n">{a.lp}</td><td className="n">{a.w}-{a.l}</td><td className="n">{g ? pct(a.w / g) : '–'}</td>
                 <td><div className="flex gap-1">{Object.keys(a.ch).slice(0, 4).map((ch) => <Champ key={ch} id={ch} size={22} />)}</div></td>
               </tr>

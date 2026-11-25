@@ -355,3 +355,8 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .role .ricon, .ricon { filter: none !important; }
 .rkt b { text-shadow: none !important; }
 .chp.on [class*='role-'], .chip.on [class*='role-'], .dr-roles button.on [class*='role-'] { color: var(--sel-ink) !important; }
+
+/* bảng Thách đấu thật */
+.lad-src { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 0 .4rem; }
+.lad-acc { margin-left: .35rem; color: var(--t3, #8a8d93); font-size: .72rem; }
+.lad-pro { margin-left: .45rem; padding: 1px 6px; border-radius: 3px; background: var(--s2); color: var(--t1, #ececec); font-size: .68rem; font-weight: 600; white-space: nowrap; }

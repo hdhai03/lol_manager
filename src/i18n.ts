@@ -1077,7 +1077,7 @@ Object.assign(vi, {
   'ac.joined': '{player} gia nhập Academy!', 'ac.err.full': 'Academy đã đủ người.', 'ac.err.money': 'Không đủ ngân sách.', 'ac.err.gone': 'Tài khoản này không còn khả dụng.',
   'ac.promoted': 'Đã đôn lên đội chính.', 'ac.err.roster': 'Đội chính đã đủ 10 người.',
   'ac.ladder': 'Bảng Thách đấu · máy chủ {server}', 'ac.ladderHint': 'Tuyển thủ chuyên nghiệp vẫn leo rank mỗi ngày (ít hơn vào ngày thi đấu); leo tốt giúp phong độ nhích lên, cày quá nhiều thì mệt.',
-  'ac.tierH': 'Bậc', 'ac.wl': 'Thắng-Thua', 'ac.champs': 'Tướng hay chơi', 'ac.amateur': 'nghiệp dư',
+  'ac.tierH': 'Bậc', 'ac.wl': 'Thắng-Thua', 'ac.champs': 'Tướng hay chơi', 'ac.amateur': 'nghiệp dư', 'ac.realSrc': 'Top {n} Thách đấu thật từ OP.GG · cập nhật {time}. Tuyển thủ không có tài khoản trong top vẫn được mô phỏng.', 'ac.noCn': 'OP.GG không có máy chủ Trung Quốc — bảng này được mô phỏng.', 'ac.simOnly': 'Chưa có dữ liệu OP.GG cho máy chủ này — bảng được mô phỏng.', 'ac.sync': 'Đồng bộ OP.GG',
   'tier.challenger': 'Thách Đấu', 'tier.grandmaster': 'Đại Cao Thủ', 'tier.master': 'Cao Thủ', 'tier.diamond': 'Kim Cương',
   'news.academyJoin': '{player} gia nhập học viện của {team}.', 'news.promotedYouth': '{team} đôn {player} từ học viện lên đội chính.', 'fin.academy': 'Phí tuyển trạch học viện',
 });
@@ -1099,7 +1099,7 @@ Object.assign(en, {
   'ac.joined': '{player} joins the academy!', 'ac.err.full': 'Academy is full.', 'ac.err.money': 'Not enough budget.', 'ac.err.gone': 'This account is no longer available.',
   'ac.promoted': 'Promoted to the main roster.', 'ac.err.roster': 'Main roster already has 10 players.',
   'ac.ladder': 'Challenger ladder · {server} server', 'ac.ladderHint': 'Pros keep playing ranked every day (less on match days); climbing lifts form a little, grinding too much tires them.',
-  'ac.tierH': 'Tier', 'ac.wl': 'W-L', 'ac.champs': 'Most played', 'ac.amateur': 'amateur',
+  'ac.tierH': 'Tier', 'ac.wl': 'W-L', 'ac.champs': 'Most played', 'ac.amateur': 'amateur', 'ac.realSrc': 'Real top {n} Challenger from OP.GG · updated {time}. Pros not in the top are simulated.', 'ac.noCn': 'OP.GG has no Chinese server — this ladder is simulated.', 'ac.simOnly': 'No OP.GG data for this server yet — ladder is simulated.', 'ac.sync': 'Sync OP.GG',
   'tier.challenger': 'Challenger', 'tier.grandmaster': 'Grandmaster', 'tier.master': 'Master', 'tier.diamond': 'Diamond',
   'news.academyJoin': '{player} joins the {team} academy.', 'news.promotedYouth': '{team} promote {player} from the academy.', 'fin.academy': 'Academy scouting fee',
 });

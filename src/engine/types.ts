@@ -112,8 +112,8 @@ export interface GprSnap { season: number; phase: Phase; day: number; ranks: Rec
 export interface Gpr { teams: Record<string, number>; leagues: Record<string, number>; snaps: GprSnap[] }
 
 export interface Prospect { age: number; role: Role; ovr: number; pot: number }
-export interface SoloAccount { id: string; pid?: string; name?: string; pr?: Prospect; lp: number; w: number; l: number; ch: Record<string, number> }
-export interface SoloQ { servers: Record<string, { acc: SoloAccount[] }> }
+export interface SoloAccount { id: string; pid?: string; name?: string; pr?: Prospect; lp: number; w: number; l: number; ch: Record<string, number>; real?: boolean; tag?: string; tier?: string; pro?: { nick: string; team: string; pos: string } | null }
+export interface SoloQ { servers: Record<string, { acc: SoloAccount[]; off?: number }>; realAt?: string }
 export interface Academy { focus: string; days: Record<string, number>; intensity: 'light' | 'normal' | 'hard' }
 
 export interface Who { pid: string; ign: string; team: string }

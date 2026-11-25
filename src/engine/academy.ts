@@ -3,6 +3,7 @@
 //   cùng với các tài năng nghiệp dư (chưa thuộc đội nào) để HLV tuyển trạch.
 // - Học viện: tuyển tài năng trẻ từ bảng Thách đấu, cho tập luyện, đôn lên đội chính.
 import { DB } from './data';
+import { ladderData } from './ladder';
 import { sqGames, sqAfter, sqOrder, poolChamp } from './life';
 import { S, makeRookie, refreshValue, teamPlayers, addNews, addFinance } from './state';
 import { signPlayer } from './season';
@@ -15,6 +16,9 @@ const LEAGUE_OF = Object.fromEntries(Object.entries(SERVER_OF).map(([l, s]) => [
 const COUNTRY: Record<string, string> = { KR: 'South Korea', CN: 'China', EUW: 'France', NA: 'United States', TW: 'Taiwan', VN: 'Vietnam', BR: 'Brazil' };
 const SYL: Record<string, string[]> = { KR: ['Min', 'Jun', 'Seo', 'Hyun', 'Woo', 'Jin', 'Kang', 'Yoon', 'Doh', 'Ha'], CN: ['Xiao', 'Ming', 'Lan', 'Tian', 'Jie', 'Wei', 'Hao', 'Yu', 'Qi', 'Fan'], EUW: ['Nox', 'Vex', 'Lumi', 'Kai', 'Rex', 'Odin', 'Sky', 'Zen', 'Mira', 'Taro'], NA: ['Ace', 'Blaze', 'Cody', 'Drift', 'Echo', 'Flux', 'Grim', 'Hex', 'Ivy', 'Jett'], TW: ['Ah', 'Wen', 'Chen', 'Lin', 'Shu', 'Kuo', 'Yi', 'Pei', 'Ting', 'Hsu'], VN: ['Bin', 'Kai', 'Nam', 'Long', 'Tú', 'Lâm', 'Khoa', 'Huy', 'Bảo', 'Tín'], BR: ['Leo', 'Rafa', 'Duda', 'Gui', 'Tito', 'Caio', 'Biel', 'Juca', 'Nino', 'Zeca'] };
 const AMATEURS = 26;
+/** máy chủ có dữ liệu thật: ít nghiệp dư ảo hơn */
+const AMATEURS_REAL = 12;
+const amateurTarget = (srv: { off?: number }): number => (srv.off != null ? AMATEURS_REAL : AMATEURS);
 const TIERS: [number, string][] = [[1100, 'challenger'], [800, 'grandmaster'], [500, 'master'], [-1e9, 'diamond']];
 export const tierOf = (lp: number): string => (TIERS.find(([v]) => lp >= v) ?? TIERS[TIERS.length - 1])[1];
 
@@ -30,35 +34,91 @@ function mkAmateur(sv: string): SoloAccount {
 }
 const proSkill = (p: { ovr: number; form?: number }): number => (p.ovr ?? 60) + (p.form || 0) * 0.6;
 const accSkill = (a: SoloAccount): number => (a.pid ? proSkill(S.players[a.pid] || { ovr: 55 }) : a.pr!.ovr + 4);
+/** hạng hiển thị: tài khoản thật dùng hạng OP.GG, còn lại quy từ LP (trừ độ lệch thang điểm máy chủ thật) */
+export const accTier = (sv: string, a: SoloAccount): string => a.tier || tierOf(a.lp - (S.soloq?.servers[sv]?.off || 0));
+
+// ----- tài khoản thật từ OP.GG -----
+const POSR: Record<string, Role> = { top: 'Top', jungle: 'Jungle', mid: 'Mid', adc: 'Bot', bottom: 'Bot', support: 'Support' };
+function realPr(a: SoloAccount, lo: number, hi: number): void {
+  const top = Object.keys(a.ch)[0];
+  const role = POSR[(a.pro?.pos || '').toLowerCase()] || (top && DB.champions[top]?.roles?.[0] as Role) || pick(ROLES);
+  const ovr = clamp(Math.round(70 + ((a.lp - lo) / Math.max(1, hi - lo)) * 20), 70, 92);
+  a.pr = { age: 22, role, ovr, pot: ovr };
+}
+/** gộp top Thách đấu thật vào máy chủ: tài khoản thật giữ đúng LP/thắng-thua/tướng; tuyển thủ trùng tên được liên kết */
+export function syncReal(q: SoloQ): void {
+  const ld = ladderData();
+  if (!ld || q.realAt === ld.fetched) return;
+  q.realAt = ld.fetched;
+  const byIgn = new Map<string, Player>();
+  for (const p of Object.values(S.players)) {
+    if (p.retired) continue;
+    const k = p.ign.toLowerCase(), cur = byIgn.get(k);
+    if (!cur || (p.teamId && !cur.teamId)) byIgn.set(k, p);
+  }
+  for (const srv of Object.values(q.servers)) srv.acc = srv.acc.filter((a) => !a.real);
+  const linked = new Set<string>();
+  for (const [sv, rows] of Object.entries(ld.servers)) {
+    const srv = q.servers[sv];
+    if (!srv || !rows.length) continue;
+    const lps = rows.map((r) => r.lp), lo = Math.min(...lps), hi = Math.max(...lps);
+    // thang LP mô phỏng dời lên quanh đáy top thật: chỉ người thật sự mạnh và cày nhiều mới chen được vào
+    const off = Math.max(0, Math.round(lo - 1550)), d = off - (srv.off || 0);
+    if (d) for (const a of srv.acc) a.lp = Math.max(0, a.lp + d);
+    srv.off = off;
+    for (const r of rows) {
+      const a: SoloAccount = { id: `r${sv}:${r.n}#${r.tag}`, real: true, name: r.n, tag: r.tag, tier: r.tier || 'challenger', lp: r.lp, w: r.w, l: r.l, ch: { ...r.ch }, pro: r.pro };
+      const p = r.pro?.nick ? byIgn.get(r.pro.nick.toLowerCase()) : undefined;
+      if (p && !linked.has(p.id)) { a.pid = p.id; linked.add(p.id); } else realPr(a, lo, hi);
+      srv.acc.push(a);
+    }
+    // bớt nghiệp dư ảo
+    const ams = srv.acc.filter((a) => !a.real && !a.pid).sort((x, y) => y.pr!.pot - x.pr!.pot);
+    const drop = new Set(ams.slice(AMATEURS_REAL).map((a) => a.id));
+    srv.acc = srv.acc.filter((a) => !drop.has(a.id));
+  }
+  // tuyển thủ đã có tài khoản thật: bỏ tài khoản mô phỏng
+  for (const srv of Object.values(q.servers)) srv.acc = srv.acc.filter((a) => a.real || !a.pid || !linked.has(a.pid));
+}
 
 export function ensureSoloq(): SoloQ {
-  if (S.soloq && S.soloq.servers) return S.soloq;
+  if (S.soloq && S.soloq.servers) { syncReal(S.soloq); return S.soloq; }
   const servers: SoloQ['servers'] = {};
   for (const sv of SERVERS) {
     const lg = LEAGUE_OF[sv];
     const pros = Object.values(S.players).filter((p) => p.teamId && S.teams[p.teamId]?.league === lg && !p.retired);
     const acc: SoloAccount[] = pros.map((p) => ({ id: 'p' + p.id, pid: p.id, lp: 0, w: 0, l: 0, ch: {} }));
     for (let i = 0; i < AMATEURS; i++) acc.push(mkAmateur(sv));
-    for (const a of acc) a.lp = Math.round(250 + (accSkill(a) - 60) * 38 + rand() * 260);
+    for (const a of acc) {
+      a.lp = Math.round(250 + (accSkill(a) - 60) * 38 + rand() * 260);
+      // đã chơi một phần mùa
+      const g = randInt(60, 320);
+      a.w = Math.round(g * clamp(0.5 + (accSkill(a) - 72) / 220 + gauss() * 0.02, 0.4, 0.66)); a.l = g - a.w;
+    }
     servers[sv] = { acc };
   }
   S.soloq = { servers };
+  syncReal(S.soloq);
   return S.soloq;
 }
 
 // mỗi ngày: mọi tài khoản đánh vài trận xếp hạng
 export function soloqDay(matchToday: Set<string>): void {
   const q = ensureSoloq();
+  const have = new Set(Object.values(q.servers).flatMap((srv) => srv.acc.filter((a) => a.pid).map((a) => a.pid)));
   for (const [sv, srv] of Object.entries(q.servers)) {
     // đồng bộ: tuyển thủ chuyển đội/giải mới, tuyển thủ mới
     const lg = LEAGUE_OF[sv];
-    const have = new Set(srv.acc.filter((a) => a.pid).map((a) => a.pid));
-    for (const p of Object.values(S.players)) if (p.teamId && S.teams[p.teamId]?.league === lg && !p.retired && !have.has(p.id)) srv.acc.push({ id: 'p' + p.id, pid: p.id, lp: 400, w: 0, l: 0, ch: {} });
+    const off = srv.off || 0;
+    for (const p of Object.values(S.players)) if (p.teamId && S.teams[p.teamId]?.league === lg && !p.retired && !have.has(p.id)) { srv.acc.push({ id: 'p' + p.id, pid: p.id, lp: 400 + off, w: 0, l: 0, ch: {} }); have.add(p.id); }
+    for (const a of srv.acc) if (a.real && a.pid && (!S.players[a.pid] || S.players[a.pid].retired)) { delete a.pid; realPr(a, a.lp, a.lp); }
     srv.acc = srv.acc.filter((a) => !a.pid || (S.players[a.pid] && !S.players[a.pid].retired));
-    const skills = srv.acc.map(accSkill).sort((x, y) => x - y);
+    const skills = srv.acc.filter((a) => !a.real).map(accSkill).sort((x, y) => x - y);
     const med = skills[Math.floor(skills.length * 0.6)] || 65;
     for (const a of srv.acc) {
       const p = a.pid ? S.players[a.pid] : null;
+      // tài khoản thật không có tuyển thủ: giữ nguyên số liệu OP.GG
+      if (a.real && !p) continue;
       let n = p ? (matchToday.has(p.teamId ?? "") ? randInt(0, 2) : randInt(2, 6)) : randInt(3, 9);
       if (p && (p.cond ?? 100) < 55 && sqOrder(p.id) !== 'grind') n = Math.min(n, 1);
       if (p) n = sqGames(p, n);
@@ -67,14 +127,14 @@ export function soloqDay(matchToday: Set<string>): void {
       let wins = 0;
       for (let i = 0; i < n; i++) {
         // LP cao thì gặp đối thủ mạnh hơn
-        const opp = med + (a.lp - 700) / 55 + gauss() * 3;
+        const opp = med + ((a.real ? 1550 : a.lp - off) - 700) / 55 + gauss() * 3;
         const win = rand() < logistic((accSkill(a) - opp) / 5);
         const d = win ? randInt(17, 24) * (pool ? 0.6 : 1) : -randInt(15, 21);
         if (win) wins++;
-        a.lp = Math.max(0, a.lp + d);
-        if (win) a.w++; else a.l++;
+        // tài khoản thật: LP/thắng-thua lấy từ OP.GG, chỉ tính hiệu ứng luyện tập
+        if (!a.real) { a.lp = Math.max(0, a.lp + d); if (win) a.w++; else a.l++; }
         const champ = p ? (pool ? poolChamp(p) : p.pool[Math.floor(Math.pow(rand(), 1.8) * Math.min(p.pool.length, 8))]?.c) : metaChamp(a.pr!.role);
-        if (champ) a.ch[champ] = (a.ch[champ] || 0) + 1;
+        if (champ && !a.real) a.ch[champ] = (a.ch[champ] || 0) + 1;
         // luyện tướng: tướng meta dần vào bể tướng (mỗi trận xếp hạng = 0.3 trận thi đấu)
         if (pool && champ && p) { const pe = p.pool.find((x) => x.c === champ); if (pe) { pe.g += 0.3; if (win) pe.w += 0.3; } else if (p.pool.length < 12) p.pool.push({ c: champ, g: 0.3, w: win ? 0.3 : 0 }); }
       }
@@ -83,12 +143,12 @@ export function soloqDay(matchToday: Set<string>): void {
       a.ch = Object.fromEntries(top);
       // tuyển thủ chuyên nghiệp leo rank tốt thì phong độ nhích lên, cày quá nhiều thì mệt
       if (p && n) {
-        p.form = clamp((p.form || 0) + (a.w > a.l ? 0.02 : -0.02), -5, 5);
+        p.form = clamp((p.form || 0) + (wins * 2 >= n ? 0.02 : -0.02), -5, 5);
         p.cond = clamp((p.cond ?? 100) - n * 0.6, 20, 100);
       }
       if (p) sqAfter(p, n, wins);
       // tài năng nghiệp dư tiến bộ dần
-      if (!p && a.pr!.ovr < a.pr!.pot && rand() < 0.03 + (a.pr!.pot - a.pr!.ovr) * 0.002) a.pr!.ovr++;
+      if (!p && !a.real && a.pr!.ovr < a.pr!.pot && rand() < 0.03 + (a.pr!.pot - a.pr!.ovr) * 0.002) a.pr!.ovr++;
     }
   }
 }
@@ -105,8 +165,11 @@ export function soloqNewSeason(): void {
   const q = ensureSoloq();
   for (const [sv, srv] of Object.entries(q.servers)) {
     const keep: SoloAccount[] = [];
+    const off = srv.off || 0;
     for (const a of srv.acc) {
-      if (!a.pid && a.pr!.age >= 19 && a.lp > 900 && rand() < 0.6) {
+      // tài khoản thật: giữ nguyên, cập nhật lại từ OP.GG
+      if (a.real) { keep.push(a); continue; }
+      if (!a.pid && a.pr!.age >= 19 && a.lp - off > 900 && rand() < 0.6) {
         // một đội trong khu vực ký hợp đồng (vào danh sách tự do để AI chọn)
         const p = makeRookie(LEAGUE_OF[sv], a.pr!.role);
         Object.assign(p, { ign: a.name, age: a.pr!.age, country: COUNTRY[sv] || p.country });
@@ -116,10 +179,10 @@ export function soloqNewSeason(): void {
       }
       if (!a.pid) a.pr!.age++;
       if (!a.pid && a.pr!.age > 21) continue;
-      a.lp = Math.round(a.lp * 0.55 + 150); a.w = 0; a.l = 0;
+      a.lp = Math.round((a.lp - off) * 0.55 + 150 + off); a.w = 0; a.l = 0;
       keep.push(a);
     }
-    while (keep.filter((a) => !a.pid).length < AMATEURS) { const a = mkAmateur(sv); a.lp = Math.round(200 + rand() * 300); keep.push(a); }
+    while (keep.filter((a) => !a.pid && !a.real).length < amateurTarget(srv)) { const a = mkAmateur(sv); a.lp = Math.round(200 + rand() * 300 + off); keep.push(a); }
     srv.acc = keep;
   }
 }

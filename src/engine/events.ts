@@ -77,7 +77,7 @@ export function clashDay(): void {
   if (acad.length < 3) return;
   S.clashDay = S.day;
   const sv = SERVER_OF[ut.league] || 'KR';
-  const ams = ladder(sv).filter((a) => !a.pid && a.pr).slice(0, 40);
+  const ams = ladder(sv).filter((a) => !a.pid && a.pr && !a.real).slice(0, 40);
   const teams: { name: string; ovr: number; best?: string }[] = [{ name: `${ut.short} Academy`, ovr: acad.reduce((s, p) => s + p.ovr, 0) / acad.length + 2 }];
   for (let i = 0; i < 7; i++) {
     const five = shuffle(ams).slice(0, 5);

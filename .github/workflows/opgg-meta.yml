@@ -1,4 +1,4 @@
-# Cập nhật bản chụp meta OP.GG (tier, tỉ lệ thắng/chọn/cấm, bảng ngọc) hai lần mỗi tuần.
+# Cập nhật bản chụp meta OP.GG (tier, tỉ lệ thắng/chọn/cấm, bảng ngọc) và top Thách đấu hai lần mỗi tuần.
 name: Update OP.GG meta
 on:
   schedule:
@@ -15,11 +15,12 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/fetch-opgg.mjs
+      - run: node scripts/fetch-ladder.mjs
       - name: Commit snapshot
         run: |
-          if git diff --quiet -- public/data/opgg.json public/assets/rune; then echo "no change"; exit 0; fi
+          if git diff --quiet -- public/data/opgg.json public/data/ladder.json public/assets/rune; then echo "no change"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
-          git add public/data/opgg.json public/assets/rune
+          git add public/data/opgg.json public/data/ladder.json public/assets/rune
           git commit -m "chore: update OP.GG meta snapshot"
           git push
