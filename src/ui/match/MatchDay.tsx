@@ -60,7 +60,7 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
       <div className="vsx-top k-label"><LeagueBadge id={compLogoId(comp)} size="sm" />{compTitle(comp)} · {t('m.bo', { n: m.bo })} · {t('m.game', { n: m.games.length + 1 })}</div>
       <div className="vsx-main">
         <Side id={m.a} />
-        <div className="vsx-mid"><b className="k-disp">VS</b><div className="k-num text-3xl">{m.winsA} - {m.winsB}</div></div>
+        <div className="vsx-mid"><b className="k-disp">VS</b><div className="k-num vsx-sc">{m.winsA} - {m.winsB}</div></div>
         <Side id={m.b} right />
       </div>
       <div className="vsx-prob">
@@ -117,7 +117,7 @@ export function MatchDay({ match }: { match: Match }) {
   };
   return (
     <div className="matchday">
-      {ph.k === 'pre' && <div className="md-inner"><PreMatch m={match} go={choose} /></div>}
+      {ph.k === 'pre' && <div className="md-inner md-wide"><PreMatch m={match} go={choose} /></div>}
       {ph.k === 'draft' && <DraftScreen m={match} onLeave={() => setPh({ k: 'pre' })} onStart={(d) => setPh({ k: 'live', d })} />}
       {ph.k === 'live' && <LiveGame m={match} d={ph.d} onEnd={(g) => setPh({ k: 'post', g })} onSkipAll={finishSeries} />}
       {ph.k === 'post' && <PostGame m={match} g={ph.g} onNext={choose} onFinish={finishSeries} />}

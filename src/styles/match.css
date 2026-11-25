@@ -164,3 +164,41 @@ tr.q .rk { background: rgba(53, 230, 210, .2); color: #bff7ef; box-shadow: 0 0 1
 .sx-end { min-height: calc(100dvh - 2.8rem); }
 .matchday, .matchday > .md-inner, .draft, .dr-grid, .pg { scrollbar-width: none; }
 .matchday::-webkit-scrollbar, .matchday > .md-inner::-webkit-scrollbar, .draft::-webkit-scrollbar, .dr-grid::-webkit-scrollbar, .pg::-webkit-scrollbar { display: none; }
+
+/* ---------- Màn đối đầu: co giãn theo màn hình, dùng hết không gian ---------- */
+.md-inner.md-wide { max-width: min(2100px, 96vw) !important; }
+.md-wide .vsx { gap: clamp(1.2rem, 3.2vh, 3rem); }
+.md-wide .vsx-top { font-size: clamp(.8rem, .9vw, 1.1rem); gap: .8rem; }
+.md-wide .vsx-top .lg-logo { width: clamp(24px, 1.8vw, 36px); height: clamp(24px, 1.8vw, 36px); }
+.md-wide .vsx-main { gap: clamp(1.2rem, 3vw, 4.5rem); }
+/* thẻ tuyển thủ: lớn theo chiều ngang nhưng không vượt ~40% chiều cao màn hình */
+.md-wide .vsx-side { width: 100%; max-width: min(100%, 165vh); gap: clamp(1rem, 2.2vh, 2rem); }
+.md-wide .vsx-side.r { justify-self: end; }
+.md-wide .vsx-line { gap: clamp(.4rem, .8vw, 1rem); }
+.md-wide .vsx-team { gap: clamp(.8rem, 1.2vw, 1.6rem); }
+.md-wide .vsx-team .badge { width: clamp(64px, 6vw, 132px); height: clamp(64px, 6vw, 132px); }
+.md-wide .vsx-team b { font-size: clamp(1.3rem, 2.2vw, 3rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-wide .vsx-team > div { min-width: 0; }
+.md-wide .vsx-team { min-height: clamp(64px, 6vw, 132px); }
+.md-wide .vsx-team .k-label { font-size: clamp(.8rem, .95vw, 1.15rem); }
+.md-wide .vsx-team .ovr { font-size: clamp(1rem, 1.2vw, 1.5rem); }
+.md-wide .vsx-p .cap { padding: 2.4rem .4rem clamp(.5rem, 1vh, .9rem); gap: clamp(.2rem, .5vh, .45rem); }
+.md-wide .vsx-p .cap b { font-size: clamp(.82rem, 1.05vw, 1.35rem); }
+.md-wide .vsx-p .cap .role { font-size: clamp(.62rem, .7vw, .85rem); }
+.md-wide .vsx-p .cap .champ { width: clamp(18px, 1.55vw, 32px) !important; height: clamp(18px, 1.55vw, 32px) !important; }
+.md-wide .vsx-p .o { font-size: clamp(.85rem, 1vw, 1.3rem); padding: .1rem .45rem; top: .5rem; left: .5rem; }
+.md-wide .vsx-mid { padding: clamp(1rem, 2.4vh, 2.2rem) clamp(1.4rem, 2.2vw, 3rem); }
+.md-wide .vsx-mid b { font-size: clamp(3rem, 6.2vw, 8rem); }
+.md-wide .vsx-sc { font-size: clamp(1.6rem, 2.6vw, 3.4rem); }
+.md-wide .vsx-prob { width: min(1200px, 64vw); padding: clamp(.8rem, 1.6vh, 1.3rem) clamp(1rem, 1.6vw, 2rem); gap: clamp(1rem, 1.4vw, 2rem); }
+.md-wide .vsx-prob .k-label { font-size: clamp(.78rem, .9vw, 1.1rem); }
+.md-wide .vsx-prob .prob { height: clamp(8px, 1vh, 14px); }
+.md-wide .vsx-prob b { font-size: clamp(1rem, 1.3vw, 1.7rem); }
+.md-wide .md-actions { gap: clamp(.8rem, 1vw, 1.4rem) !important; margin-top: clamp(.6rem, 1.4vh, 1.6rem) !important; }
+.md-wide .md-actions .gb { min-height: clamp(3rem, 6vh, 4.4rem) !important; padding: 0 clamp(1.6rem, 2.4vw, 3.4rem) !important; font-size: clamp(.95rem, 1.05vw, 1.35rem); border-radius: 9px; }
+.md-wide .vsx-main { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.md-wide .vsx-side { min-width: 0; }
+@media (max-width: 900px) { .md-wide .vsx-main { grid-template-columns: minmax(0, 1fr); } }
+/* tên đội dài: tối đa 2 dòng trong khối cao cố định, hai hàng thẻ luôn thẳng nhau */
+.md-wide .vsx-team { height: clamp(72px, 7vw, 150px); min-height: 0; }
+.md-wide .vsx-team b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.02; text-overflow: clip; }
