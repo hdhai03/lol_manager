@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { WindowBadge } from './Club';
 import { DB } from '../../engine/data';
 import { S, userTeam } from '../../engine/state';
 import { askingPrice } from '../../engine/season';
@@ -64,7 +65,7 @@ export function Transfers() {
   return (
     <div className="gp fill stag">
       <div className="gp-h">
-        <h3 className="k-title">{t('tr.title')}</h3>
+        <h3 className="k-title flex items-center gap-2">{t('tr.title')} <WindowBadge /></h3>
         <div className="gp-r">
           <span>{t('top.budget')} <b className="text-white">{money(userTeam().budget)}</b></span>
           <span>{t('tr.players', { n: list.length, p: f.trPage + 1, pages })}</span>

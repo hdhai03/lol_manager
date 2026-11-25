@@ -62,6 +62,7 @@ export function soloqDay(matchToday: Set<string>): void {
       let n = p ? (matchToday.has(p.teamId ?? "") ? randInt(0, 2) : randInt(2, 6)) : randInt(3, 9);
       if (p && (p.cond ?? 100) < 55 && sqOrder(p.id) !== 'grind') n = Math.min(n, 1);
       if (p) n = sqGames(p, n);
+      if (p?.injury) n = 0;
       const pool = p && sqOrder(p.id) === 'pool';
       let wins = 0;
       for (let i = 0; i < n; i++) {

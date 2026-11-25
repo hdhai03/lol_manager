@@ -3,6 +3,7 @@
 import { S, addNews, addFinance, userTeam, teamOvr, teamPlayers, autoLineup } from './state';
 import { clamp, rand, pick, randInt } from './util';
 import { acceptOffer, signPlayer, askingPrice } from './season';
+import { windowOpen, rivalBid } from './club';
 import type { Player, Role } from './types';
 
 export type RolePromise = 'starter' | 'rotation' | 'none';
@@ -42,7 +43,7 @@ export function satisfaction(p: Player, teamId: string, tm: Terms): number {
   else s += tm.clause <= d.minClause ? 0.06 : tm.clause <= d.minClause * 1.6 ? 0.02 : -0.02;
   if (tm.bonus) s += 0.05;
   // tinh thần / danh tiếng đội của bạn
-  s += ((p.morale ?? 70) - 70) / 600 + (S.career ? (S.career.rep - 50) / 900 : 0);
+  s += ((p.morale ?? 70) - 70) / 600 + (S.career ? (S.career.rep - 50) / 900 : 0) + (S.fac?.house ?? 0) * 0.025;
   return +s.toFixed(3);
 }
 export const termCost = (tm: Terms): number => Math.round(tm.salary * (tm.bonus ? 1.05 : 1));
@@ -86,11 +87,14 @@ export function renewWith(p: Player, tm: Terms): void {
   p.morale = clamp((p.morale ?? 70) + 8, 0, 100);
 }
 /** mua (phí chuyển nhượng cho CLB) + ký hợp đồng cá nhân */
-export function buyWith(p: Player, fee: number, tm: Terms): { ok: boolean; reason?: string } {
+export function buyWith(p: Player, fee: number, tm: Terms): { ok: boolean; reason?: string; rival?: { team: string; amount: number } } {
   const ut = userTeam();
   if (ut.roster.length >= 10) return { ok: false, reason: 'tr.rosterFull' };
   if (p.teamId) {
+    if (!windowOpen()) return { ok: false, reason: 'tr.windowClosed' };
     if (fee > ut.budget) return { ok: false, reason: 'tr.noBudget' };
+    const rb = rivalBid(p, fee);
+    if (rb) return { ok: false, reason: 'tr.rival', rival: rb };
     const clauseHit = p.clause != null && fee >= p.clause;
     if (!clauseHit && fee < askingPrice(p) * (0.9 + rand() * 0.2)) return { ok: false, reason: 'tr.rejected' };
     const seller = S.teams[p.teamId];

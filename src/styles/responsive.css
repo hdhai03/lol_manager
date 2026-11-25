@@ -673,3 +673,27 @@
 .dr-sg b { font-size: .82rem; }
 .dr-sg small { font-size: .66rem; color: #8b95a8; }
 .dr-comp .syn { font-style: normal; margin-left: .45rem; padding: .05rem .4rem; border-radius: 99px; background: rgba(110, 231, 168, .16); color: #6ee7a8; font-size: .66rem; }
+/* ===== CLB: chấn thương, nhiệm vụ, cơ sở vật chất, tài trợ, kỳ chuyển nhượng ===== */
+.inj { font-style: normal; font-size: .62rem; font-weight: 800; padding: .08rem .35rem; border-radius: 4px; background: rgba(255, 143, 143, .18); color: #ff8f8f; margin-left: .35rem; }
+.inj.k-burnout { background: rgba(255, 178, 122, .18); color: #ffb27a; }
+.mis-list { display: flex; flex-direction: column; gap: .4rem; }
+.mis { display: flex; align-items: center; gap: 1rem; padding: .55rem .7rem; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .04); }
+.mis small { display: block; font-size: .72rem; }
+.mis.done { background: rgba(110, 231, 168, .1); } .mis.fail { opacity: .55; }
+.mis-p { width: 180px; display: flex; flex-direction: column; gap: .2rem; flex: none; }
+.mis-p small { font-size: .68rem; color: #8b95a8; text-align: right; }
+.fac-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.fac-c { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; padding: .7rem; border-radius: var(--r, 10px); background: rgba(255, 255, 255, .04); }
+.fac-c b { display: block; } .fac-c small { display: block; font-size: .74rem; }
+.fac-i { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(124, 196, 255, .14); color: #7cc4ff; font-size: 1.1rem; }
+.fac-pips { display: flex; gap: 3px; margin-top: .3rem; } .fac-pips i { width: 22px; height: 5px; border-radius: 99px; background: rgba(255, 255, 255, .1); } .fac-pips i.on { background: #7cc4ff; }
+.fac-u { width: 100%; text-align: right; font-size: .68rem; }
+.sp-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .5rem; }
+.sp-c { display: flex; flex-direction: column; gap: .25rem; padding: .7rem .8rem; border-radius: var(--r, 10px); background: rgba(255, 255, 255, .045); }
+.sp-c.on { background: linear-gradient(135deg, rgba(110, 231, 168, .14), rgba(255, 255, 255, .03)); }
+.sp-c .k-disp { font-size: 1.05rem; }
+.sp-c span { font-size: .8rem; } .sp-c small { font-size: .72rem; }
+.sp-c .gb { margin-top: .3rem; align-self: flex-start; }
+.win-b { font-family: inherit; font-size: .62rem; letter-spacing: .06em; padding: .15rem .5rem; border-radius: 99px; background: rgba(255, 143, 143, .14); color: #ff8f8f; }
+.win-b.open { background: rgba(110, 231, 168, .14); color: #6ee7a8; }
+@media (max-width: 760px) { .fac-g { grid-template-columns: 1fr; } .mis { flex-direction: column; align-items: stretch; } .mis-p { width: auto; } }

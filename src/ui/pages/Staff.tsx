@@ -1,5 +1,6 @@
 // Ban huấn luyện + lộ trình phát triển cá nhân + cho mượn
 import { S, userTeam, teamPlayers } from '../../engine/state';
+import { Facilities } from './Club';
 import { academyPlayers } from '../../engine/academy';
 import { STAFF, STAFF_COST, STAFF_HIRE, staffLv, setStaff, DEV_FOCUS, devOf, setDev, devRate, loanTargets, loanOut, type DevFocus } from '../../engine/staff';
 import { TICKS } from '../../engine/career';
@@ -14,7 +15,8 @@ const ICON: Record<string, string> = { assistant: '✎', analyst: '◈', psych: 
 export function Staff() {
   const ut = userTeam();
   return (
-    <div className="stf stag">
+    <div className="flex flex-col gap-4 stag">
+    <div className="stf">
       {STAFF.map((k) => {
         const lv = staffLv(k);
         return (
@@ -32,6 +34,8 @@ export function Staff() {
           </div>
         );
       })}
+    </div>
+    <Facilities />
     </div>
   );
 }

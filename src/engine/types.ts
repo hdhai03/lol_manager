@@ -54,6 +54,7 @@ export interface Player {
   t2?: { g: number; w: number; r: number }; loan?: { from: string; until: number };
   /** điểm phong độ 20 ván gần nhất (0-10) */
   fh?: number[];
+  injury?: { kind: 'wrist' | 'back' | 'burnout'; until: number };
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -146,6 +147,11 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  fac?: { house: number; training: number; gym: number; analysis: number };
+  missions?: { id: string; kind: 'win3' | 'top3' | 'chem' | 'promote' | 'sign' | 'fans'; start: number; deadline: number; target: number; base: number; reward: number; done?: boolean; failed?: boolean }[]; missionDay?: number;
+  deal?: { id: string; brand: string; base: number; bonus: number; cond: 'worlds' | 'title' | 'fans' | 'stream'; target: number; season: number } | null;
+  dealOffers?: { id: string; brand: string; base: number; bonus: number; cond: 'worlds' | 'title' | 'fans' | 'stream'; target: number; season: number }[];
+  rivalBids?: Record<string, { team: string; amount: number; day: number }>;
   patch?: { v: string; day: number; mods: Record<string, number>; notes: { c: string; d: number }[]; n: number; hist?: { v: string; day: number; notes: { c: string; d: number }[] }[] };
   replays?: { id: string; season: number; day: number; comp: string; a: string; b: string; winner: string; durS: number; k: [number, number]; game: number; rin: import('./engine').RunInput; star?: boolean }[];
   ceremony?: { title: string; tier: string; season: number; team: string } | null;

@@ -26,7 +26,9 @@ function NegoBody({ p, mode, close }: { p: Player; mode: 'buy' | 'renew'; close:
     if (r.verdict === 'accept') {
       if (mode === 'renew') { renewWith(p, tm); toast(t('ng.done', { player: p.ign }), 'ok'); close(); refresh(); return; }
       const b = buyWith(p, fee, tm);
-      if (b.ok) { toast(t('ng.signed', { player: p.ign }), 'ok'); close(); refresh(); } else { setMsg(t(b.reason!)); }
+      if (b.ok) { toast(t('ng.signed', { player: p.ign }), 'ok'); close(); refresh(); }
+      else if (b.rival) { setMsg(t('tr.rival', { team: S.teams[b.rival.team].name, money: money(b.rival.amount) })); setFee(Math.ceil(b.rival.amount * 1.06)); }
+      else { setMsg(t(b.reason!)); }
       return;
     }
     if (r.verdict === 'counter' && r.counter) { setTm({ ...tm, ...r.counter }); setMsg(t(r.msg, { agent: d.agent, salary: money(r.counter.salary || tm.salary) })); }

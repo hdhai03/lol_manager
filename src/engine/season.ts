@@ -11,6 +11,7 @@ import { lifeDay, chemNewcomer } from './life';
 import { contractsDay } from './contracts';
 import { staffDay, devDay, loanDay, returnLoans, trainMul } from './staff';
 import { patchDay } from './patch';
+import { injuryDay, missionDay, dealDay, dealSeasonEnd, transferDay } from './club';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -109,6 +110,10 @@ function dailyTick(): void {
   contractsDay(playing);
   staffDay();
   patchDay();
+  injuryDay();
+  missionDay();
+  dealDay();
+  transferDay();
   devDay();
   loanDay(playing);
   brandDay();
@@ -182,6 +187,7 @@ export function setAutoSave(fn: () => void): void { autoSaveHook = fn; }
 export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
+  dealSeasonEnd();
   seasonWrapped();
   careerNewSeason();
   returnLoans();

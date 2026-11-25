@@ -61,7 +61,7 @@ export function autoLineup(t: Team): void {
   const used = new Set<string>();
   t.lineup = {};
   for (const role of ROLES) {
-    const best = teamPlayers(t).filter((p) => p.role === role && !used.has(p.id)).sort((a, b) => b.ovr - a.ovr)[0];
+    const best = teamPlayers(t).filter((p) => p.role === role && !used.has(p.id)).sort((a, b) => b.ovr - (b.injury ? 60 : 0) - (a.ovr - (a.injury ? 60 : 0)))[0];
     if (best) { t.lineup[role] = best.id; used.add(best.id); }
   }
   // vị trí trống: dùng người còn lại tốt nhất (trái vị trí)

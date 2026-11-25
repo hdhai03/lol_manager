@@ -56,7 +56,7 @@ export const groupOf = (leaf: string): string => TABS.find((g) => GROUPS[g].incl
 export const unreadCount = (): number => S.news.filter((n) => (n.id || 0) > (S.inboxSeen || 0)).length;
 
 // ----- việc cần làm trong ngày (thay đổi theo ngày, làm xong thì biến mất) -----
-export const TASK_TAB: Record<string, string> = { event: 'inbox', training: 'training', squad: 'roster', rest: 'roster', scout: 'youth', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
+export const TASK_TAB: Record<string, string> = { mission: 'career', sponsor: 'finance', event: 'inbox', training: 'training', squad: 'roster', rest: 'roster', scout: 'youth', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
 export function todayTasks(): DailyTask[] {
   const ut = userTeam();
   if (!S.tasks || S.tasks.day !== S.day) {
@@ -85,6 +85,9 @@ export function todayTasks(): DailyTask[] {
   if (ROLES.some((r) => !ut.lineup[r])) list.push({ id: 'lineup', kind: 'lineup' });
   const evs = (S.events || []).filter((e) => !e.done).length;
   if (evs) list.unshift({ id: 'event', kind: 'event', n: evs });
+  const mis = (S.missions || []).filter((m) => !m.done && !m.failed && S.day - m.start <= 3).length;
+  if (mis) list.push({ id: 'mission', kind: 'mission', n: mis });
+  if (S.phase !== 'offseason' && !(S.deal && S.deal.season === S.season)) list.push({ id: 'sponsor', kind: 'sponsor' });
   return list;
 }
 /** đánh dấu xong khi người chơi mở đúng mục liên quan */

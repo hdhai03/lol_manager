@@ -57,10 +57,12 @@ describe('đời sống đội tuyển', () => {
 });
 
 import { simSeason, startNewSeason } from '../src/engine';
+import { sponsorOffers, signDeal } from '../src/engine/club';
 import { ensureT2, t2Table } from '../src/engine/tier2';
 describe('sự nghiệp, thương hiệu, hạng 2', () => {
   it('một mùa: có sổ tuần, người hâm mộ, hạng 2 và lịch sử HLV', () => {
     const g = createGame({ teamId: 'Gen.G', manager: 'Test' });
+    withState(g, () => { const o = sponsorOffers(); expect(o.length).toBe(3); expect(signDeal(o[0].id)).toBe(true); });
     simSeason(g);
     withState(g, () => {
       expect(S.ledger!.length).toBeGreaterThan(3);
@@ -70,6 +72,8 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
       expect(tb.reduce((s, x) => s + x.w, 0)).toBeGreaterThan(10);
       expect(S.career!.w + S.career!.l).toBeGreaterThan(5);
       expect(S.patch!.n).toBeGreaterThan(5);
+      expect((S.missions || []).length).toBeGreaterThan(0);
+      expect(S.ledger!.some((r) => (r.sponsor as number) > 0)).toBe(true);
       expect(Object.keys(S.patch!.mods).length).toBeGreaterThan(0);
     });
     startNewSeason(g);

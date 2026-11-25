@@ -12,7 +12,7 @@ export interface ScoutPlayer { role: Role; p: Player; danger: number; champs: { 
 export interface ScoutReport { team: string; style: OppStyle; styleWhy: string; players: ScoutPlayer[]; bans: string[]; tactics: Partial<Tactics>; recent: { w: number; l: number }; depth: number }
 
 /** độ sâu trinh sát theo nhà phân tích (0..3) */
-const depth = (): number => 3 + (S.staff?.analyst ?? 0);
+const depth = (): number => 3 + (S.staff?.analyst ?? 0) + ((S.fac?.analysis ?? 0) >= 2 ? 1 : 0);
 export function scoutReport(teamId: string): ScoutReport {
   const tm = S.teams[teamId];
   const lp = lineupPlayers(tm).filter((x) => x.p) as { role: Role; p: Player }[];

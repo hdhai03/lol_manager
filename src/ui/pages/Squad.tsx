@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { InjTag } from './Club';
 import { Spark } from './Stats';
 import { loanModal } from './Staff';
 import { sendDown } from '../../engine/staff';
@@ -157,7 +158,7 @@ export function Roster() {
             <tbody>{rows.map(({ p, slot }, i) => (
               <tr key={p.id} className={`click ${p.id === ui.selPlayer ? 'sel' : ''} ${i === starterIds.length && i > 0 ? 'sep' : ''}`} data-sel={p.id} onClick={() => { ui.selPlayer = p.id; refresh(); }}>
                 <td><RoleTag r={slot || p.role} /></td>
-                <td><div className="nm2"><Face p={p} size="sm" />{p.ign}{slot && slot !== p.role && <span className="warn text-xs">{t('roster.offRole')}</span>}</div></td>
+                <td><div className="nm2"><Face p={p} size="sm" />{p.ign}<InjTag p={p} />{slot && slot !== p.role && <span className="warn text-xs">{t('roster.offRole')}</span>}</div></td>
                 <td className="n">{p.age}</td>
                 <td className={`n v-${vClass(p.ovr)}`}>{p.ovr}</td>
                 <td className="n"><span className={`v-${vClass(p.potential)}`}>{p.potential}</span></td>

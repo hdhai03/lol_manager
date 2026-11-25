@@ -1,5 +1,6 @@
 // Sự nghiệp HLV + Tài chính (thương hiệu, sổ thu chi theo tuần)
 import { S, userTeam, teamPlayers, teamSalary, saveGame } from '../../engine/state';
+import { Missions, Sponsors } from './Club';
 import { Achievements } from './Stats';
 import { money } from '../../engine/util';
 import { ensureCareer, ensureBrand, objTarget, switchTeam, setContent, upgradeMerch, fanFestival, merchPerDay, CONTENT_COST, MERCH_UPGRADE, FEST_COST, TICKS, LEDGER_CATS, type LedgerCat } from '../../engine/career';
@@ -54,6 +55,7 @@ export function Career() {
           </div>
         </div>
       )}
+      <Missions />
       <Achievements />
       <div className="gp">
         <div className="gp-h"><h3 className="k-title">{t('car.history')}</h3></div>
@@ -112,7 +114,7 @@ function BrandPanel() {
         <div className="br-kpis">
           <div><small>{t('br.fans')}</small><b className="k-disp">{b.fans >= 1000 ? `${(b.fans / 1000).toFixed(2)}M` : `${Math.round(b.fans)}K`}</b><span className={b.fans >= b.fansStart ? 'up' : 'down'}>{b.fans >= b.fansStart ? '▲' : '▼'} {Math.abs(((b.fans / b.fansStart) - 1) * 100).toFixed(1)}%</span></div>
           <div><small>{t('br.hype')}</small><b className="k-disp">{Math.round(b.hype)}</b><Meter v={b.hype} cls="hype" /></div>
-          <div><small>{t('br.merch')}</small><b className="k-disp">{fullMoney(merchPerDay(b) * TICKS)}</b><span className="muted">{t('br.perSeason')}</span></div>
+          <div><small>{t('br.merch')}</small><b className="k-disp">{money(merchPerDay(b) * TICKS)}</b><span className="muted">{t('br.perSeason')}</span></div>
         </div>
         <div className="br-opt">
           <div className="br-h"><b>{t('br.content')}</b><span className="muted text-xs">{t('br.contentD')}</span></div>
@@ -150,7 +152,7 @@ export function Finance() {
           <div className="gp-h"><h3 className="k-title">{t('fin.weekly')}</h3></div>
           <div className="gp-b" style={{ overflowX: 'auto' }}><WeekChart /></div>
         </div>
-        <BrandPanel />
+        <div className="flex flex-col gap-4"><BrandPanel /><Sponsors /></div>
       </div>
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="gp">

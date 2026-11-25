@@ -4,6 +4,18 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'task.mission': 'Ban lãnh đạo giao {n} nhiệm vụ mới', 'task.sponsor': 'Chọn nhà tài trợ chính cho mùa giải',
+  'inj.wrist': 'Chấn thương cổ tay', 'inj.back': 'Đau lưng', 'inj.burnout': 'Kiệt sức (burnout)', 'inj.d': 'n', 'news.injury': '{player} gặp vấn đề: {kind}, nghỉ khoảng {n} ngày.', 'news.recovered': '{player} đã bình phục.',
+  'mis.title': 'Nhiệm vụ ban lãnh đạo', 'mis.none': 'Chưa có nhiệm vụ nào.', 'mis.done': 'Hoàn thành', 'mis.failed': 'Thất bại', 'mis.left': 'còn {n} ngày', 'mis.reward': 'thưởng {money}',
+  'mis.win3': 'Thắng 3 loạt trận', 'mis.top3': 'Nằm trong top 3 bảng xếp hạng khi hết hạn', 'mis.chem': 'Đưa độ ăn ý đội hình lên {n}', 'mis.promote': 'Đôn một tuyển thủ học viện lên đá chính', 'mis.sign': 'Ký một tuyển thủ OVR từ {n} trở lên', 'mis.fans': 'Đạt {n}K người hâm mộ',
+  'news.mission': 'Ban lãnh đạo giao nhiệm vụ mới: {m}.', 'news.missionDone': 'Hoàn thành nhiệm vụ "{m}" — thưởng $ {money}K.', 'news.missionFail': 'Không hoàn thành nhiệm vụ "{m}".',
+  'fac.title': 'Cơ sở vật chất', 'fac.lv': 'cấp {n}', 'fac.up': 'Nâng cấp', 'fac.ok': 'Đã nâng cấp cơ sở vật chất!', 'fac.upkeep': 'duy trì {money}/mùa', 'fin.facility': 'Nâng cấp {f}',
+  'fac.house': 'Gaming house', 'fac.houseD': 'Tinh thần tăng dần, tuyển thủ dễ đồng ý ký hơn.', 'fac.training': 'Phòng tập', 'fac.trainingD': 'Tăng tốc độ tập luyện.', 'fac.gym': 'Phòng gym & y tế', 'fac.gymD': 'Hồi thể lực, giảm nguy cơ chấn thương.', 'fac.analysis': 'Phòng phân tích', 'fac.analysisD': 'Lộ trình cá nhân nhanh hơn, trinh sát sâu hơn.',
+  'sp.title': 'Nhà tài trợ chính', 'sp.pick': 'Chọn một hợp đồng cho mùa này. Tiền cố định trả dần theo ngày, tiền thưởng nhận cuối mùa nếu đạt điều kiện.', 'sp.base': 'Cố định {money}', 'sp.bonus': 'Thưởng {money}', 'sp.sign': 'Ký hợp đồng', 'sp.signed': 'Đã ký với {brand}!',
+  'sp.cond.worlds': 'Điều kiện thưởng: dự CKTG', 'sp.cond.title': 'Điều kiện thưởng: giành một danh hiệu', 'sp.cond.fans': 'Điều kiện thưởng: đạt {n} người hâm mộ', 'sp.cond.stream': 'Tuyển thủ phải stream (mệt hơn mỗi ngày); thưởng chắc chắn',
+  'news.deal': 'Ký hợp đồng tài trợ chính với {brand}.', 'news.dealBonus': '{brand} trả thưởng $ {money}K!', 'news.dealMiss': 'Không đạt điều kiện thưởng của {brand}.',
+  'win.open': 'Đang mở kỳ chuyển nhượng', 'win.closed': 'Kỳ chuyển nhượng đã đóng', 'win.hint': 'Mua tuyển thủ từ đội khác chỉ được trong kỳ nghỉ và 14 ngày đầu mùa Xuân / Hè. Tuyển thủ tự do ký lúc nào cũng được.',
+  'tr.windowClosed': 'Kỳ chuyển nhượng đang đóng.', 'tr.rival': '{team} cũng hỏi mua với giá {money}! Trả cao hơn để giành tuyển thủ.', 'news.rivalBid': '{team} nhảy vào tranh mua {player}!', 'news.rumor': 'Tin đồn: {team} quan tâm đến {player}.',
   'dr.suggest': 'Gợi ý', 'dr.why.syn': 'hợp đội hình', 'dr.why.counter': 'khắc chế', 'dr.why.buff': 'vừa được tăng sức mạnh', 'dr.why.comfort': 'tướng tủ',
   'syn.pair': 'Combo', 'syn.engage': 'Giao tranh tổng', 'syn.poke': 'Cấu rỉa', 'syn.dive': 'Lao vào', 'syn.protect': 'Bảo kê', 'syn.early': 'Đánh nhanh',
   'cm.intro': 'Hai đội đã vào trận! {a} đi lối {sa}, còn {b} chọn {sb}.', 'cm.noSyn': 'đội hình linh hoạt',
@@ -351,6 +363,18 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'task.mission': 'The board set {n} new mission(s)', 'task.sponsor': 'Pick a main sponsor for the season',
+  'inj.wrist': 'Wrist injury', 'inj.back': 'Back pain', 'inj.burnout': 'Burnout', 'inj.d': 'd', 'news.injury': '{player}: {kind}, out for about {n} days.', 'news.recovered': '{player} has recovered.',
+  'mis.title': 'Board missions', 'mis.none': 'No missions yet.', 'mis.done': 'Completed', 'mis.failed': 'Failed', 'mis.left': '{n} days left', 'mis.reward': 'reward {money}',
+  'mis.win3': 'Win 3 series', 'mis.top3': 'Be top 3 in the standings at the deadline', 'mis.chem': 'Raise lineup chemistry to {n}', 'mis.promote': 'Promote an academy player into the lineup', 'mis.sign': 'Sign a player with OVR {n}+', 'mis.fans': 'Reach {n}K fans',
+  'news.mission': 'New board mission: {m}.', 'news.missionDone': 'Mission "{m}" completed — $ {money}K reward.', 'news.missionFail': 'Mission "{m}" failed.',
+  'fac.title': 'Facilities', 'fac.lv': 'level {n}', 'fac.up': 'Upgrade', 'fac.ok': 'Facility upgraded!', 'fac.upkeep': 'upkeep {money}/season', 'fin.facility': 'Upgraded {f}',
+  'fac.house': 'Gaming house', 'fac.houseD': 'Morale rises, players sign more easily.', 'fac.training': 'Training room', 'fac.trainingD': 'Faster training.', 'fac.gym': 'Gym & medical', 'fac.gymD': 'Condition recovery, fewer injuries.', 'fac.analysis': 'Analysis room', 'fac.analysisD': 'Faster development plans, deeper scouting.',
+  'sp.title': 'Main sponsor', 'sp.pick': 'Pick one deal for this season. The fixed fee is paid daily; the bonus arrives at season end if the condition is met.', 'sp.base': 'Fixed {money}', 'sp.bonus': 'Bonus {money}', 'sp.sign': 'Sign deal', 'sp.signed': 'Signed with {brand}!',
+  'sp.cond.worlds': 'Bonus condition: reach Worlds', 'sp.cond.title': 'Bonus condition: win a title', 'sp.cond.fans': 'Bonus condition: reach {n} fans', 'sp.cond.stream': 'Players must stream (more tired daily); bonus guaranteed',
+  'news.deal': 'Signed a main sponsorship with {brand}.', 'news.dealBonus': '{brand} paid a $ {money}K bonus!', 'news.dealMiss': 'Missed the {brand} bonus condition.',
+  'win.open': 'Transfer window open', 'win.closed': 'Transfer window closed', 'win.hint': 'Buying from other teams is only allowed in the off-season and the first 14 days of Spring / Summer. Free agents can be signed any time.',
+  'tr.windowClosed': 'The transfer window is closed.', 'tr.rival': '{team} also bid {money}! Outbid them to get the player.', 'news.rivalBid': '{team} joins the race for {player}!', 'news.rumor': 'Rumour: {team} is interested in {player}.',
   'dr.suggest': 'Suggested', 'dr.why.syn': 'synergy', 'dr.why.counter': 'counter', 'dr.why.buff': 'just buffed', 'dr.why.comfort': 'comfort pick',
   'syn.pair': 'Combo', 'syn.engage': 'Teamfight', 'syn.poke': 'Poke', 'syn.dive': 'Dive', 'syn.protect': 'Protect', 'syn.early': 'Early game',
   'cm.intro': 'We are live! {a} goes for {sa}, while {b} picks {sb}.', 'cm.noSyn': 'a flexible comp',

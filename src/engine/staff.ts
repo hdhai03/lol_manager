@@ -28,16 +28,19 @@ export function setStaff(k: StaffKind, lv: number): boolean {
 /** mỗi ngày: chi phí + hiệu ứng tâm lý / thể lực */
 export function staffDay(): void {
   const ut = userTeam();
-  const cost = STAFF.reduce((s, k) => s + STAFF_COST[staffLv(k)], 0);
+  const cost = STAFF.reduce((s, k) => s + STAFF_COST[staffLv(k)], 0) + (['house', 'training', 'gym', 'analysis'] as const).reduce((s, k) => s + [0, 4, 8, 14][S.fac?.[k] ?? 0], 0);
   if (cost) { ut.budget -= cost; ledgerAdd('staff', -cost); }
   const ps = staffLv('psych'), ft = staffLv('fitness');
   for (const p of teamPlayers(ut)) {
     if (ps) p.morale = clamp((p.morale ?? 70) + (72 + ps * 3 - (p.morale ?? 70)) * 0.04 * ps, 20, 100);
     if (ft) p.cond = clamp((p.cond ?? 100) + ft * 1.6, 20, 100);
+    const gym = S.fac?.gym ?? 0, house = S.fac?.house ?? 0;
+    if (gym) p.cond = clamp((p.cond ?? 100) + gym, 20, 100);
+    if (house) p.morale = clamp((p.morale ?? 70) + house * 0.15, 20, 100);
   }
 }
 /** hệ số tốc độ tập luyện (trợ lý HLV) */
-export const trainMul = (): number => 1 + staffLv('assistant') * 0.2;
+export const trainMul = (): number => 1 + staffLv('assistant') * 0.2 + (S.fac?.training ?? 0) * 0.1;
 /** phong độ trong trận nhờ nhà phân tích (chuẩn bị cấm/chọn & đối thủ) */
 export const analystDay = (): number => staffLv('analyst') * 0.25;
 
@@ -56,7 +59,7 @@ export function setDev(pid: string, focus: DevFocus | null): void {
 }
 const ageF = (age: number) => (age <= 21 ? 1.4 : age <= 24 ? 1.1 : age <= 27 ? 0.75 : 0.45);
 export function devRate(p: Player): number {
-  return +(((2.2 + staffLv('assistant') * 0.7) * ageF(p.age) * (p.potential > p.ovr ? 1 : 0.55))).toFixed(2);
+  return +(((2.2 + staffLv('assistant') * 0.7 + (S.fac?.analysis ?? 0) * 0.3) * ageF(p.age) * (p.potential > p.ovr ? 1 : 0.55))).toFixed(2);
 }
 export function devDay(): void {
   for (const [pid, d] of Object.entries(S.dev || {})) {
