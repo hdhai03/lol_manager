@@ -195,6 +195,7 @@ export function promoteFromAcademy(pid: string): boolean {
   if (!p || p.academyOf !== ut.id) return false;
   if (ut.roster.length >= 10) return false;
   p.academyOf = null;
+  p.fromAcademy = ut.id;
   signPlayer(ut, p, S.season + 2);
   addNews('news.promotedYouth', { player: p.ign, team: ut.name }, true);
   return true;

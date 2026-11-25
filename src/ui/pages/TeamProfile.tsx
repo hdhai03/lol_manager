@@ -1,5 +1,8 @@
 // Hồ sơ đội: đội hình, danh hiệu, thành tích mùa, đối đầu với đội của bạn, kết quả gần đây
 import { S, teamOvr, lineupPlayers, teamPlayers } from '../../engine/state';
+import { clubValue } from '../../engine/squadx';
+import { TeamColorIcons } from './SquadX';
+import { money } from '../../engine/util';
 import { coachStyle, isRival } from '../../engine/world';
 import { gprTable } from '../../engine/gpr';
 import { teamChem } from '../../engine/life';
@@ -36,6 +39,8 @@ function TeamProfile({ id }: { id: string }) {
             <span><small>{t('tp.season')}</small><b>{w}-{thisY.length - w}</b></span>
             <span><small>{t('pr.chem')}</small><b>{Math.round(teamChem(id))}</b></span>
             <span><small>{t('tp.trophies')}</small><b>{tm.trophies.length}</b></span>
+            <span><small>{t('cv.value')}</small><b>{money(clubValue(tm))}</b></span>
+            <span><small>{t('tc.title')}</small><TeamColorIcons teamId={id} /></span>
           </div>
         </div>
       </div>

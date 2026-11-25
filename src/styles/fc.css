@@ -255,3 +255,17 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .stage .st-art { opacity: .28; filter: grayscale(.35); }
 .stage .st-shade { background: linear-gradient(90deg, rgba(13, 14, 16, .92) 0%, rgba(13, 14, 16, .7) 45%, rgba(13, 14, 16, .55) 100%), linear-gradient(0deg, rgba(13, 14, 16, .85), transparent 40%) !important; }
 .stage .st-logo { opacity: .04; }
+
+/* dải thông tin CLB (kiểu FC: nhãn xám nhỏ, giá trị to trắng) */
+.cstrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; margin: 0 var(--pad) .6rem; }
+.cs-k { display: flex; flex-direction: column; gap: .2rem; padding: .55rem .7rem; background: var(--s1); min-width: 0; }
+.cs-k:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); } .cs-k:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.cs-k small { color: var(--muted); font-size: .76rem; }
+.cs-k b { font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-k em { font-style: normal; font-size: .7rem; }
+.cs-k .mtr { height: 4px; }
+.tc-ic { display: flex; gap: .3rem; flex-wrap: wrap; }
+.tc { display: inline-flex; align-items: center; gap: .2rem; padding: .1rem .4rem; border-radius: 3px; background: var(--s3); font-size: .78rem; }
+.tc i { font-style: normal; } .tc b { font-family: var(--cond); }
+.tc.k-nation i { color: #7cc4ff; } .tc.k-champs i { color: var(--gold-chip); } .tc.k-academy i { color: var(--fc); } .tc.k-duo i { color: #c8aaff; }
+@media (max-width: 640px) { .cstrip { grid-template-columns: 1fr; } .cs-k { border-radius: 0 !important; } }

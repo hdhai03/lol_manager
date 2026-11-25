@@ -54,7 +54,7 @@ export interface Player {
   t2?: { g: number; w: number; r: number }; loan?: { from: string; until: number };
   /** điểm phong độ 20 ván gần nhất (0-10) */
   fh?: number[];
-  hype?: number;
+  hype?: number; fromAcademy?: string;
   injury?: { kind: 'wrist' | 'back' | 'burnout'; until: number };
 }
 export interface Team {
@@ -148,6 +148,8 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  caps?: Record<string, { cap: number; floor: number; season: number }>; luxTax?: number;
+  valueHist?: { key: string; season: number; phase: string; v: number }[];
   social?: { id: string; day: number; handle: string; key: string; params: Record<string, string | number>; likes: number; mood: 'pos' | 'neg' | 'meh'; pid?: string; team?: string }[]; seqP?: number;
   rivalry?: Record<string, number>; coachStyle?: Record<string, string>;
   fac?: { house: number; training: number; gym: number; analysis: number };

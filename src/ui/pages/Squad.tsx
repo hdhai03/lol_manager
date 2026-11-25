@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { ClubStrip } from './SquadX';
 import { InjTag } from './Club';
 import { Spark } from './Stats';
 import { loanModal } from './Staff';
@@ -154,6 +155,7 @@ export function Roster() {
             <button className="gb ghost xs" data-auto onClick={() => { autoLineup(ut); refresh(); }}>{t('roster.auto')}</button>
           </div>
         </div>
+        <ClubStrip />
         <div className="gp-b scroll" style={{ paddingTop: 0 }}>
           <table className="gt"><thead><tr><th>{t('role')}</th><th>{t('name')}</th><th>{t('age')}</th><th>OVR</th><th>{t('pot')}</th><th>{t('p.cond')}</th><th>{t('form')}</th><th /></tr></thead>
             <tbody>{rows.map(({ p, slot }, i) => (

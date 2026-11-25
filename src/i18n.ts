@@ -4,6 +4,9 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'cap.after': 'Lương đội sau ký {pay}/{cap}', 'cv.value': 'Giá trị CLB', 'cv.world': 'thế giới', 'cap.total': 'Tổng lương / trần', 'cap.tax': 'Vượt trần: thuế xa xỉ ≈ {money}/mùa', 'cap.floor': 'Dưới mức sàn {money}: bị phạt', 'cap.ok': 'Trong giới hạn',
+  'tr.overCap': 'Vượt trần lương cứng của giải (trần + 15%) — giảm lương hoặc bán bớt trước.', 'news.luxTax': 'Mùa này CLB nộp $ {money}K thuế xa xỉ do vượt trần lương.',
+  'tc.title': 'Đồng điệu đội hình', 'tc.none': 'Chưa có', 'tc.lv': 'cấp {n}', 'tc.nation': 'Đồng hương', 'tc.champs': 'Từng vô địch cùng nhau', 'tc.academy': 'Cùng lò học viện', 'tc.duo': 'Cặp chơi chung lâu năm',
   'dby.tag': 'DERBY', 'dby.h2h': 'Đối đầu: {w} thắng - {l} thua', 'news.derbyWin': '{team} thắng derby trước {opp}! Cả đội và người hâm mộ vỡ oà.', 'news.derbyLoss': '{team} thua derby trước {opp}, áp lực đè nặng.', 'news.newRival': 'Một cặp kình địch mới hình thành: bạn và {opp}!',
   'cs.aggressive': 'HLV ưa tấn công', 'cs.safe': 'HLV thận trọng', 'cs.teamfight': 'HLV giao tranh tổng', 'cs.macro': 'HLV chiến thuật bản đồ', 'cs.flex': 'HLV linh hoạt', 'sc.coach': 'HLV {coach}: {style}',
   'news.coachSacked': '{team} sa thải HLV {old}, bổ nhiệm {coach}.',
@@ -370,6 +373,9 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'cap.after': 'Payroll after signing {pay}/{cap}', 'cv.value': 'Club value', 'cv.world': 'worldwide', 'cap.total': 'Payroll / cap', 'cap.tax': 'Over the cap: luxury tax ≈ {money}/season', 'cap.floor': 'Below the {money} floor: fined', 'cap.ok': 'Within limits',
+  'tr.overCap': 'Exceeds the league hard cap (cap + 15%).', 'news.luxTax': 'The club paid $ {money}K luxury tax this season for exceeding the cap.',
+  'tc.title': 'Team color', 'tc.none': 'None', 'tc.lv': 'level {n}', 'tc.nation': 'Same nationality', 'tc.champs': 'Won titles together', 'tc.academy': 'Same academy', 'tc.duo': 'Long-time duo',
   'dby.tag': 'DERBY', 'dby.h2h': 'Head-to-head: {w}W - {l}L', 'news.derbyWin': '{team} win the derby over {opp}! Players and fans go wild.', 'news.derbyLoss': '{team} lose the derby to {opp}, pressure mounts.', 'news.newRival': 'A new rivalry is born: you vs {opp}!',
   'cs.aggressive': 'Aggressive coach', 'cs.safe': 'Cautious coach', 'cs.teamfight': 'Teamfight coach', 'cs.macro': 'Macro coach', 'cs.flex': 'Flexible coach', 'sc.coach': 'Coach {coach}: {style}',
   'news.coachSacked': '{team} sacked coach {old} and appointed {coach}.',

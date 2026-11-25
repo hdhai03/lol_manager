@@ -4,6 +4,7 @@ import { S, addNews, addFinance, userTeam, teamOvr, teamPlayers, autoLineup } fr
 import { clamp, rand, pick, randInt } from './util';
 import { acceptOffer, signPlayer, askingPrice } from './season';
 import { windowOpen, rivalBid } from './club';
+import { capBlocks } from './squadx';
 import type { Player, Role } from './types';
 
 export type RolePromise = 'starter' | 'rotation' | 'none';
@@ -90,6 +91,7 @@ export function renewWith(p: Player, tm: Terms): void {
 export function buyWith(p: Player, fee: number, tm: Terms): { ok: boolean; reason?: string; rival?: { team: string; amount: number } } {
   const ut = userTeam();
   if (ut.roster.length >= 10) return { ok: false, reason: 'tr.rosterFull' };
+  if (capBlocks(termCost(tm))) return { ok: false, reason: 'tr.overCap' };
   if (p.teamId) {
     if (!windowOpen()) return { ok: false, reason: 'tr.windowClosed' };
     if (fee > ut.budget) return { ok: false, reason: 'tr.noBudget' };

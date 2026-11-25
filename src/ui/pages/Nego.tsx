@@ -1,6 +1,7 @@
 // Bàn đàm phán: phí chuyển nhượng (nếu mua) + hợp đồng cá nhân với người đại diện
 import { useState } from 'react';
-import { S, userTeam } from '../../engine/state';
+import { S, userTeam, teamSalary } from '../../engine/state';
+import { salaryCap } from '../../engine/squadx';
 import { askingPrice } from '../../engine/season';
 import { money } from '../../engine/util';
 import { demandOf, satisfaction, propose, renewWith, buyWith, negoState, termCost, type Terms, type RolePromise } from '../../engine/contracts';
@@ -54,7 +55,7 @@ function NegoBody({ p, mode, close }: { p: Player; mode: 'buy' | 'renew'; close:
       <label className="tg"><input type="checkbox" checked={tm.bonus} data-bonus onChange={(e) => set({ bonus: e.target.checked })} /> {t('ng.bonus')}</label>
       {msg && <div className="ng-msg">{msg}</div>}
       <div className="ng-foot">
-        <span className="muted text-sm">{t('ng.total', { v: money(termCost(tm) * tm.years) })}{buying ? ` + ${money(fee)}` : ''} · {t('top.budget')}: {money(ut.budget)}</span>
+        <span className="muted text-sm">{t('ng.total', { v: money(termCost(tm) * tm.years) })}{buying ? ` + ${money(fee)}` : ''} · {t('top.budget')}: {money(ut.budget)} · {t('cap.after', { pay: money(teamSalary(ut) - (mode === 'renew' ? p.salary : 0) + termCost(tm)), cap: money(salaryCap(ut.league).cap) })}</span>
         <div className="flex gap-2"><button className="gb ghost" onClick={close}>{t('common.cancel')}</button><button className="gb primary" data-send disabled={blocked} onClick={send}>{blocked ? t('ng.blockedBtn', { n: st.blockedUntil! - S.day }) : t('ng.send')}</button></div>
       </div>
     </div>
