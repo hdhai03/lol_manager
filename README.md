@@ -100,3 +100,15 @@ src/styles/              game.css (giao diện game), style.css (màn thi đấu
 tests/                   Vitest
 scripts/                 lấy dữ liệu (Leaguepedia, Data Dragon), làm sạch logo, đóng gói ảnh, thống kê cân bằng
 ```
+
+## Đưa game lên mạng
+
+Game là trang tĩnh: `npm run build` tạo thư mục `dist/` (khoảng 76 MB, gồm ảnh) và có thể đặt lên bất kỳ hosting tĩnh nào. Repo đã có sẵn cấu hình:
+
+| Nền tảng | Cách làm |
+|---|---|
+| **Cloudflare Pages** | Workers & Pages → Create → Pages → Connect to Git → chọn repo. Framework preset **Vite**, build command `npm run build`, output `dist`. Biến môi trường `NODE_VERSION=20`. |
+| **Netlify** | Add new site → Import from Git → chọn repo. Netlify tự đọc `netlify.toml`. |
+| **Vercel** | Add New → Project → Import repo. Vercel tự đọc `vercel.json`. |
+
+Mỗi lần push lên nhánh đã chọn, trang tự build lại. File `public/_headers` (Netlify/Cloudflare) và `vercel.json` đặt thời gian cache cho ảnh và dữ liệu.

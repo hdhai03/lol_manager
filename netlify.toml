@@ -1,0 +1,7 @@
+# Netlify: kết nối repo là tự build & deploy mỗi lần push
+[build]
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
