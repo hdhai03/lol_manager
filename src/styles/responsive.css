@@ -6,8 +6,8 @@
 /* ---------- Màn rất rộng: nội dung không bị kéo giãn, chữ lớn hơn ---------- */
 @media (min-width: 1900px) { html { font-size: 16.5px; } }
 @media (min-width: 2300px) { html { font-size: 18px; } }
-@media (min-width: 2000px) {
-  .view > *, .hud, .subnav { max-width: 2200px; margin-inline: auto; width: 100%; }
+@media (min-width: 2800px) {
+  .view > *, .hud, .subnav { max-width: 2700px; margin-inline: auto; width: 100%; }
   .hud { padding-inline: 48px; }
   .pick { max-width: 2000px; margin-inline: auto; }
   .menu { max-width: 2200px; margin-inline: auto; }
@@ -221,3 +221,15 @@
   .pg-d .champ { width: 34px; height: 34px; }
   .pg-chart { height: 180px; }
 }
+
+/* ---------- Thanh menu: logo, tab và cụm nút phải cùng một đường giữa ---------- */
+.hud { align-items: center; padding-bottom: .85rem; }
+.hud .logo, .hud .sect, .hud .right { margin-bottom: 0; }
+.hud .nav { align-items: center; align-self: center; }
+.nv { padding: .45rem 0; }
+.nv.on::after { bottom: -.4rem; }
+.nv.on::before { display: none; }
+@media (max-width: 720px) { .hud { padding-bottom: .5rem; } .hud .nav { padding-top: .4rem; } }
+/* bỏ giới hạn chiều rộng cũ của hàng tab con */
+.subnav.subtabs { max-width: none; margin: 0; width: 100%; }
+@media (min-width: 2800px) { .subnav.subtabs { max-width: 2700px; margin-inline: auto; } }

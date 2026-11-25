@@ -69,7 +69,7 @@ export function GameShell() {
           <span className="ml-auto flex items-center gap-1 muted text-xs"><kbd className="kc">Q</kbd><kbd className="kc">E</kbd></span>
         </nav>
       )}
-      <main className={`view content ${SCROLLS.has(ui.tab) ? 'scroll' : ''}`} key={ui.tab} id="content">
+      <main className={`view ${SCROLLS.has(ui.tab) ? 'scroll' : ''}`} key={ui.tab} id="content">
         <Page />
       </main>
     </div>
