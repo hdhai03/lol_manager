@@ -79,8 +79,8 @@
 .bc .buff { border-radius: 5px; }
 .bc .bc-timers > div { border-radius: 7px; background: var(--hud); }
 .bc .bc-p { border-radius: 8px; background: var(--hud); gap: .55rem; padding: .35rem; width: 178px; }
-.bc .bc-p.B { box-shadow: inset 2px 0 0 var(--cb); }
-.bc .bc-side.r .bc-p { box-shadow: inset -2px 0 0 var(--cr); }
+.bc .bc-p.B { background: linear-gradient(90deg, rgba(61, 139, 255, .32), rgba(10, 13, 22, .5) 65%); }
+.bc .bc-side.r .bc-p { background: linear-gradient(270deg, rgba(255, 71, 87, .32), rgba(10, 13, 22, .5) 65%); }
 .bc .bc-p .ph { border-radius: 6px; }
 .bc .bc-p .lv { border-radius: 4px 0 0 0; }
 .bc .bc-p .hp, .bc .bc-p .mp { border-radius: 2px; background: rgba(0, 0, 0, .4); }
@@ -111,8 +111,8 @@
 .pg-bg { filter: blur(6px) saturate(1.15) !important; }
 .pg-head { background: linear-gradient(160deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .02)), rgba(10, 13, 22, .5) !important; backdrop-filter: var(--mblur) !important; border-radius: 10px; overflow: hidden; box-shadow: 0 24px 50px -28px #000, inset 0 1px 0 rgba(255, 255, 255, .07); }
 .pg-team b { font-family: var(--display) !important; }
-.pg-team.B { box-shadow: inset 3px 0 0 var(--cb, #3fa9ff); }
-.pg-team.R { box-shadow: inset -3px 0 0 var(--cr, #ff4d5e); }
+.pg-team.B { background: linear-gradient(90deg, rgba(61, 139, 255, .26), transparent 70%); }
+.pg-team.R { background: linear-gradient(270deg, rgba(255, 71, 87, .26), transparent 70%); }
 .pg-sc { font-family: var(--cond); font-weight: 700 !important; }
 .pg-res { font-family: var(--cond); font-weight: 700 !important; letter-spacing: .12em !important; border-color: rgba(255, 255, 255, .14) !important; }
 .pg-time { border-color: rgba(255, 255, 255, .1) !important; background: rgba(0, 0, 0, .15); }
@@ -140,3 +140,20 @@
 .pg-legend i.early { background: linear-gradient(90deg, #9cc8ff 50%, #ffaab3 50%) !important; }
 .pg-legend { font-family: var(--cond); color: var(--muted); }
 .pg-sbwrap .gt th { background: rgba(10, 13, 22, .9); }
+
+/* ---------- Nhấn mạnh kiểu kính (thay cho vạch viền ở mép) ---------- */
+.kf.B { background: linear-gradient(90deg, rgba(61, 139, 255, .34), rgba(10, 13, 22, .5) 70%) !important; }
+.kf.R { background: linear-gradient(90deg, rgba(255, 71, 87, .34), rgba(10, 13, 22, .5) 70%) !important; }
+.tbl tr.qual td:first-child { box-shadow: none; }
+/* số thứ hạng trong ô kính nhỏ; nhóm đi tiếp phát sáng teal */
+.rk { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; padding: 0 .3rem; border-radius: 6px; background: rgba(255, 255, 255, .06); font-family: var(--cond); font-weight: 700; color: var(--ink-2); }
+tr.q .rk { background: rgba(53, 230, 210, .2); color: #bff7ef; box-shadow: 0 0 14px -4px var(--teal-glow); }
+/* hàng được chọn / của đội mình: cả hàng phủ một lớp màu trong mờ, bo đều hai đầu */
+.gt tr.sel td { background: rgba(53, 230, 210, .14) !important; }
+.gt tr.sel td:first-child, .gt tr.me td:first-child, .mst tr.me td:first-child { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
+.gt tr.sel td:last-child, .gt tr.me td:last-child, .mst tr.me td:last-child { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+.gt tr.sel td, .gt tr.me td { border-bottom-color: transparent !important; }
+.mst tr.me td { background: rgba(255, 255, 255, .13); }
+.bc .sb-team::after { display: none; }
+.bc .sb-team.l { background: linear-gradient(90deg, rgba(61, 139, 255, .4), rgba(61, 139, 255, .08)); }
+.bc .sb-team.r { background: linear-gradient(270deg, rgba(255, 71, 87, .4), rgba(255, 71, 87, .08)); }

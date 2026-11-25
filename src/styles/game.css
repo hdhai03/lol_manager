@@ -235,7 +235,7 @@ select.gin option { background: #141826; }
 .mst td:first-child { border-radius: 6px 0 0 9px; } .mst td:last-child { border-radius: 0 9px 9px 0; }
 .mst .tn { display: flex; align-items: center; gap: .65rem; text-transform: uppercase; white-space: nowrap; }
 .mst tr.me td { background: rgba(255, 255, 255, .14); }
-.mst tr.q td:first-child { box-shadow: inset 3px 0 0 var(--teal); }
+
 .mst .n { text-align: center; width: 2.4rem; }
 .switch { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--cond); font-weight: 700; letter-spacing: .12em; }
 
@@ -257,7 +257,7 @@ select.gin option { background: #141826; }
 .gt td { padding: .62rem .75rem; border: 0; border-bottom: 1px solid var(--sep); vertical-align: middle; }
 .gt tbody tr:last-child td { border-bottom: 0; }
 .gt tr.sel td { background: rgba(53, 230, 210, .13); }
-.gt tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--teal); }
+
 .gt tr.me td { background: rgba(255, 255, 255, .08); }
 .gt tr.click { cursor: pointer; }
 .gt tr.click:hover td { background: rgba(255, 255, 255, .05); }
@@ -349,8 +349,8 @@ select.gin option { background: #141826; }
 .modal h3 { font-family: var(--cond); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 1.1rem; margin-bottom: 1rem; }
 .modal-x { width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--glass-2) !important; right: 1rem !important; top: 1rem !important; }
 .toast { background: rgba(20, 24, 40, .9) !important; backdrop-filter: blur(14px); border: 0 !important; border-radius: 999px; padding: .8rem 1.6rem; font-family: var(--cond); letter-spacing: .08em; font-size: 1rem; box-shadow: 0 18px 40px -16px #000; }
-.toast-ok { box-shadow: 0 18px 40px -16px #000, inset 0 -2px 0 var(--teal); }
-.toast-err { box-shadow: 0 18px 40px -16px #000, inset 0 -2px 0 #ff6b6b; }
+.toast-ok { background: linear-gradient(90deg, rgba(53, 230, 210, .3), rgba(20, 24, 40, .9) 70%) !important; }
+.toast-err { background: linear-gradient(90deg, rgba(255, 107, 107, .32), rgba(20, 24, 40, .9) 70%) !important; }
 
 .busy { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; background: rgba(3, 5, 9, .45); backdrop-filter: blur(6px); }
 .busy > div { display: flex; flex-direction: column; align-items: center; gap: .9rem; font-family: var(--cond); letter-spacing: .2em; text-transform: uppercase; }

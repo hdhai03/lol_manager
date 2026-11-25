@@ -13,8 +13,8 @@ export function StandTable({ st, compact = false }: { st: StandRow[]; compact?: 
   return (
     <table className="gt standings"><thead><tr><th>{t('st.rank')}</th><th>{t('team')}</th><th>{t('st.w')}</th><th>{t('st.l')}</th>{!compact && <><th>{t('st.diff')}</th><th>{t('st.form')}</th><th>OVR</th></>}</tr></thead>
       <tbody>{st.map((r, i) => (
-        <tr key={r.team} className={`${r.team === S.userTeam ? 'me' : ''}`}>
-          <td className="n" style={i < 4 ? { boxShadow: 'inset 2px 0 0 var(--teal)' } : undefined}>{i + 1}</td>
+        <tr key={r.team} className={`${r.team === S.userTeam ? 'me' : ''} ${i < 4 ? 'q' : ''}`}>
+          <td className="n"><span className="rk">{i + 1}</span></td>
           <td><div className="nm2"><Badge id={r.team} size="sm" /><span className="uppercase">{compact ? S.teams[r.team].short : S.teams[r.team].name}</span></div></td>
           <td className="n">{r.w}</td><td className="n">{r.l}</td>
           {!compact && <><td className="n">{r.gw - r.gl > 0 ? '+' : ''}{r.gw - r.gl}</td><td>{r.streak.slice(-5).map((x, j) => <span key={j} className={`dot ${x}`} />)}</td><td><Ovr v={teamOvr(S.teams[r.team])} /></td></>}

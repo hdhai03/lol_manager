@@ -255,7 +255,7 @@ function MiniStandings() {
           <table className="mst"><thead><tr><th>#</th><th>{t('team')}</th><th className="n">{getLang() === 'vi' ? 'T' : 'W'}</th><th className="n">{getLang() === 'vi' ? 'B' : 'L'}</th></tr></thead>
             <tbody>{st.map((r, i) => (
               <tr key={r.team} className={`${r.team === ut.id ? 'me' : ''} ${i < 4 ? 'q' : ''}`}>
-                <td>{i + 1}</td><td><div className="tn"><Badge id={r.team} size="xs" />{S.teams[r.team].short}</div></td><td className="n">{r.w}</td><td className="n">{r.l}</td>
+                <td><span className="rk">{i + 1}</span></td><td><div className="tn"><Badge id={r.team} size="xs" />{S.teams[r.team].short}</div></td><td className="n">{r.w}</td><td className="n">{r.l}</td>
               </tr>
             ))}</tbody></table>
         ) : <p className="muted">{t('st.notStarted')}</p>}
