@@ -42,9 +42,19 @@ const POSR: Record<string, Role> = { top: 'Top', jungle: 'Jungle', mid: 'Mid', a
 function realPr(a: SoloAccount, lo: number, hi: number): void {
   const top = Object.keys(a.ch)[0];
   const role = POSR[(a.pro?.pos || '').toLowerCase()] || (top && DB.champions[top]?.roles?.[0] as Role) || pick(ROLES);
-  const ovr = clamp(Math.round(70 + ((a.lp - lo) / Math.max(1, hi - lo)) * 20), 70, 92);
-  a.pr = { age: 22, role, ovr, pot: ovr };
+  const h = [...a.id].reduce((x, ch) => (x * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  if (a.pro?.team) {
+    // tuyển thủ của đội ngoài dữ liệu game: chỉ để hiển thị, không tuyển được
+    a.pr = { age: 22, role, ovr: clamp(Math.round(72 + ((a.lp - lo) / Math.max(1, hi - lo)) * 18), 72, 90), pot: 90 };
+    return;
+  }
+  // cao thủ tự do: tuyển trạch được về học viện (tuổi/tiềm năng ước lượng cố định theo tài khoản)
+  const age = 17 + (h % 6);
+  const ovr = clamp(Math.round(64 + ((a.lp - lo) / Math.max(1, hi - lo)) * 16), 60, 82);
+  a.pr = { age, role, ovr, pot: clamp(ovr + (22 - age) * 2 + ((h >> 4) % 7), ovr, 95) };
 }
+/** tài khoản có thể mời về học viện */
+export const recruitable = (a: SoloAccount): boolean => !a.pid && !!a.pr && (a.real ? !a.pro?.team : a.pr.age <= 19);
 /** gộp top Thách đấu thật vào máy chủ: tài khoản thật giữ đúng LP/thắng-thua/tướng; tuyển thủ trùng tên được liên kết */
 export function syncReal(q: SoloQ): void {
   const ld = ladderData();
@@ -56,6 +66,9 @@ export function syncReal(q: SoloQ): void {
     const k = p.ign.toLowerCase(), cur = byIgn.get(k);
     if (!cur || (p.teamId && !cur.teamId)) byIgn.set(k, p);
   }
+  // giữ liên kết cũ (tài khoản thật đã được mời về học viện / đã khớp tuyển thủ)
+  const prevPid = new Map<string, string>();
+  for (const srv of Object.values(q.servers)) for (const a of srv.acc) if (a.real && a.pid && S.players[a.pid] && !S.players[a.pid].retired) prevPid.set(a.id, a.pid);
   for (const srv of Object.values(q.servers)) srv.acc = srv.acc.filter((a) => !a.real);
   const linked = new Set<string>();
   for (const [sv, rows] of Object.entries(ld.servers)) {
@@ -68,7 +81,8 @@ export function syncReal(q: SoloQ): void {
     srv.off = off;
     for (const r of rows) {
       const a: SoloAccount = { id: `r${sv}:${r.n}#${r.tag}`, real: true, name: r.n, tag: r.tag, tier: r.tier || 'challenger', lp: r.lp, w: r.w, l: r.l, ch: { ...r.ch }, pro: r.pro };
-      const p = r.pro?.nick ? byIgn.get(r.pro.nick.toLowerCase()) : undefined;
+      const keep = prevPid.get(a.id);
+      const p = keep ? S.players[keep] : r.pro?.nick ? byIgn.get(r.pro.nick.toLowerCase()) : undefined;
       if (p && !linked.has(p.id)) { a.pid = p.id; linked.add(p.id); } else realPr(a, lo, hi);
       srv.acc.push(a);
     }

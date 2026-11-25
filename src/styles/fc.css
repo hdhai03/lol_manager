@@ -368,3 +368,7 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .sk-old { display: flex; align-items: center; gap: .8rem; opacity: .6; }
 .sk-list { display: flex; flex-direction: column; gap: .4rem; }
 .sk-o { display: flex; align-items: center; gap: .8rem; padding: .7rem .9rem; background: var(--s1); border-radius: 4px; }
+.lad-real { margin-left: .4rem; padding: 0 5px; border-radius: 3px; background: var(--s2); color: var(--fc); font-size: .62rem; font-weight: 700; vertical-align: middle; }
+.ac-row { flex-wrap: wrap; }
+.ac-row > .grow { flex: 1 1 150px; }
+.ac-row > .grow > b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

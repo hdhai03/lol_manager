@@ -2,7 +2,7 @@ import { S, userTeam, teamPlayers } from '../../engine/state';
 import { loanModal } from './Staff';
 import { ATTR_GROUPS, money } from '../../engine/util';
 import {
-  SERVERS, SERVER_OF, ladder as soloLadder, accTier, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange,
+  SERVERS, SERVER_OF, ladder as soloLadder, accTier, recruitable, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange,
   inviteToAcademy, promoteFromAcademy, releaseFromAcademy,
 } from '../../engine/academy';
 import { t, getLang } from '../../i18n';
@@ -56,7 +56,7 @@ export function Training() {
 export function Youth() {
   const ac = ensureAcademy();
   const sv = ac.focus;
-  const am = soloLadder(sv).map((a, i) => ({ a, rank: i + 1 })).filter(({ a }) => !a.pid && a.pr && a.pr.age <= 19);
+  const am = soloLadder(sv).map((a, i) => ({ a, rank: i + 1 })).filter(({ a }) => recruitable(a));
   const acad = academyPlayers();
   return (
     <div className="cols fill stag" style={{ gridTemplateColumns: 'minmax(280px, .8fr) minmax(0, 1.6fr)' }}>
@@ -64,7 +64,7 @@ export function Youth() {
         <div className="gp-h"><h3 className="k-title">{t('ac.mine', { n: acad.length, max: ACADEMY_MAX })}</h3></div>
         <div className="gp-b scroll gap-1">
           {acad.length ? acad.map((p) => (
-            <div key={p.id} className="flex items-center gap-2 py-2 border-b border-line cursor-pointer" data-player={p.id} onClick={() => openPlayer(p.id)}>
+            <div key={p.id} className="ac-row flex items-center gap-2 py-2 border-b border-line cursor-pointer" data-player={p.id} onClick={() => openPlayer(p.id)}>
               <Face p={p} size="sm" /><RoleTag r={p.role} />
               <div className="grow min-w-0"><b>{p.ign}</b><div className="muted text-xs">{t('age')} {p.age} · OVR {p.ovr} · {t('pot')} {p.potential}{p.t2 && p.t2.g ? ` · ${t('ac.t2stat', { g: p.t2.g, r: (p.t2.r / p.t2.g).toFixed(1) })}` : ''}</div></div>
               <button className="gb ghost xs" data-aloan={p.id} onClick={(e) => { e.stopPropagation(); loanModal(p.id); }}>{t('p.loan')}</button>
@@ -85,12 +85,12 @@ export function Youth() {
         <div className="gp-b scroll" style={{ paddingTop: '.4rem' }}>
           <p className="muted text-sm mt-0">{t('ac.scoutHint', { server: sv, days: ac.days[sv] || 0 })}</p>
           <table className="gt"><thead><tr><th>#</th><th>{t('ac.account')}</th><th>{t('role')}</th><th>{t('age')}</th><th>{t('ac.rank')}</th><th>{t('ac.estPot')}</th><th>{t('ac.cost')}</th><th /></tr></thead>
-            <tbody>{am.slice(0, 25).map(({ a, rank }) => {
+            <tbody>{am.slice(0, 40).map(({ a, rank }) => {
               const [lo, hi] = potRange(sv, a);
               return (
                 <tr key={a.id}>
                   <td className="n">{rank}</td>
-                  <td><b>{a.name}</b><div className="flex gap-1 mt-1">{Object.keys(a.ch).slice(0, 3).map((ch) => <Champ key={ch} id={ch} size={20} />)}</div></td>
+                  <td><b>{a.name}</b>{a.real && <span className="lad-acc">#{a.tag}</span>}{a.real && <span className="lad-real">OP.GG</span>}<div className="flex gap-1 mt-1">{Object.keys(a.ch).slice(0, 3).map((ch) => <Champ key={ch} id={ch} size={20} />)}</div></td>
                   <td><RoleTag r={a.pr!.role} /></td><td className="n">{a.pr!.age}</td>
                   <td><RankTxt tier={accTier(sv, a)} lp={a.lp} /></td>
                   <td className="n">{lo}-{hi}</td><td className="n">{money(inviteCost(a))}</td>
@@ -124,7 +124,7 @@ export function Ladder() {
           <button className="gb ghost xs" data-lsync disabled={busy} onClick={() => { setBusy(true); void refreshLadder(true).finally(() => { setBusy(false); refresh(); }); }}>{busy ? '…' : t('ac.sync')}</button>
         </div>
         <p className="muted text-sm mt-0">{t('ac.ladderHint')}</p>
-        <table className="gt ladder-t"><thead><tr><th>#</th><th>{t('ac.account')}</th><th>{t('role')}</th><th>{t('ac.tierH')}</th><th>LP</th><th>{t('ac.wl')}</th><th>{t('st.wr')}</th><th>{t('ac.champs')}</th></tr></thead>
+        <table className="gt ladder-t"><thead><tr><th>#</th><th>{t('ac.account')}</th><th>{t('role')}</th><th>{t('ac.tierH')}</th><th>LP</th><th>{t('ac.wl')}</th><th>{t('st.wr')}</th><th>{t('ac.champs')}</th><th /></tr></thead>
           <tbody>{list.map((a, i) => {
             const p = a.pid ? S.players[a.pid] : null;
             const tag = p ? (p.teamId ? S.teams[p.teamId].short : p.academyOf ? t('ac.tag') : t('p.freeAgent')) : '';
@@ -139,6 +139,12 @@ export function Ladder() {
                 <td><RankTxt tier={accTier(f.lsv!, a)} /></td>
                 <td className="n">{a.lp}</td><td className="n">{a.w}-{a.l}</td><td className="n">{g ? pct(a.w / g) : '–'}</td>
                 <td><div className="flex gap-1">{Object.keys(a.ch).slice(0, 4).map((ch) => <Champ key={ch} id={ch} size={22} />)}</div></td>
+                <td>{recruitable(a) && <button className="gb xs" data-linvite={a.id} title={`${t('age')} ${a.pr!.age} · ${t('ac.estPot')} ${potRange(f.lsv!, a).join('-')} · ${money(inviteCost(a))}`} onClick={(e) => {
+                  e.stopPropagation();
+                  const r = inviteToAcademy(f.lsv!, a.id);
+                  toast(r.ok ? t('ac.joined', { player: r.p.ign }) : t('ac.err.' + r.why), r.ok ? 'ok' : 'err');
+                  refresh();
+                }}>{t('ac.invite')}</button>}</td>
               </tr>
             );
           })}</tbody></table>

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { loadDb } from './helpers';
 import { createGame, type GameState } from '../src/engine';
 import { withState, S } from '../src/engine/state';
-import { ensureSoloq, ladder, soloqDay, soloqNewSeason } from '../src/engine/academy';
+import { ensureSoloq, ladder, soloqDay, soloqNewSeason, recruitable, inviteToAcademy, academyPlayers, syncReal } from '../src/engine/academy';
 import { setLadderData, type LadderData } from '../src/engine/ladder';
 
 let st: GameState;
@@ -34,5 +34,23 @@ describe('bảng Thách đấu thật (OP.GG)', () => {
     expect(ladder('KR').filter((a) => a.real).length).toBe(ld.servers.KR.length);
     const names = new Set(ld.servers.KR.map((r) => r.n));
     expect(S.freeAgents.slice(fa).some((id) => names.has(S.players[id].ign))).toBe(false);
+  }));
+
+  it('cao thủ thật không thuộc đội nào mời được về học viện và giữ liên kết khi đồng bộ lại', () => withState(st, () => {
+    const q = ensureSoloq();
+    const kr = ladder('KR');
+    expect(kr.some((a) => a.real && a.pro?.team && recruitable(a))).toBe(false);
+    const a = kr.find((x) => x.real && recruitable(x))!;
+    expect(a).toBeTruthy();
+    S.teams[S.userTeam].budget += 5000;
+    const r = inviteToAcademy('KR', a.id);
+    expect(r.ok).toBe(true);
+    const pid = r.ok ? r.p.id : '';
+    expect(academyPlayers().some((p) => p.id === pid)).toBe(true);
+    q.realAt = 'force-resync';
+    syncReal(q);
+    const again = ladder('KR').find((x) => x.id === a.id)!;
+    expect(again.pid).toBe(pid);
+    expect(recruitable(again)).toBe(false);
   }));
 });
