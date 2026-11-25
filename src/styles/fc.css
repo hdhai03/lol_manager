@@ -360,3 +360,11 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .lad-src { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 0 .4rem; }
 .lad-acc { margin-left: .35rem; color: var(--t3, #8a8d93); font-size: .72rem; }
 .lad-pro { margin-left: .45rem; padding: 1px 6px; border-radius: 3px; background: var(--s2); color: var(--t1, #ececec); font-size: .68rem; font-weight: 600; white-space: nowrap; }
+
+/* bị sa thải: chọn đội mới */
+.ovl.sk { display: grid; place-items: center; background: var(--bg, #101113); overflow: auto; padding: 2rem 1rem; z-index: 70; }
+.sk-in { width: min(560px, 100%); display: flex; flex-direction: column; gap: .8rem; }
+.sk-in .k-label { color: #ff6b6b; }
+.sk-old { display: flex; align-items: center; gap: .8rem; opacity: .6; }
+.sk-list { display: flex; flex-direction: column; gap: .4rem; }
+.sk-o { display: flex; align-items: center; gap: .8rem; padding: .7rem .9rem; background: var(--s1); border-radius: 4px; }

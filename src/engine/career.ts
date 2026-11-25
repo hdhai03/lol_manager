@@ -128,6 +128,19 @@ export function careerOnComp(comp: Comp, order: string[]): void {
     c.best = c.best == null ? pos + 1 : Math.min(c.best, pos + 1);
   } else if (pos <= 3) c.rep = clamp(c.rep + 3, 0, 100);
 }
+/** bị sa thải: luôn có ít nhất 3 lời mời (đội yếu hơn; thiếu thì lấy các đội yếu nhất còn lại) */
+export function sackOffers(): { team: string; day: number }[] {
+  const c = ensureCareer();
+  if (!c.sacked) return c.offers;
+  const ut = userTeam(), mine = teamOvr(ut);
+  const others = Object.values(S.teams).filter((t) => t.id !== ut.id);
+  const have = new Set(c.offers.map((o) => o.team).filter((id) => S.teams[id]));
+  const pool = others.filter((t) => !have.has(t.id) && teamOvr(t) < mine - 1).sort(() => rand() - 0.5);
+  const weakest = others.filter((t) => !have.has(t.id)).sort((a, b) => teamOvr(a) - teamOvr(b));
+  for (const t of [...pool, ...weakest]) { if (have.size >= 3) break; have.add(t.id); }
+  c.offers = [...have].map((team) => ({ team, day: S.day }));
+  return c.offers;
+}
 /** chuyển sang dẫn dắt đội khác (sau khi bị sa thải hoặc nhận lời mời) */
 export function switchTeam(teamId: string): void {
   const c = ensureCareer();
@@ -155,8 +168,8 @@ export function careerNewSeason(): void {
   if (c.conf < 20) {
     c.sacked = true;
     c.rep = clamp(c.rep - 8, 0, 100);
-    const mine = teamOvr(ut);
-    c.offers = Object.values(S.teams).filter((t) => t.id !== ut.id && teamOvr(t) < mine - 1).sort(() => rand() - 0.5).slice(0, 3).map((t) => ({ team: t.id, day: S.day }));
+    c.offers = [];
+    sackOffers();
     addNews('news.sacked', { team: ut.name }, true);
   } else {
     c.obj = objFor(ut.id);

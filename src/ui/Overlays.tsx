@@ -1,10 +1,11 @@
 // Lớp phủ toàn màn hình: lễ trao cúp, tổng kết mùa ("Wrapped"), xem lại ván đấu
 import { useState } from 'react';
-import { S, lineupPlayers } from '../engine/state';
+import { S, lineupPlayers, teamOvr, saveGame } from '../engine/state';
+import { ensureCareer, sackOffers, switchTeam } from '../engine/career';
 import { runGame } from '../engine/engine';
 import { t } from '../i18n';
 import { ui, refresh } from './store';
-import { Badge, Face, RoleTag } from './components';
+import { Badge, Face, RoleTag, LeagueBadge } from './components';
 import { LiveGame } from './match/Live';
 import type { GameResult, Match, Role } from '../engine/types';
 
@@ -76,6 +77,33 @@ export function ReplayView() {
     <div className="ovl rp">
       <LiveGame m={m} d={null} game={g} replay={`${t('rp.title')} · ${rep.comp} ${rep.season}`} onEnd={close} onSkipAll={close} />
       <button className="gb rp-x" data-rp-close onClick={close}>✕ {t('rp.close')}</button>
+    </div>
+  );
+}
+
+/** bị sa thải: không thể tiếp tục dẫn dắt đội cũ, phải chọn bến đỗ mới */
+export function Sacked() {
+  const c = ensureCareer();
+  if (!c.sacked) return null;
+  const old = S.teams[S.userTeam];
+  const offers = sackOffers();
+  return (
+    <div className="ovl sk" data-sacked>
+      <div className="sk-in">
+        <small className="k-label">{t('car.sackedT')}</small>
+        <div className="sk-old"><Badge id={old.id} size="lg" /><b className="k-disp">{old.name}</b></div>
+        <p className="muted">{t('car.sackedD', { team: old.name })}</p>
+        <div className="sk-list">{offers.map((o) => {
+          const tm = S.teams[o.team];
+          return (
+            <div key={o.team} className="sk-o">
+              <Badge id={tm.id} size="md" />
+              <div className="grow min-w-0"><b>{tm.name}</b><div className="muted text-xs flex items-center gap-2"><LeagueBadge id={tm.league} size="xs" />{tm.league} · OVR {teamOvr(tm)}</div></div>
+              <button className="gb primary sm" data-job={o.team} onClick={() => { switchTeam(o.team); saveGame(); refresh(); }}>{t('car.accept')}</button>
+            </div>
+          );
+        })}</div>
+      </div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { MenuScreen, AboutScreen, LoadScreen } from './screens/Menu';
 import { NewGameScreen } from './screens/NewGame';
 import { GameShell } from './screens/GameShell';
 import { MatchDay } from './match/MatchDay';
-import { Ceremony, Wrapped, ReplayView } from './Overlays';
+import { Ceremony, Wrapped, ReplayView, Sacked } from './Overlays';
 
 export function App() {
   useVersion();
@@ -30,6 +30,7 @@ export function App() {
       {s === 'game' && !ui.matchDay && ui.replay && <ReplayView key={ui.replay} />}
       {s === 'game' && !ui.matchDay && !ui.replay && <Ceremony />}
       {s === 'game' && !ui.matchDay && !ui.replay && !S.ceremony && <Wrapped />}
+      {s === 'game' && !ui.matchDay && !ui.replay && !S.ceremony && (!S.wrapped || S.wrapped.seen) && <Sacked />}
       {s === 'game' && ui.matchDay && <MatchDay key={ui.matchDay.id} match={ui.matchDay} />}
       <ModalHost />
       <ToastHost />
