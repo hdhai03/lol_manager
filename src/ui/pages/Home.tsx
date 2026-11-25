@@ -6,7 +6,7 @@ import { gprTable } from '../../engine/gpr';
 import { clamp, money } from '../../engine/util';
 import { t, getLang } from '../../i18n';
 import { ui, refresh, toast, openModal } from '../store';
-import { Badge, LeagueBadge, Stars, faceSrc } from '../components';
+import { Badge, LeagueBadge, RoleIcon, Stars, faceSrc } from '../components';
 import {
   compTitle, currentSplitComp, fmtD, fullMoney, hash, kfmt, newsText, primaryAction, recordOf, relDay, taskLabel, todayTasks, TASK_TAB,
 } from '../helpers';
@@ -176,7 +176,7 @@ function YourTeam() {
               {fs ? <img src={fs} alt="" /> : <span className="ini">{p ? p.ign.slice(0, 2).toUpperCase() : '—'}</span>}
               {p && <span className="o">{p.ovr}</span>}
               {p && <span className={`cnd ${cond < 60 ? 'low' : ''}`}><i style={{ width: `${cond}%` }} /></span>}
-              <div className="cap"><small>{t('roleS.' + role)}</small><b>{p ? p.ign : '—'}</b></div>
+              <div className="cap"><small className={`role-${role}`} title={t('role.' + role)}><RoleIcon r={role} /></small><b>{p ? p.ign : '—'}</b></div>
             </div>
           );
         })}</div>

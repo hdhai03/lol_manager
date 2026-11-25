@@ -68,7 +68,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           else { swapPicks(draft, ms, swapSel, r); setSwapSel(null); }
         } : undefined}>
           {c ? <div className="art" style={{ backgroundImage: `url('${champArt(c)}')` }} /> : <div className="glyph"><RoleIcon r={r} /></div>}
-          <span className="rl">{t('roleS.' + r)}</span>
+          <span className={`rl role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span>
           {c && mine && <span className="ft">{Math.round(champFit(p, c, r))}</span>}
           <span className="cn">{c ? cname(c) : ''}</span><span className="pn">{p ? p.ign : '—'}</span>
         </div>
@@ -87,7 +87,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
       <div className="dr-mid">
         <div className="dr-panel">
           <div className="dr-ph"><h3>{t('dr.champions')}</h3>
-            <div className="dr-roles">{(['all', ...ROLES] as const).map((r) => <button key={r} className={filter === r ? 'on' : ''} data-f={r} onClick={() => setFilter(r)}>{r === 'all' ? t('tr.all') : t('roleS.' + r)}</button>)}</div>
+            <div className="dr-roles">{(['all', ...ROLES] as const).map((r) => <button key={r} className={filter === r ? 'on' : ''} data-f={r} onClick={() => setFilter(r)}>{r === 'all' ? t('tr.all') : <span className={`role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span>}</button>)}</div>
             <label className="dr-search"><input type="search" placeholder={t('meta.search')} value={q} data-q onChange={(e) => setQ(e.target.value)} /></label></div>
           <div className="dr-grid">{champs.map((c) => {
             const dis = taken.has(c.id);

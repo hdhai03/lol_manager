@@ -99,7 +99,7 @@ export function PlayerDetail({ p }: { p: Player }) {
       <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-line">
         {mine ? (
           <>
-            <div className="chips">{ROLES.map((r) => <button key={r} className={`chp sm ${lineRole === r ? 'on' : ''}`} data-setrole={r} onClick={() => setRole(r)}><RoleIcon r={r} /> {t('roleS.' + r)}</button>)}</div>
+            <div className="chips">{ROLES.map((r) => <button key={r} className={`chp sm ${lineRole === r ? 'on' : ''}`} data-setrole={r} onClick={() => setRole(r)}><span className={`role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span></button>)}</div>
             <span className="grow" />
             <button className="gb sm" data-list onClick={() => { S.listed = listed ? (S.listed || []).filter((x) => x !== p.id) : [...(S.listed || []), p.id]; refresh(); }}>{listed ? t('p.unlist') : t('p.sell')}</button>
             <button className="gb ghost danger sm" data-release onClick={() => void release()}>{t('p.release')}</button>
@@ -177,7 +177,7 @@ export function Roster() {
         <div className="gp-h">
           <h3 className="k-title">{t('nav.roster')} <span className="muted">· {ut.roster.length}</span></h3>
           <div className="gp-r">
-            {ROLES.map((r) => <span key={r} className={ut.lineup[r] ? '' : 'neg'}>{t('roleS.' + r)}</span>)}
+            {ROLES.map((r) => <span key={r} className={`role-${r} ${ut.lineup[r] ? '' : 'neg'}`} title={t('role.' + r)} style={ut.lineup[r] ? undefined : { opacity: .3 }}><RoleIcon r={r} /></span>)}
             <span>OVR <b className="text-white">{ovr}</b></span>
             <button className="gb ghost xs" data-auto onClick={() => { autoLineup(ut); refresh(); }}>{t('roster.auto')}</button>
           </div>

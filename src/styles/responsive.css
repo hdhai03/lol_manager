@@ -284,3 +284,15 @@
 .gp > .gp-b.scroll > * { flex-shrink: 0; }
 .pcards { grid-auto-rows: max-content; }
 @media (max-width: 720px) { .hud .nav, .subnav { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%); padding-inline: 10px; } }
+
+/* ===== Vai trò = chỉ biểu tượng; rank = chữ màu (không chip, không nền) ===== */
+.role { display: inline-grid !important; place-items: center; background: none !important; padding: 0 !important; min-width: 0 !important; border-radius: 0 !important; font-size: 1.05rem !important; line-height: 1; vertical-align: middle; }
+.role .ricon { width: 18px; height: 18px; filter: drop-shadow(0 0 6px currentColor) opacity(.95); }
+.role-Top { color: #f4c66e !important; } .role-Jungle { color: #7fe3a2 !important; } .role-Mid { color: #c8aaff !important; } .role-Bot { color: #ff9e9e !important; } .role-Support { color: #82d4f6 !important; }
+.rkt { display: inline-flex; flex-direction: column; gap: .05rem; line-height: 1.15; white-space: nowrap; background: none !important; padding: 0 !important; }
+.rkt b { font-weight: 700; font-size: .86rem; text-shadow: 0 0 12px color-mix(in srgb, currentColor 45%, transparent); }
+.rkt small { color: var(--muted, #8b95a8); font-size: .72rem; font-weight: 500; }
+.rkt.t-challenger { color: #ffd98a; } .rkt.t-grandmaster { color: #ff8f8f; } .rkt.t-master { color: #d6a6ff; } .rkt.t-diamond { color: #9cc5ff; }
+.rkt.t-emerald { color: #6ee7b7; } .rkt.t-platinum { color: #7dd3c8; } .rkt.t-gold { color: #f2c46d; } .rkt.t-silver { color: #c3cad6; } .rkt.t-bronze, .rkt.t-iron { color: #c59a7a; }
+.dr-roles .ricon, .rl .ricon, .cap small .ricon, .gp-r .ricon { width: 1.05rem; height: 1.05rem; }
+.rl.role-Top, .rl.role-Jungle, .rl.role-Mid, .rl.role-Bot, .rl.role-Support { background: none !important; }

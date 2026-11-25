@@ -46,7 +46,10 @@ const ROLE_PATH: Record<Role, string> = {
   Support: 'M12 3l3 4-3 3-3-3 3-3zM2 8h6l4 4 4-4h6l-5 5h-3l-2 8-2-8H7L2 8z',
 };
 export const RoleIcon = ({ r }: { r: Role }) => <svg className="ricon" viewBox="0 0 24 24" aria-hidden="true"><path d={ROLE_PATH[r]} /></svg>;
-export const RoleTag = ({ r }: { r: Role }) => <span className={`role role-${r}`} title={t('role.' + r)}>{t('roleS.' + r)}</span>;
+// vai trò: chỉ hiện biểu tượng (tô màu theo vai trò), tên đầy đủ ở tooltip / aria-label
+export const RoleTag = ({ r }: { r: Role }) => <span className={`role role-${r}`} title={t('role.' + r)} aria-label={t('role.' + r)}><RoleIcon r={r} /></span>;
+// hạng rank: chữ tô màu, không nền
+export const RankTxt = ({ tier, lp }: { tier: string; lp?: number }) => <span className={`rkt t-${tier}`}><b>{t('tier.' + tier)}</b>{lp != null && <small>{lp} LP</small>}</span>;
 export const Ovr = ({ v }: { v: number }) => <span className={`ovr o-${vClass(v)}`}>{v}</span>;
 export function Stars({ ovr }: { ovr: number }) {
   const n = clamp(Math.round((ovr - 58) / 6), 1, 5);

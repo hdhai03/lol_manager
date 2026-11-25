@@ -6,7 +6,7 @@ import {
 } from '../../engine/academy';
 import { t } from '../../i18n';
 import { ui, refresh, toast } from '../store';
-import { Champ, CondMini, Face, RoleTag } from '../components';
+import { Champ, CondMini, Face, RoleTag, RankTxt } from '../components';
 import { isMine, pct, vClass } from '../helpers';
 import { openPlayer } from './Squad';
 import type { AttrGroup } from '../../engine/types';
@@ -84,7 +84,7 @@ export function Youth() {
                   <td className="n">{rank}</td>
                   <td><b>{a.name}</b><div className="flex gap-1 mt-1">{Object.keys(a.ch).slice(0, 3).map((ch) => <Champ key={ch} id={ch} size={20} />)}</div></td>
                   <td><RoleTag r={a.pr!.role} /></td><td className="n">{a.pr!.age}</td>
-                  <td><span className={`tier t-${tierOf(a.lp)}`}>{t('tier.' + tierOf(a.lp))}</span><div className="muted text-xs">{a.lp} LP</div></td>
+                  <td><RankTxt tier={tierOf(a.lp)} lp={a.lp} /></td>
                   <td className="n">{lo}-{hi}</td><td className="n">{money(inviteCost(a))}</td>
                   <td><button className="gb xs" data-invite={a.id} onClick={() => {
                     const r = inviteToAcademy(sv, a.id);
@@ -120,7 +120,7 @@ export function Ladder() {
                 <td className="n">{i + 1}</td>
                 <td>{p ? <b>{tag && <span className="muted">{tag} </span>}{p.ign}</b> : <><b>{a.name}</b> <span className="muted text-xs">{t('ac.amateur')}</span></>}</td>
                 <td><RoleTag r={p ? p.role : a.pr!.role} /></td>
-                <td><span className={`tier t-${tierOf(a.lp)}`}>{t('tier.' + tierOf(a.lp))}</span></td>
+                <td><RankTxt tier={tierOf(a.lp)} /></td>
                 <td className="n">{a.lp}</td><td className="n">{a.w}-{a.l}</td><td className="n">{g ? pct(a.w / g) : '–'}</td>
                 <td><div className="flex gap-1">{Object.keys(a.ch).slice(0, 4).map((ch) => <Champ key={ch} id={ch} size={22} />)}</div></td>
               </tr>
