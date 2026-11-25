@@ -6,6 +6,7 @@ import { runGame, type RunInput, type Order } from './engine';
 import { opggAdj } from './runes';
 import { lineChem, chemPairs, boostMods } from './life';
 import { careerOnSeries } from './career';
+import { analystDay } from './staff';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
 import { archiveGame } from './awards';
@@ -168,6 +169,7 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
     const mine = tid === S.userTeam;
     const base = mine && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
     const bm = mine ? boostMods() : { day: 0, chem: 0, rune: 0, fresh: false };
+    if (mine) bm.day += analystDay();
     const chem = lineChem(tid);
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
     return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh }; // phong độ chung của cả đội trong ngày

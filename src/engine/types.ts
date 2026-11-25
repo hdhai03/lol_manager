@@ -51,6 +51,7 @@ export interface Player {
   season: SeasonStats; career: SeasonStats; rookie: boolean; homeLeague?: LeagueId;
   retired?: boolean; titles?: string[]; awards?: string[]; academyOf?: string | null; ovrStart?: number;
   clause?: number; promise?: 'starter' | 'rotation'; bonus?: boolean;
+  t2?: { g: number; w: number; r: number }; loan?: { from: string; until: number };
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -143,6 +144,7 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  dev?: Record<string, { focus: 'laning' | 'mechanics' | 'macro' | 'mental' | 'leader' | 'pool'; prog: number }>;
   scouted?: { team: string; day: number; bans: string[] }; pressDay?: number;
   staff?: { assistant: number; analyst: number; psych: number; fitness: number };
   nego?: Record<string, { pid: string; round: number; mood: number; last?: string; blockedUntil?: number }>;

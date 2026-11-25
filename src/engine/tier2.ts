@@ -2,6 +2,7 @@
 import { DB } from './data';
 import { S, addNews, teamOvr } from './state';
 import { clamp, logistic, rand, shuffle } from './util';
+import { academyT2Game } from './staff';
 
 export const T2_NAME: Record<string, string> = { LCK: 'LCK Challengers', LPL: 'LDL', LEC: 'EMEA Regional Leagues', LCS: 'NACL', LCP: 'LCP Academy', CBLOL: 'CBLOL Academy', VCS: 'VCS Challengers' };
 
@@ -38,6 +39,8 @@ export function t2Day(playing: Set<string>): void {
       while (wa < 2 && wb < 2) { if (rand() < logistic((a.ovr - b.ovr) / 5 + (rand() - 0.5) * 0.3)) wa++; else wb++; }
       a.gw += wa; a.gl += wb; b.gw += wb; b.gl += wa;
       if (wa > wb) { a.w++; b.l++; } else { b.w++; a.l++; }
+      if (a.parent === S.userTeam) academyT2Game(wa > wb, wa + wb);
+      if (b.parent === S.userTeam) academyT2Game(wb > wa, wa + wb);
     }
     void lg;
   }

@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import { loanModal } from './Staff';
+import { sendDown } from '../../engine/staff';
 import { negoModal } from './Nego';
 import { S, userTeam, teamPlayers, teamOvr, lineupPlayers, autoLineup } from '../../engine/state';
 import { askingPrice, makeOffer, releasePlayer, renewContract, renewCost } from '../../engine/season';
@@ -103,6 +105,8 @@ export function PlayerDetail({ p }: { p: Player }) {
             <div className="chips">{ROLES.map((r) => <button key={r} className={`chp sm ${lineRole === r ? 'on' : ''}`} data-setrole={r} onClick={() => setRole(r)}><span className={`role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span></button>)}</div>
             <span className="grow" />
             <button className="gb sm" data-list onClick={() => { S.listed = listed ? (S.listed || []).filter((x) => x !== p.id) : [...(S.listed || []), p.id]; refresh(); }}>{listed ? t('p.unlist') : t('p.sell')}</button>
+            {!lineRole && <button className="gb ghost sm" data-down onClick={() => { if (sendDown(p.id)) { toast(t('p.sentDown'), 'ok'); closeModal(); } refresh(); }}>{t('p.sendDown')}</button>}
+            {!lineRole && <button className="gb ghost sm" data-loanp onClick={() => loanModal(p.id)}>{t('p.loan')}</button>}
             <button className="gb ghost danger sm" data-release onClick={() => void release()}>{t('p.release')}</button>
             {p.contractUntil <= S.season && !(S.renewed || []).includes(p.id) && <button className="gb primary sm" data-renew onClick={() => renewModal(p.id)}>{t('p.renew')}</button>}
           </>

@@ -1,4 +1,5 @@
 import { S, userTeam, teamPlayers } from '../../engine/state';
+import { loanModal } from './Staff';
 import { ATTR_GROUPS, money } from '../../engine/util';
 import {
   SERVERS, SERVER_OF, ladder as soloLadder, tierOf, ensureSoloq, ensureAcademy, academyPlayers, ACADEMY_MAX, inviteCost, potRange,
@@ -63,7 +64,8 @@ export function Youth() {
           {acad.length ? acad.map((p) => (
             <div key={p.id} className="flex items-center gap-2 py-2 border-b border-line cursor-pointer" data-player={p.id} onClick={() => openPlayer(p.id)}>
               <Face p={p} size="sm" /><RoleTag r={p.role} />
-              <div className="grow min-w-0"><b>{p.ign}</b><div className="muted text-xs">{t('age')} {p.age} · OVR {p.ovr} · {t('pot')} {p.potential}</div></div>
+              <div className="grow min-w-0"><b>{p.ign}</b><div className="muted text-xs">{t('age')} {p.age} · OVR {p.ovr} · {t('pot')} {p.potential}{p.t2 && p.t2.g ? ` · ${t('ac.t2stat', { g: p.t2.g, r: (p.t2.r / p.t2.g).toFixed(1) })}` : ''}</div></div>
+              <button className="gb ghost xs" data-aloan={p.id} onClick={(e) => { e.stopPropagation(); loanModal(p.id); }}>{t('p.loan')}</button>
               <button className="gb primary xs" data-promote={p.id} onClick={(e) => { e.stopPropagation(); toast(promoteFromAcademy(p.id) ? t('ac.promoted') : t('ac.err.roster'), 'ok'); refresh(); }}>{t('ac.promote')}</button>
               <button className="gb ghost xs" data-arel={p.id} onClick={(e) => { e.stopPropagation(); releaseFromAcademy(p.id); refresh(); }}>{t('ac.release')}</button>
             </div>

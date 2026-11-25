@@ -49,7 +49,7 @@ export function primaryAction(): { act: ActKey; label: string } {
 // ----- điều hướng 6 mục -----
 export const GROUPS: Record<string, string[]> = {
   dashboard: ['dashboard'], inbox: ['inbox'], squad: ['roster', 'tactics', 'practice'], transfers: ['transfers'],
-  academy: ['training', 'youth', 'ladder'], office: ['schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance', 'career'],
+  academy: ['training', 'youth', 'ladder'], office: ['schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance', 'staff', 'career'],
 };
 export const TABS = Object.keys(GROUPS);
 export const groupOf = (leaf: string): string => TABS.find((g) => GROUPS[g].includes(leaf)) || 'dashboard';

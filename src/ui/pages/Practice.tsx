@@ -6,6 +6,7 @@ import { t } from '../../i18n';
 import { refresh } from '../store';
 import { Badge, CondMini, Face, RoleTag } from '../components';
 import { openPlayer } from './Squad';
+import { DevPlans } from './Staff';
 import type { Player, Role } from '../../engine/types';
 
 const chemCls = (v: number) => (v >= 80 ? 'c5' : v >= 68 ? 'c4' : v >= 56 ? 'c3' : v >= 44 ? 'c2' : 'c1');
@@ -128,7 +129,7 @@ export function Practice() {
   return (
     <div className="prac stag">
       <div className="prac-l"><Scrim /><SoloOrders /></div>
-      <div className="prac-r"><ChemMatrix /><Boosts /></div>
+      <div className="prac-r"><ChemMatrix /><Boosts /><DevPlans /></div>
     </div>
   );
 }

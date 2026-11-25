@@ -4,6 +4,17 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'nav.staff': 'Ban huấn luyện', 'stf.lv0': 'Không có', 'stf.lv1': 'Cơ bản', 'stf.lv2': 'Giỏi', 'stf.lv3': 'Hàng đầu', 'fin.staffHire': 'Ký hợp đồng {role}',
+  'stf.assistant': 'Trợ lý HLV', 'stf.assistantD': 'Giáo án, kèm cặp từng tuyển thủ', 'stf.assistantE': 'Tốc độ tập luyện +{pct}%, lộ trình cá nhân nhanh hơn.',
+  'stf.analyst': 'Nhà phân tích', 'stf.analystD': 'Phân tích đối thủ, cấm/chọn', 'stf.analystE': 'Trinh sát sâu hơn ({n} tướng tủ thêm), phong độ trong trận nhỉnh hơn.',
+  'stf.psych': 'Chuyên gia tâm lý', 'stf.psychD': 'Giữ tinh thần ổn định', 'stf.psychE': 'Tinh thần tự hồi về mức cao hơn mỗi ngày (cấp {n}).',
+  'stf.fitness': 'HLV thể lực', 'stf.fitnessD': 'Dinh dưỡng, phục hồi', 'stf.fitnessE': 'Hồi thêm thể lực mỗi ngày (cấp {n}).',
+  'dev.title': 'Lộ trình phát triển cá nhân', 'dev.hint': 'Đặt mục tiêu riêng cho từng tuyển thủ. Đủ 100% sẽ tăng chỉ số nhóm đó (hoặc thêm một tướng meta vào bể tướng); trẻ và còn tiềm năng thì tiến nhanh hơn, có thể mở khoá đặc điểm mới.', 'dev.none': '— Không đặt —', 'dev.day': 'ngày',
+  'dev.laning': 'Đi đường (farm, chính xác)', 'dev.mechanics': 'Kỹ năng (né chiêu, vị trí)', 'dev.macro': 'Tư duy (nhận thức, phán đoán)', 'dev.mental': 'Tâm lý (tập trung, bản lĩnh)', 'dev.leader': 'Lãnh đạo (chỉ huy, phối hợp)', 'dev.pool': 'Mở rộng bể tướng (meta)',
+  'news.devDone': '{player} hoàn thành mốc phát triển: {focus}.', 'news.devPool': '{player} đã thành thạo thêm {champ}.', 'news.traitGain': '{player} mở khoá đặc điểm mới: {trait}!',
+  'p.sendDown': 'Xuống học viện', 'p.sentDown': 'Đã đưa xuống học viện', 'p.loan': 'Cho mượn', 'news.sentDown': '{player} xuống học viện.', 'news.loanOut': '{player} được cho {team} mượn đến hết mùa.', 'news.loanBack': '{player} trở về sau thời gian cho mượn.',
+  'loan.title': 'Cho mượn {player}', 'loan.hint': 'Đội nhận sẽ cho tuyển thủ đá chính và trả lương đến hết mùa; thi đấu thường xuyên giúp tiến bộ nhanh hơn.', 'loan.replaces': 'thay', 'loan.go': 'Cho mượn', 'loan.done': 'Đã cho {team} mượn', 'loan.none': 'Chưa có đội nào phù hợp.',
+  'ac.t2stat': 'Hạng 2: {g} ván · điểm {r}',
   'ng.agent': 'Người đại diện', 'ng.mood': 'Mức hài lòng', 'ng.happy': 'Sẵn sàng ký', 'ng.close': 'Gần đạt', 'ng.far': 'Còn xa', 'ng.wants': 'Yêu cầu: {salary}/năm · {years} năm · {role}', 'ng.round': 'Lượt {n}/{max}',
   'ng.fee': 'Phí chuyển nhượng', 'ng.clauseOf': 'điều khoản giải phóng {v}', 'ng.salary': 'Lương', 'ng.year': 'năm', 'ng.years': 'Thời hạn', 'ng.rolePromise': 'Hứa hẹn vai trò', 'ng.role.starter': 'Đá chính', 'ng.role.rotation': 'Xoay tua', 'ng.role.none': 'Không hứa',
   'ng.clause': 'Điều khoản giải phóng', 'ng.noClause': 'Không có', 'ng.bonus': 'Thưởng theo thành tích (+5% lương, tuyển thủ thích)', 'ng.total': 'Tổng lương hợp đồng {v}', 'ng.send': 'Gửi đề nghị', 'ng.blockedBtn': 'Từ chối nói chuyện ({n} ngày)',
@@ -317,6 +328,17 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'nav.staff': 'Staff', 'stf.lv0': 'None', 'stf.lv1': 'Basic', 'stf.lv2': 'Good', 'stf.lv3': 'Elite', 'fin.staffHire': 'Hired {role}',
+  'stf.assistant': 'Assistant coach', 'stf.assistantD': 'Drills and individual coaching', 'stf.assistantE': 'Training speed +{pct}%, faster development plans.',
+  'stf.analyst': 'Analyst', 'stf.analystD': 'Opponent analysis, draft prep', 'stf.analystE': 'Deeper scouting (+{n} pocket picks), slightly better in-game form.',
+  'stf.psych': 'Sports psychologist', 'stf.psychD': 'Keeps morale stable', 'stf.psychE': 'Morale drifts to a higher level each day (level {n}).',
+  'stf.fitness': 'Fitness coach', 'stf.fitnessD': 'Nutrition and recovery', 'stf.fitnessE': 'Extra daily condition recovery (level {n}).',
+  'dev.title': 'Individual development plans', 'dev.hint': 'Set a personal goal per player. At 100% the focus attributes improve (or a meta champion joins the pool); young players with potential progress faster and may unlock new traits.', 'dev.none': '— None —', 'dev.day': 'day',
+  'dev.laning': 'Laning (farm, accuracy)', 'dev.mechanics': 'Mechanics (dodge, positioning)', 'dev.macro': 'Macro (awareness, judgment)', 'dev.mental': 'Mental (focus, composure)', 'dev.leader': 'Leadership (shotcalling, teamwork)', 'dev.pool': 'Champion pool (meta)',
+  'news.devDone': '{player} reached a development milestone: {focus}.', 'news.devPool': '{player} mastered {champ}.', 'news.traitGain': '{player} unlocked a new trait: {trait}!',
+  'p.sendDown': 'Send to academy', 'p.sentDown': 'Sent to academy', 'p.loan': 'Loan out', 'news.sentDown': '{player} moved to the academy.', 'news.loanOut': '{player} loaned to {team} until season end.', 'news.loanBack': '{player} returned from loan.',
+  'loan.title': 'Loan {player}', 'loan.hint': 'The host team starts the player and pays the salary until season end; regular games speed up development.', 'loan.replaces': 'replaces', 'loan.go': 'Loan', 'loan.done': 'Loaned to {team}', 'loan.none': 'No suitable team yet.',
+  'ac.t2stat': 'Tier 2: {g} games · rating {r}',
   'ng.agent': 'Agent', 'ng.mood': 'Satisfaction', 'ng.happy': 'Ready to sign', 'ng.close': 'Close', 'ng.far': 'Far apart', 'ng.wants': 'Wants: {salary}/yr · {years} yr · {role}', 'ng.round': 'Round {n}/{max}',
   'ng.fee': 'Transfer fee', 'ng.clauseOf': 'release clause {v}', 'ng.salary': 'Salary', 'ng.year': 'year', 'ng.years': 'Length', 'ng.rolePromise': 'Role promise', 'ng.role.starter': 'Starter', 'ng.role.rotation': 'Rotation', 'ng.role.none': 'No promise',
   'ng.clause': 'Release clause', 'ng.noClause': 'None', 'ng.bonus': 'Performance bonus (+5% salary, players like it)', 'ng.total': 'Total salary {v}', 'ng.send': 'Send offer', 'ng.blockedBtn': 'Refuses to talk ({n} days)',

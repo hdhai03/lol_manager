@@ -77,3 +77,33 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
     });
   });
 });
+
+import { setDev, devDay, loanTargets, loanOut, returnLoans, setStaff, staffLv } from '../src/engine/staff';
+import { scoutReport } from '../src/engine/scout';
+import { propose, demandOf } from '../src/engine/contracts';
+describe('nhân sự, phát triển, cho mượn, trinh sát, đàm phán', () => {
+  it('chạy được và có hiệu lực', () => {
+    const g = createGame({ teamId: 'T1', manager: 'Test' });
+    withState(g, () => {
+      S.teams.T1.budget = 100000;
+      expect(setStaff('assistant', 3)).toBe(true);
+      expect(staffLv('assistant')).toBe(3);
+      const p = S.players[S.teams.T1.lineup.Mid!];
+      const sum = () => p.stats.awareness + p.stats.judgment;
+      const before = sum();
+      setDev(p.id, 'macro');
+      for (let i = 0; i < 120; i++) devDay();
+      expect(sum()).toBeGreaterThan(before);
+      const bench = S.teams.T1.roster.map((id) => S.players[id]).find((x) => !Object.values(S.teams.T1.lineup).includes(x.id));
+      if (bench) {
+        const to = loanTargets(bench)[0];
+        if (to) { expect(loanOut(bench.id, to)).toBe(true); expect(bench.teamId).toBe(to); S.season++; returnLoans(); expect(bench.teamId).toBe('T1'); S.season--; }
+      }
+      const rep = scoutReport('Gen.G');
+      expect(rep.players.length).toBe(5);
+      expect(rep.bans.length).toBeGreaterThan(0);
+      const d = demandOf(p, 'T1');
+      expect(propose(p, 'T1', { salary: d.salary * 1.3, years: d.years, role: d.role, clause: null, bonus: true }).verdict).toBe('accept');
+    });
+  });
+});

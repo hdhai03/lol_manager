@@ -9,6 +9,7 @@ import { closeEvent, resetEventStats } from './awards';
 import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy';
 import { lifeDay, chemNewcomer } from './life';
 import { contractsDay } from './contracts';
+import { staffDay, devDay, loanDay, returnLoans, trainMul } from './staff';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -104,6 +105,9 @@ function dailyTick(): void {
   academyDay();
   lifeDay(playing);
   contractsDay(playing);
+  staffDay();
+  devDay();
+  loanDay(playing);
   brandDay();
   t2Day(playing);
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
@@ -114,7 +118,7 @@ function dailyTick(): void {
     // hồi thể lực mỗi ngày
     p.cond = clamp((p.cond ?? 100) + 9 + (p.stats.stamina - 60) / 10, 20, 100);
     const gap = p.potential - p.ovr;
-    if (p.age <= 25 && gap > 0 && rand() < (0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) * (isUser ? intensity : 1)) {
+    if (p.age <= 25 && gap > 0 && rand() < (0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) * (isUser ? intensity * trainMul() : 1)) {
       // giáo án theo nhóm: chỉ số trong nhóm được ưu tiên, aggression không luyện được
       const grp: Attr[] = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
       const a = pick(grp.filter((x) => x !== 'aggression'));
@@ -176,6 +180,7 @@ export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
   careerNewSeason();
+  returnLoans();
   t2NewSeason();
   // nghỉ hè: độ ăn ý quay về mức trung bình một phần
   for (const k of Object.keys(S.chem || {})) S.chem![k] = +(S.chem![k] - (S.chem![k] - 55) * 0.25).toFixed(2);
