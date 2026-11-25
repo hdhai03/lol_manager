@@ -1,5 +1,5 @@
 {
-  "name": "rift-manager",
+  "name": "lol-manager",
   "version": "1.0.0",
   "description": "Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt, **mặc định tiếng Việt** và có thể đổi sang **tiếng Anh** (nút 🇻🇳/🇬🇧 ở góc trên).",
   "directories": {

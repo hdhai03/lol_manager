@@ -21,7 +21,7 @@ export function compact(data) {
 }
 const out = { fetched: new Date().toISOString(), source: 'OP.GG', servers: {} };
 for (const [sv, code] of Object.entries(SERVERS)) {
-  const r = await fetch(`https://lol-api-summoner.op.gg/api/${code}/rankings/ladder?page=1`, { headers: { 'User-Agent': 'RiftManager-fan-project (ladder snapshot)' } });
+  const r = await fetch(`https://lol-api-summoner.op.gg/api/${code}/rankings/ladder?page=1`, { headers: { 'User-Agent': 'LOLManager-fan-project (ladder snapshot)' } });
   if (!r.ok) { console.warn(sv, r.status); continue; }
   const j = await r.json();
   out.servers[sv] = compact(j.data || []);

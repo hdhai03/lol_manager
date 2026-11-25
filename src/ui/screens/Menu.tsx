@@ -25,8 +25,8 @@ export function MenuScreen() {
       <div className="tl"><LangSwitch /></div>
       <div className="stag">
         <div className="brand">
-          <div className="logo">RM</div>
-          <div><h1>Rift Manager</h1><small><span className="tagx">{t('app.beta')}</span> {t('app.tagline')}</small></div>
+          <div className="logo">LM</div>
+          <div><h1>LOL Manager</h1><small><span className="tagx">{t('app.beta')}</span> {t('app.tagline')}</small></div>
         </div>
         <div className="items">
           {items.map((x, i) => (

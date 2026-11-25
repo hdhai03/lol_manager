@@ -56,7 +56,7 @@ function saveModal(): void {
         const blob = new Blob([exportSave()], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `rift-manager-${S.userTeam.replace(/\W+/g, '_')}-${S.season}.json`;
+        a.download = `lol-manager-${S.userTeam.replace(/\W+/g, '_')}-${S.season}.json`;
         a.click();
       }}>{t('set.export')}</button>
     </>

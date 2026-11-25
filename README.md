@@ -1,4 +1,4 @@
-# Rift Manager — Giả lập HLV Liên Minh Huyền Thoại
+# LOL Manager — Giả lập HLV Liên Minh Huyền Thoại
 
 Game quản lý đội tuyển LMHT chuyên nghiệp chạy trên trình duyệt, **mặc định tiếng Việt** và có thể đổi sang **tiếng Anh** (nút 🇻🇳/🇬🇧 ở góc trên).
 

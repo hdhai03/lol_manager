@@ -46,7 +46,7 @@ export function GameShell() {
   return (
     <div className="shell game">
       <header className="hud">
-        <div className="logo">RM</div>
+        <div className="logo">LM</div>
         <div className="sect"><span className="k-label">{t('season', { y: S.season })} · {t('phase.' + S.phase)}</span><b>{t('nav.' + grp)}</b></div>
         <nav className="nav" aria-label="main">
           {TABS.map((g) => (

@@ -13,7 +13,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const getJson = async (url, tries = 4) => {
   for (let i = 1; ; i++) {
     try {
-      const r = await fetch(url, { headers: { 'User-Agent': 'RiftManager-fan-project (meta snapshot)' } });
+      const r = await fetch(url, { headers: { 'User-Agent': 'LOLManager-fan-project (meta snapshot)' } });
       if (!r.ok) throw new Error(`${r.status} ${url}`);
       return await r.json();
     } catch (e) { if (i >= tries) throw e; await sleep(1500 * i); }

@@ -15,7 +15,7 @@ import { loadLadder, refreshLadder } from './engine/ladder';
 setLang(getLang());
 const el = document.getElementById('app')!;
 const boot = el.querySelector('.boot');
-Promise.all([loadData((p) => { if (boot) boot.textContent = `Rift Manager · ${Math.round(p * 100)}%`; }), loadLadder()])
+Promise.all([loadData((p) => { if (boot) boot.textContent = `LOL Manager · ${Math.round(p * 100)}%`; }), loadLadder()])
   .then(() => {
     setOnAssets(() => refresh()); // ảnh splash/loading tải xong thì vẽ lại
     createRoot(el).render(<App />);
@@ -26,5 +26,5 @@ Promise.all([loadData((p) => { if (boot) boot.textContent = `Rift Manager · ${M
   })
   .catch((e) => {
     console.error(e);
-    el.innerHTML = `<div class="pick"><h1>Rift Manager</h1><p>${t('err.data')}</p><pre class="muted">${String(e)}</pre></div>`;
+    el.innerHTML = `<div class="pick"><h1>LOL Manager</h1><p>${t('err.data')}</p><pre class="muted">${String(e)}</pre></div>`;
   });
