@@ -57,6 +57,10 @@ export interface Player {
   hype?: number; fromAcademy?: string;
   mastery?: Record<string, number>; honor?: number; rankHist?: { season: number; server: string; rank: number; lp: number }[];
   injury?: { kind: 'wrist' | 'back' | 'burnout'; until: number };
+  /** bất mãn tích lũy; đòi ra đi */
+  unrest?: number; wantsOut?: boolean;
+  /** quyền cư trú theo giải; số mùa thi đấu ở giải; mức hòa nhập ngôn ngữ (0-100) */
+  resid?: string[]; yrs?: Record<string, number>; adapt?: number;
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -143,6 +147,8 @@ export interface GameState {
   evstats?: Record<string, EventStats>; hall?: HallEntry[]; records?: Records;
   msiDirect?: string[]; worldsQ?: { byLeague: Record<string, string[]>; slots: Record<string, number>; extra: string[] }; worldsSwiss?: string[];
   pendingSwap?: { up: string; down: string } | null;
+  suitors?: Record<string, { team: string; pull: number; day: number }>;
+  importsInit?: boolean; mentor?: Record<string, string>; swap?: Record<string, { to: Role; prog: number }>;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
   inboxSeen?: number; goal?: string;
   chem?: Record<string, number>; boosts?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep'; from: string; day: number }[]; seqB?: number;

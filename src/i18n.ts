@@ -3,6 +3,7 @@ import { DB } from './engine/data';
 export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
+import { X } from './i18n-x';
 const vi: Dict = {
   'rec.tab.skins': 'Trang phục vô địch', 'rec.tab.allstar': 'All-Star', 'sk.none': 'Chưa có đội nào vô địch CKTG trong sự nghiệp của bạn.', 'sk.name': 'Trang phục {team} {y}', 'news.skins': 'Riot ra mắt bộ trang phục vô địch của {team}: {champs}!',
   'as.none': 'All-Star diễn ra khi mùa giải kết thúc.', 'as.1v1': 'Vô địch giải 1v1', 'as.final': 'Chung kết: {a} vs {b}', 'as.aram': 'Showmatch ARAM', 'as.east': 'Phương Đông thắng', 'as.west': 'Phương Tây thắng',
@@ -1104,6 +1105,8 @@ Object.assign(en, {
   'news.academyJoin': '{player} joins the {team} academy.', 'news.promotedYouth': '{team} promote {player} from the academy.', 'fin.academy': 'Academy scouting fee',
 });
 
+Object.assign(vi, X.vi);
+Object.assign(en, X.en);
 export const DICTS: Record<Lang, Dict> = { vi, en };
 let lang: Lang = 'vi';
 try { lang = (localStorage.getItem('lolm_lang') as Lang) || 'vi'; } catch { /* */ }

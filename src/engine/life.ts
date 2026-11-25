@@ -1,5 +1,6 @@
 // Đời sống đội tuyển: độ ăn ý theo cặp, scrim, lệnh leo rank, sự kiện có lựa chọn, thẻ tăng cường.
 import { S, addNews, userTeam, teamPlayers } from './state';
+import { langPenalty } from './squad2';
 import { ROLES, clamp, rand, pick } from './util';
 import { autoDraft, simulateGame } from './sim';
 import { tierList } from './runes';
@@ -36,6 +37,8 @@ export function lineChem(teamId: string): Partial<Record<Role, number>> {
     if (!a) continue;
     const others = ROLES.filter((x) => x !== r).map((x) => t.lineup[x]).filter(Boolean) as string[];
     out[r] = others.length ? others.reduce((s, b) => s + chemOf(a, b), 0) / others.length : 50;
+    // rào cản ngôn ngữ: người chưa hòa nhập giao tiếp kém, kéo cả đội xuống một chút
+    out[r]! -= langPenalty(S.players[a]) + others.reduce((s, b) => s + langPenalty(S.players[b]), 0) * 0.15;
   }
   return out;
 }

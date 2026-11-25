@@ -372,3 +372,20 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .ac-row { flex-wrap: wrap; }
 .ac-row > .grow { flex: 1 1 150px; }
 .ac-row > .grow > b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ng-amb { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; margin-bottom: .3rem; }
+.ng-rv { margin-left: .5rem; padding: 1px 7px; border-radius: 3px; background: rgba(255, 107, 107, .14); color: #ff8f8f; font-size: .72rem; font-weight: 600; }
+
+/* hồ sơ: động lực, ngoại binh, kèm cặp, đổi vị trí */
+.pdx { display: flex; flex-direction: column; gap: .5rem; }
+.pdx-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .85rem; }
+.pdx-k { color: var(--t3, #8a8d93); }
+.pdx-tag { padding: 1px 7px; border-radius: 3px; background: var(--s2); font-size: .7rem; font-weight: 600; }
+.pdx-tag.ok { color: var(--fc); }
+.pdx-bad { padding: 1px 7px; border-radius: 3px; background: rgba(255, 107, 107, .15); color: #ff8f8f; font-size: .7rem; font-weight: 700; }
+.pdx-bad.sm { margin-left: .35rem; font-size: .62rem; }
+.pdx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) { .pdx-grid { grid-template-columns: 1fr; } }
+.imp-b { margin-left: .35rem; padding: 0 4px; border-radius: 3px; background: var(--s2); color: var(--t2, #c9cbd0); font-size: .6rem; font-weight: 700; }
+.imp-strip { font-size: .75rem; color: var(--t3, #8a8d93); white-space: nowrap; }
+.imp-strip.bad { color: #ff8f8f; }
+select.gin.sm { padding: .3rem .5rem; font-size: .8rem; max-width: 100%; }

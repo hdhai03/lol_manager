@@ -19,6 +19,8 @@ import { championSkins, skinDay, runAllStar, clashDay } from './events';
 import { ladder as soloLadder, SERVERS } from './academy';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
+import { onJoin, adaptDay, mentorDay, swapDay, residencySeason } from './squad2';
+import { retireProb, aiFinanceSeason, aiRenew, aiOffseason, unrestDay } from './market';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats';
 export { PHASES, standings, compOrder, runnerUp };
@@ -130,6 +132,10 @@ function dailyTick(): void {
   loanDay(playing);
   brandDay();
   t2Day(playing);
+  unrestDay();
+  adaptDay();
+  mentorDay();
+  swapDay();
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
   // tập luyện & phát triển
   for (const p of Object.values(S.players)) {
@@ -219,8 +225,10 @@ export function startNewSeason(): void {
     p.age++;
     p.season = blankStats();
     p.form = 0;
-    if (p.age >= 30 && rand() < (p.age - 28) * 0.12 && p.teamId !== ut) {
+    if (rand() < retireProb(p) && !p.academyOf) {
       p.retired = true;
+      if (p.teamId === ut) addNews('news.retireMine', { player: p.ign, age: p.age }, true);
+      else if (p.ovr >= 82) addNews('news.retireStar', { player: p.ign, age: p.age });
       if (p.teamId) removeFromTeam(p);
       continue;
     }
@@ -232,8 +240,8 @@ export function startNewSeason(): void {
           removeFromTeam(p);
           S.freeAgents.push(p.id);
         }
-      } else if (rand() < 0.7) {
-        p.contractUntil = y + randInt(1, 3);
+      } else if (aiRenew(p, y)) {
+        // gia hạn theo giá thị trường
       } else {
         removeFromTeam(p);
         S.freeAgents.push(p.id);
@@ -241,6 +249,7 @@ export function startNewSeason(): void {
     }
     refreshValue(p);
   }
+  residencySeason();
   S.renewed = [];
   S.offers = [];
   S.listed = [];
@@ -260,6 +269,7 @@ export function startNewSeason(): void {
     }
     autoLineup(t);
   }
+  aiOffseason();
   // đội người chơi: bổ sung tân binh nếu thiếu vị trí
   const ut2 = S.teams[ut];
   for (const r of ROLES) {
@@ -284,6 +294,7 @@ export function startNewSeason(): void {
     if (S.teams[up] && S.teams[down]) { S.teams[up].league = 'LCP'; S.teams[down].league = 'VCS'; }
     S.pendingSwap = null;
   }
+  aiFinanceSeason(S.day - (S.seasonStartDay ?? S.day - 150));
   S.season++;
   S.day++;
   S.phaseStart = {};
@@ -313,6 +324,7 @@ export function signPlayer(t: Team, p: Player, until: number): void {
   p.contractUntil = until;
   chemNewcomer(p, t.id);
   t.roster.push(p.id);
+  onJoin(p, t);
 }
 
 // ----- Chuyển nhượng của người chơi -----

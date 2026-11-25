@@ -4,6 +4,7 @@ import { S, userTeam, teamSalary } from '../../engine/state';
 import { salaryCap } from '../../engine/squadx';
 import { askingPrice } from '../../engine/season';
 import { money } from '../../engine/util';
+import { ambitionOf, rivalSuitor } from '../../engine/market';
 import { demandOf, satisfaction, propose, renewWith, buyWith, negoState, termCost, type Terms, type RolePromise } from '../../engine/contracts';
 import { t } from '../../i18n';
 import { openModal, refresh, toast } from '../store';
@@ -19,6 +20,7 @@ function NegoBody({ p, mode, close }: { p: Player; mode: 'buy' | 'renew'; close:
   const [tm, setTm] = useState<Terms>({ salary: Math.round(d.salary * 0.92), years: d.years, role: d.role, clause: Math.round(d.minClause * 1.3), bonus: false });
   const [msg, setMsg] = useState<string | null>(null);
   const st = negoState(p.id);
+  const rv = mode !== 'renew' ? rivalSuitor(p) : null;
   const sat = satisfaction(p, ut.id, tm) * st.mood;
   const set = (x: Partial<Terms>) => setTm({ ...tm, ...x });
   const blocked = st.blockedUntil != null && S.day < st.blockedUntil;
@@ -42,6 +44,7 @@ function NegoBody({ p, mode, close }: { p: Player; mode: 'buy' | 'renew'; close:
       <div className="ng-h"><Face p={p} size="lg" /><div className="grow min-w-0"><b className="k-disp">{p.ign}</b><div className="muted text-sm flex items-center gap-2"><RoleTag r={p.role} />{t('age')} {p.age} · <Ovr v={p.ovr} /> · {t('ng.agent')}: {d.agent}</div></div>
         <div className="ng-mood"><small>{t('ng.mood')}</small><div className={`mtr ${sat >= 1 ? 'hi' : sat >= 0.85 ? 'mid' : 'lo'}`}><i style={{ width: `${Math.min(100, sat * 80)}%` }} /></div><span>{sat >= 1 ? t('ng.happy') : sat >= 0.85 ? t('ng.close') : t('ng.far')}</span></div>
       </div>
+      <div className="ng-amb text-sm"><span className="muted">{t('amb.label')}:</span> <b title={t('amb.' + ambitionOf(p) + 'D')}>{t('amb.' + ambitionOf(p))}</b>{rv && <span className="ng-rv">{t('ng.rivalOn', { team: S.teams[rv.team].name })}</span>}</div>
       <div className="ng-dem muted text-sm">{t('ng.wants', { salary: money(d.salary), years: d.years, role: t('ng.role.' + d.role) })} · {t('ng.round', { n: st.round, max: 3 })}</div>
       {buying && (
         <div className="ng-row"><label className="k-label">{t('ng.fee')} <span className="muted">({t('p.asking')}: {money(ask)}{p.clause ? ` · ${t('ng.clauseOf', { v: money(p.clause) })}` : ''})</span></label>

@@ -1,4 +1,5 @@
 import { DB } from './data';
+import { IMPORT_MAX, isImport, grandfatherImports } from './squad2';
 import { ledgerAdd, ledgerCatOf } from './career';
 import { ROLES, ATTRS, computeOvr, randInt, pick, clamp, hue } from './util';
 import { deriveAttrs, defaultTactics, migratePlayer } from './attrs';
@@ -46,6 +47,7 @@ export function newGame({ teamId, manager }: { teamId: string; manager: string }
     autoLineup(t);
     t.sponsor = Math.round(teamSalary(t) * (t.id === teamId ? 1.0 : 1.1) + 200);
   }
+  grandfatherImports();
   return s;
 }
 
@@ -60,15 +62,19 @@ export const teamSalary = (t: Team): number => teamPlayers(t).reduce((s, p) => s
 export function autoLineup(t: Team): void {
   const used = new Set<string>();
   t.lineup = {};
+  // luật ngoại binh: tối đa 2 ngoại binh đá chính (sau khi đã xét quyền cư trú lúc tạo game)
+  let imports = 0;
+  const blocked = (p: Player) => !!S.importsInit && imports >= IMPORT_MAX && isImport(p, t.league);
+  const take = (role: Role, p: Player) => { t.lineup[role] = p.id; used.add(p.id); if (isImport(p, t.league)) imports++; };
   for (const role of ROLES) {
-    const best = teamPlayers(t).filter((p) => p.role === role && !used.has(p.id)).sort((a, b) => b.ovr - (b.injury ? 60 : 0) - (a.ovr - (a.injury ? 60 : 0)))[0];
-    if (best) { t.lineup[role] = best.id; used.add(best.id); }
+    const best = teamPlayers(t).filter((p) => p.role === role && !used.has(p.id) && !blocked(p)).sort((a, b) => b.ovr - (b.injury ? 60 : 0) - (a.ovr - (a.injury ? 60 : 0)))[0];
+    if (best) take(role, best);
   }
   // vị trí trống: dùng người còn lại tốt nhất (trái vị trí)
   for (const role of ROLES) {
     if (t.lineup[role]) continue;
-    const best = teamPlayers(t).filter((p) => !used.has(p.id)).sort((a, b) => b.ovr - a.ovr)[0];
-    if (best) { t.lineup[role] = best.id; used.add(best.id); }
+    const best = teamPlayers(t).filter((p) => !used.has(p.id) && !blocked(p)).sort((a, b) => b.ovr - a.ovr)[0];
+    if (best) take(role, best);
   }
 }
 
@@ -187,4 +193,5 @@ export function migrateState(): void {
   for (const p of Object.values(S.players)) migratePlayer(p);
   S.tactics ??= defaultTactics();
   if (!['tech', 'mind', 'mental', 'team'].includes(S.training)) S.training = 'tech';
+  grandfatherImports();
 }

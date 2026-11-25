@@ -5,6 +5,7 @@ import { clamp, rand, pick, randInt } from './util';
 import { acceptOffer, signPlayer, askingPrice } from './season';
 import { windowOpen, rivalBid } from './club';
 import { capBlocks } from './squadx';
+import { ambitionFit, ambitionOf, rivalSuitor } from './market';
 import type { Player, Role } from './types';
 
 export type RolePromise = 'starter' | 'rotation' | 'none';
@@ -36,13 +37,15 @@ const ROLE_V: Record<RolePromise, number> = { starter: 2, rotation: 1, none: 0 }
 /** mức hài lòng 0..~1.3 (≥1 là chấp nhận) */
 export function satisfaction(p: Player, teamId: string, tm: Terms): number {
   const d = demandOf(p, teamId);
-  let s = (tm.salary / d.salary) * 0.72;
+  let s = (tm.salary / d.salary) * (ambitionOf(p) === 'money' ? 0.8 : 0.72) - (ambitionOf(p) === 'money' ? 0.08 : 0);
   s += tm.years === d.years ? 0.1 : Math.abs(tm.years - d.years) === 1 ? 0.04 : -0.04;
   s += (ROLE_V[tm.role] - ROLE_V[d.role]) * 0.08 + (tm.role === 'starter' ? 0.04 : 0);
   // điều khoản giải phóng: tuyển thủ thích có điều khoản vừa phải (dễ ra đi khi có đội lớn hỏi)
   if (tm.clause == null) s -= p.ovr >= 82 ? 0.05 : 0;
   else s += tm.clause <= d.minClause ? 0.06 : tm.clause <= d.minClause * 1.6 ? 0.02 : -0.02;
   if (tm.bonus) s += 0.05;
+  // động lực cá nhân: danh hiệu / quê nhà / thời gian thi đấu
+  s += ambitionFit(p, S.teams[teamId], tm.role === 'starter');
   // tinh thần / danh tiếng đội của bạn
   s += ((p.morale ?? 70) - 70) / 600 + (S.career ? (S.career.rep - 50) / 900 : 0) + (S.fac?.house ?? 0) * 0.025;
   return +s.toFixed(3);
@@ -60,7 +63,11 @@ export function propose(p: Player, teamId: string, tm: Terms): NegoResult {
   if (st.blockedUntil != null && S.day < st.blockedUntil) return { verdict: 'blocked', sat: 0, msg: 'ng.blocked' };
   st.round++;
   const sat = satisfaction(p, teamId, tm) * st.mood;
-  if (sat >= 1) { delete S.nego![p.id]; return { verdict: 'accept', sat, msg: 'ng.accept' }; }
+  // đội AI cạnh tranh: phải hấp dẫn hơn lời mời của họ
+  const rv = teamId === S.userTeam ? rivalSuitor(p) : null;
+  const need = rv ? Math.max(1, rv.pull) : 1;
+  if (sat >= need) { delete S.nego![p.id]; if (S.suitors) delete S.suitors[p.id]; return { verdict: 'accept', sat, msg: 'ng.accept' }; }
+  if (rv && sat >= 1) return { verdict: 'counter', sat, counter: { salary: Math.round(tm.salary * (1 + (need - sat) * 1.3 + 0.02)) }, msg: 'ng.rival' };
   const d = demandOf(p, teamId);
   if (st.round >= 3 || sat < 0.7) {
     st.blockedUntil = S.day + 14; st.round = 0; st.mood = 1;

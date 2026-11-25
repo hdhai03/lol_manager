@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { topMastery } from '../../engine/lolx';
 import { Mastery, HonorBadge } from '../components';
 import { ClubStrip } from './SquadX';
+import { PlayerX, ImportStrip } from './SquadY';
+import { lineupOk, isImport } from '../../engine/squad2';
 import { InjTag } from './Club';
 import { Spark } from './Stats';
 import { loanModal } from './Staff';
@@ -31,9 +33,13 @@ export function PlayerDetail({ p }: { p: Player }) {
   const setRole = (r: Role) => {
     const prev = ROLES.find((x) => ut.lineup[x] === p.id);
     const displaced = ut.lineup[r];
-    if (prev) delete ut.lineup[prev];
-    if (displaced && prev && displaced !== p.id) ut.lineup[prev] = displaced;
-    ut.lineup[r] = p.id;
+    const next = { ...ut.lineup };
+    if (prev) delete next[prev];
+    if (displaced && prev && displaced !== p.id) next[prev] = displaced;
+    next[r] = p.id;
+    // luật ngoại binh
+    if (!lineupOk(ut, next)) { toast(t('imp.err'), 'err'); return; }
+    ut.lineup = next;
     refresh();
   };
   const release = async () => {
@@ -91,6 +97,7 @@ export function PlayerDetail({ p }: { p: Player }) {
           ) : <p className="muted text-sm">{t('p.noGames')}</p>}
         </div>
       </div>
+      <PlayerX p={p} />
       {mine && (
         <div>
           <div className="sub-h">{t('p.dev')}</div>
@@ -153,6 +160,7 @@ export function Roster() {
           <h3 className="k-title">{t('nav.roster')} <span className="muted">· {ut.roster.length}</span></h3>
           <div className="gp-r">
             {ROLES.map((r) => <span key={r} className={`role-${r} ${ut.lineup[r] ? '' : 'neg'}`} title={t('role.' + r)} style={ut.lineup[r] ? undefined : { opacity: .3 }}><RoleIcon r={r} /></span>)}
+            <ImportStrip />
             <span>OVR <b className="text-white">{ovr}</b></span>
             <button className="gb ghost xs" data-auto onClick={() => { autoLineup(ut); refresh(); }}>{t('roster.auto')}</button>
           </div>
@@ -163,7 +171,7 @@ export function Roster() {
             <tbody>{rows.map(({ p, slot }, i) => (
               <tr key={p.id} className={`click ${p.id === ui.selPlayer ? 'sel' : ''} ${i === starterIds.length && i > 0 ? 'sep' : ''}`} data-sel={p.id} onClick={() => { ui.selPlayer = p.id; refresh(); }}>
                 <td><RoleTag r={slot || p.role} /></td>
-                <td><div className="nm2"><Face p={p} size="sm" />{p.ign}<InjTag p={p} />{slot && slot !== p.role && <span className="warn text-xs">{t('roster.offRole')}</span>}</div></td>
+                <td><div className="nm2"><Face p={p} size="sm" />{p.ign}<InjTag p={p} />{isImport(p, ut.league) && <span className="imp-b" title={t('imp.tag')}>NB</span>}{p.wantsOut && <span className="pdx-bad sm">{t('p.wantsOut')}</span>}{slot && slot !== p.role && <span className="warn text-xs">{t('roster.offRole')}</span>}</div></td>
                 <td className="n">{p.age}</td>
                 <td className={`n v-${vClass(p.ovr)}`}>{p.ovr}</td>
                 <td className="n"><span className={`v-${vClass(p.potential)}`}>{p.potential}</span></td>
