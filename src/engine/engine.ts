@@ -90,7 +90,7 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     at[a] = v;
   }
   // phong độ trong ngày: cùng chỉ số nhưng mỗi ván một khác (người focus cao dao động ít hơn)
-  const swing = gauss() * (p && s ? clamp((100 - (s.focus ?? 70)) / 8, 2, 5.5) : 4) + (tac.day || 0);
+  const swing = gauss() * (p && s ? clamp((100 - (s.focus ?? 70)) / 7, 3, 6.5) : 4.5) + (tac.day || 0);
   for (const a of ATTRS) if (a !== 'aggression' && a !== 'stamina') at[a] += swing;
   // độ ăn ý với đồng đội: phối hợp, phán đoán, nhận thức bản đồ
   const ch = (tac.chem?.[role] ?? 58) - 58;

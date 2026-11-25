@@ -26,6 +26,9 @@ export function aiFinanceSeason(seasonDays: number): void {
   for (const t of Object.values(S.teams)) {
     if (t.id === S.userTeam) continue;
     t.budget = Math.max(300, Math.round(t.budget + (t.sponsor - teamSalary(t)) * k * 0.6));
+    // chủ đầu tư rút lợi nhuận: ngân sách không phình vô hạn
+    const cap = Math.max(5000, teamSalary(t) * 3);
+    if (t.budget > cap) t.budget = Math.round(cap + (t.budget - cap) * 0.3);
   }
 }
 /** gia hạn của đội AI: lương theo giá thị trường; tuyển thủ giỏi hơn hẳn đội có thể từ chối để ra đi */

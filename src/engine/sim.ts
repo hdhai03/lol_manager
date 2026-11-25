@@ -225,7 +225,7 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
     if (mine) bm.day += analystDay();
     const chem = lineChem(tid);
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
-    return { ...base, day: gauss() * 2.6 + bm.day + derbySwing(tid, other) + teamColor(S.teams[tid]).bonus, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) + flex[sd].bonus, dayE: edge[sd] }; // phong độ chung của cả đội trong ngày
+    return { ...base, day: gauss() * 5 + bm.day + derbySwing(tid, other) + teamColor(S.teams[tid]).bonus, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) + flex[sd].bonus, dayE: edge[sd] }; // phong độ chung của cả đội trong ngày
   };
   // ảnh chụp tuyển thủ lúc vào trận (để phát lại / ra lệnh giữa trận cho đúng diễn biến)
   const snap = (p: Player | null | undefined): Player | null => (p ? ({ id: p.id, ign: p.ign, role: p.role, stats: { ...p.stats }, cond: p.cond, morale: p.morale, form: p.form } as Player) : null);

@@ -146,14 +146,16 @@ function dailyTick(): void {
     const isUser = p.teamId === S.userTeam;
     // hồi thể lực mỗi ngày
     p.cond = clamp((p.cond ?? 100) + 9 + (p.stats.stamina - 60) / 10, 20, 100);
+    // tinh thần trở lại mức bình thường theo thời gian
+    p.morale = clamp((p.morale ?? 70) + (68 - (p.morale ?? 70)) * 0.015, 20, 100);
     const gap = p.potential - p.ovr;
-    if (p.age <= 25 && gap > 0 && rand() < (0.05 + gap * 0.006 + (isUser ? 0.03 : 0)) * (isUser ? intensity * trainMul() : 1)) {
+    if (p.age <= 25 && gap > 0 && rand() < (0.06 + gap * 0.007 + (isUser ? 0.03 : 0)) * (isUser ? intensity * trainMul() : 1)) {
       // giáo án theo nhóm: chỉ số trong nhóm được ưu tiên, aggression không luyện được
       const grp: Attr[] = isUser && rand() < 0.7 ? ATTR_GROUPS[S.training] || ATTRS : ATTRS;
       const a = pick(grp.filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] + 1, 30, 99);
       if (isUser && rand() < 0.15 * intensity) p.cond = clamp(p.cond - 4, 20, 100); // tập nặng hơi mệt
-    } else if (p.age >= 28 && rand() < 0.02 * (p.age - 26)) {
+    } else if (p.age >= 28 && rand() < 0.016 * (p.age - 26)) {
       const a = pick((['dodge', 'accuracy', 'stamina', 'farm', pick(ATTRS)] as Attr[]).filter((x) => x !== 'aggression'));
       p.stats[a] = clamp(p.stats[a] - 1, 30, 99);
     }
@@ -222,6 +224,8 @@ export function startNewSeason(): void {
   for (const t of Object.values(S.teams)) {
     const titles = t.trophies.filter((x) => x.endsWith(String(y))).length;
     t.sponsor = Math.round(t.sponsor * (1 + titles * 0.08) * (0.97 + rand() * 0.06));
+    // đội AI: tài trợ quay dần về mức tương xứng quỹ lương (không cộng dồn mãi)
+    if (t.id !== ut) t.sponsor = Math.round(t.sponsor * 0.5 + (teamSalary(t) * 1.1 + 200) * 0.5);
   }
   // tuổi, giải nghệ, hợp đồng
   for (const p of Object.values(S.players)) {
@@ -276,6 +280,14 @@ export function startNewSeason(): void {
       signPlayer(t, pl, y + randInt(1, 2));
     }
     autoLineup(t);
+    // luật ngoại binh: thừa ngoại binh đá chính → ký người nội cùng vị trí
+    for (let guard = 0; guard < 3 && importsIn(t).length > IMPORT_MAX; guard++) {
+      const imp = importsIn(t).sort((a, b) => a.ovr - b.ovr)[0];
+      const loc = S.freeAgents.map((id) => S.players[id]).filter((p) => p && p.role === imp.role && !isImport(p, t.league)).sort((a, b) => b.ovr - a.ovr)[0] || makeRookie(t.league, imp.role);
+      signPlayer(t, loc, y + randInt(1, 2));
+      if (t.roster.length > 8) { removeFromTeam(imp); S.freeAgents.push(imp.id); }
+      autoLineup(t);
+    }
   }
   // đội người chơi: bổ sung tân binh nếu thiếu vị trí
   const ut2 = S.teams[ut];
@@ -331,6 +343,7 @@ export function signPlayer(t: Team, p: Player, until: number): void {
   p.contractUntil = until;
   chemNewcomer(p, t.id);
   t.roster.push(p.id);
+  p.wantsOut = false; p.unrest = 0;
   onJoin(p, t);
 }
 
