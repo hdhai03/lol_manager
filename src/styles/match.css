@@ -48,7 +48,7 @@
 .dr-banrow { padding: 0 16px; gap: 1rem; }
 .dr-bans { gap: 4px; height: 56px !important; }
 .dr-ban { width: 56px !important; height: 56px !important; border: 0 !important; border-radius: 6px; background: rgba(10, 13, 22, .5) linear-gradient(to top right, transparent calc(50% - 1px), rgba(255, 255, 255, .25) 50%, transparent calc(50% + 1px)) !important; backdrop-filter: blur(10px); }
-.dr-ban.next { background-color: rgba(53, 230, 210, .28) !important; box-shadow: 0 0 18px -4px var(--teal-glow); }
+.dr-ban.next { background-color: rgba(212, 255, 58, .28) !important; box-shadow: 0 0 18px -4px var(--teal-glow); }
 .dr-progress { height: 3px !important; background: rgba(255, 255, 255, .08) !important; margin: .6rem 16px 0; border-radius: 2px; overflow: hidden; }
 .dr-progress i { background: var(--teal) !important; }
 .dr-bar { background: transparent !important; gap: 6px; padding: 8px 16px 14px !important; min-height: 190px !important; }
@@ -61,7 +61,7 @@
 .dr-slot .rl { font-family: var(--cond); font-size: .7rem !important; }
 .dr-slot .ft { border-radius: 4px !important; font-family: var(--cond); font-size: .74rem !important; }
 .dr-slot.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 0 30px -6px rgba(255, 255, 255, .5) !important; }
-.dr-slot.swappable:hover { box-shadow: 0 0 0 2px rgba(53, 230, 210, .7) !important; }
+.dr-slot.swappable:hover { box-shadow: 0 0 0 2px rgba(212, 255, 58, .7) !important; }
 .dr-slot.swap-sel { box-shadow: 0 0 0 2px var(--teal), 0 0 24px -6px var(--teal-glow) !important; }
 .dr-center { border-radius: 9px; background: var(--mg) !important; backdrop-filter: var(--mblur); }
 .dr-center .t1, .dr-center .t2, .dr-center .t3 { font-family: var(--cond); font-weight: 600 !important; letter-spacing: .1em !important; }
@@ -147,9 +147,9 @@
 .tbl tr.qual td:first-child { box-shadow: none; }
 /* số thứ hạng trong ô kính nhỏ; nhóm đi tiếp phát sáng teal */
 .rk { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; padding: 0 .3rem; border-radius: 6px; background: rgba(255, 255, 255, .06); font-family: var(--cond); font-weight: 700; color: var(--ink-2); }
-tr.q .rk { background: rgba(53, 230, 210, .2); color: #bff7ef; box-shadow: 0 0 14px -4px var(--teal-glow); }
+tr.q .rk { background: rgba(212, 255, 58, .2); color: #bff7ef; box-shadow: 0 0 14px -4px var(--teal-glow); }
 /* hàng được chọn / của đội mình: cả hàng phủ một lớp màu trong mờ, bo đều hai đầu */
-.gt tr.sel td { background: rgba(53, 230, 210, .14) !important; }
+.gt tr.sel td { background: rgba(212, 255, 58, .14) !important; }
 .gt tr.sel td:first-child, .gt tr.me td:first-child, .mst tr.me td:first-child { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
 .gt tr.sel td:last-child, .gt tr.me td:last-child, .mst tr.me td:last-child { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
 .gt tr.sel td, .gt tr.me td { border-bottom-color: transparent !important; }

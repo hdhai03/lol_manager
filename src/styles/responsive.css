@@ -587,10 +587,10 @@
 .cmp-bar i { display: block; height: 100%; border-radius: inherit; }
 /* ===== Xem lại ===== */
 .rp-list { display: flex; flex-direction: column; gap: .4rem; }
-.rp-row { display: grid; grid-template-columns: minmax(0, 1.3fr) auto minmax(0, .8fr); align-items: center; gap: 1rem; padding: .6rem .8rem; border: 0; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .04); color: inherit; cursor: pointer; text-align: left; }
-.rp-row:hover { background: rgba(255, 255, 255, .08); }
-.rp-row.star { background: linear-gradient(90deg, rgba(255, 207, 110, .12), rgba(255, 255, 255, .03)); }
-.rp-row > span:last-child { text-align: right; }
+.rpl-row { display: grid; grid-template-columns: minmax(0, 1.3fr) auto minmax(0, .8fr); align-items: center; gap: 1rem; padding: .6rem .8rem; border: 0; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .04); color: inherit; cursor: pointer; text-align: left; }
+.rpl-row:hover { background: rgba(255, 255, 255, .08); }
+.rpl-row.star { background: linear-gradient(90deg, rgba(255, 207, 110, .12), rgba(255, 255, 255, .03)); }
+.rpl-row > span:last-child { text-align: right; }
 .rp-m { display: flex; align-items: center; gap: .5rem; }
 .ovl { position: fixed; inset: 0; z-index: 60; }
 .ovl.rp { background: #060a12; }
@@ -632,7 +632,7 @@
 .ach-i { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .06); font-size: 1.05rem; }
 .ach b { display: block; font-size: .88rem; }
 .ach small { display: block; font-size: .7rem; color: #8b95a8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 640px) { .rp-row { grid-template-columns: 1fr; gap: .3rem; } .rp-row > span:last-child { text-align: left; } .wr-ap { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cmp-r { grid-template-columns: 3.4rem 1fr 4.5rem 1fr 3.4rem; gap: .35rem; } }
+@media (max-width: 640px) { .rpl-row { grid-template-columns: 1fr; gap: .3rem; } .rpl-row > span:last-child { text-align: left; } .wr-ap { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cmp-r { grid-template-columns: 3.4rem 1fr 4.5rem 1fr 3.4rem; gap: .35rem; } }
 /* ===== Bản cập nhật trong game ===== */
 .pt-box { margin-bottom: .8rem; padding: .7rem .8rem; border-radius: var(--r, 10px); background: rgba(255, 255, 255, .04); display: flex; flex-direction: column; gap: .5rem; }
 .pt-h { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }

@@ -20,9 +20,10 @@ const detect = () => {
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) continue;
     // phần tử bị cắt bởi khung cuộn thì bỏ qua nếu nằm ngoài khung
-    let clipped = false;
-    for (let p = el.parentElement; p; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflow + cs.overflowX + cs.overflowY)) { const pr = p.getBoundingClientRect(); if (r.bottom <= pr.top || r.top >= pr.bottom || r.right <= pr.left || r.left >= pr.right) { clipped = true; break; } } }
-    if (!clipped) leaves.push({ el, r });
+    // phần nhìn thấy = giao với mọi khung cuộn/cắt bao ngoài (chữ bị khung cuộn che một phần không tính là đè)
+    let v = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    for (let p = el.parentElement; p; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflow + cs.overflowX + cs.overflowY)) { const pr = p.getBoundingClientRect(); v = { left: Math.max(v.left, pr.left), top: Math.max(v.top, pr.top), right: Math.min(v.right, pr.right), bottom: Math.min(v.bottom, pr.bottom) }; } }
+    if (v.right - v.left > 2 && v.bottom - v.top > 2) leaves.push({ el, r: { ...v, width: v.right - v.left, height: v.bottom - v.top } });
   }
   const name = (el) => (el.className && typeof el.className === 'string' ? el.tagName.toLowerCase() + '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : el.tagName.toLowerCase()) + ` "${el.textContent.trim().slice(0, 18)}"`;
   const out = [];

@@ -84,85 +84,73 @@ export function Backdrop({ champ }: { champ?: string }) {
         const r = Math.max(w, h) * br * (0.9 + 0.1 * Math.sin(t * 0.4 + i));
         const g = ctx.createRadialGradient(x, y, 0, x, y, r);
         const col = th.cols[i % th.cols.length];
-        g.addColorStop(0, rgba(col, al * 0.72));
-        g.addColorStop(0.45, rgba(col, al * 0.24));
+        g.addColorStop(0, rgba(col, al * 0.5));
+        g.addColorStop(0.45, rgba(col, al * 0.16));
         g.addColorStop(1, rgba(col, 0));
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);
       });
       ctx.globalCompositeOperation = 'source-over';
-      // hoạ tiết riêng của từng chủ đề
-      if (th.motif === 'hex') {
-        const R = Math.max(w, h) / 22;
-        const hw = Math.sqrt(3) * R;
-        ctx.lineWidth = 1;
-        for (let row = -1; row * R * 1.5 < h + R; row++) {
-          for (let col = -1; col * hw < w + hw; col++) {
-            const cx = col * hw + (row % 2 ? hw / 2 : 0), cy = row * R * 1.5;
-            const wave = 0.5 + 0.5 * Math.sin(t * 0.9 - (cx / w) * 5 + (cy / h) * 2);
-            const a = 0.025 + 0.09 * wave * wave * (cx / w);
-            ctx.strokeStyle = rgba(th.cols[0], a);
-            ctx.beginPath();
-            for (let k = 0; k < 6; k++) { const an = Math.PI / 3 * k + Math.PI / 6; const px = cx + R * Math.cos(an), py = cy + R * Math.sin(an); if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
-            ctx.closePath();
-            ctx.stroke();
-          }
-        }
-      } else if (th.motif === 'rays') {
-        ctx.globalCompositeOperation = 'lighter';
-        const ox = w * 0.72, oy = -h * 0.15;
-        for (let i = 0; i < 9; i++) {
-          const an = Math.PI * 0.35 + i * 0.13 + 0.06 * Math.sin(t * 0.25 + i);
-          const len = Math.hypot(w, h) * 1.3;
-          const spread = 0.035 + 0.02 * Math.sin(t * 0.5 + i * 2);
-          const g = ctx.createLinearGradient(ox, oy, ox + Math.cos(an) * len, oy + Math.sin(an) * len);
-          g.addColorStop(0, rgba(th.cols[i % 2 ? 1 : 0], 0.16));
-          g.addColorStop(1, rgba(th.cols[i % 2 ? 1 : 0], 0));
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.moveTo(ox, oy);
-          ctx.lineTo(ox + Math.cos(an - spread) * len, oy + Math.sin(an - spread) * len);
-          ctx.lineTo(ox + Math.cos(an + spread) * len, oy + Math.sin(an + spread) * len);
-          ctx.closePath();
+      // ===== hệ hoạ tiết tam giác (Formation · Trajectory · Momentum) =====
+      const tri = (cx: number, cy: number, r: number, rot: number) => {
+        ctx.beginPath();
+        for (let k = 0; k < 3; k++) { const an = rot + k * 2.0944; const px = cx + r * Math.cos(an), py = cy + r * Math.sin(an); if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+        ctx.closePath();
+      };
+      // Formation: lưới tam giác bên phải, sáng lên theo làn sóng như đội hình di chuyển
+      const R = Math.max(w, h) / 34;
+      for (let row = 0; row * R * 0.9 < h + R; row++) {
+        for (let col = 0; col * R < w * 0.62 + R; col++) {
+          const cx = w * 0.42 + col * R + (row % 2 ? R / 2 : 0), cy = row * R * 0.9;
+          const wave = 0.5 + 0.5 * Math.sin(t * 1.1 - col * 0.35 + row * 0.22);
+          const fade = Math.min(1, (cx - w * 0.38) / (w * 0.3));
+          const a = 0.02 + 0.11 * Math.pow(wave, 6) * fade;
+          ctx.fillStyle = rgba(th.cols[(row + col) % 2 ? 0 : 3], a);
+          tri(cx, cy, R * 0.34, (row + col) % 2 ? -Math.PI / 2 : Math.PI / 2);
           ctx.fill();
         }
-        ctx.globalCompositeOperation = 'source-over';
-      } else if (th.motif === 'grid') {
-        const hy = h * 0.58;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 18; i++) {
-          const z = ((i + (t * 0.35) % 1) / 18);
-          const y = hy + (h - hy) * z * z;
-          ctx.strokeStyle = rgba(th.cols[0], 0.05 + 0.18 * z);
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-        }
-        for (let i = -14; i <= 14; i++) {
-          ctx.strokeStyle = rgba(th.cols[1], 0.08);
-          ctx.beginPath(); ctx.moveTo(w / 2 + i * w * 0.012, hy); ctx.lineTo(w / 2 + i * w * 0.16, h); ctx.stroke();
-        }
-      } else if (th.motif === 'streaks') {
-        ctx.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < 7; i++) {
-          const p = ((t * (0.04 + i * 0.006) + i * 0.17) % 1.4) - 0.2;
-          const x = w * p, y = h * (0.15 + i * 0.12);
-          const len = w * (0.25 + 0.1 * (i % 3));
-          const g = ctx.createLinearGradient(x - len, y + len * 0.35, x, y);
-          g.addColorStop(0, rgba(th.cols[i % 2], 0));
-          g.addColorStop(1, rgba(th.cols[i % 2], 0.2));
-          ctx.strokeStyle = g;
-          ctx.lineWidth = 1.5 + (i % 3);
-          ctx.beginPath(); ctx.moveTo(x - len, y + len * 0.35); ctx.lineTo(x, y); ctx.stroke();
-        }
-        ctx.globalCompositeOperation = 'source-over';
       }
-      // tàn lửa / bụi sáng bay lên
+      // Trajectory: các đường bay thẳng, đầu tam giác sáng lướt dọc theo đường
       ctx.globalCompositeOperation = 'lighter';
-      for (const s of sparks) {
-        const x = (s.x + 0.015 * Math.sin(t * 0.6 + s.d)) * w;
-        const y = ((s.y - t * s.v * 0.25) % 1 + 1) % 1 * h;
-        const tw = 0.5 + 0.5 * Math.sin(t * 2 + s.d);
-        ctx.fillStyle = rgba(th.spark, s.a * tw * 0.55);
-        ctx.beginPath(); ctx.arc(x, y, s.s * scale * 1.6, 0, 6.283); ctx.fill();
+      const paths = [[-0.1, 0.92, 1.05, 0.08], [-0.05, 0.62, 0.9, -0.1], [0.2, 1.08, 1.1, 0.3]];
+      paths.forEach(([x0, y0, x1, y1], i) => {
+        const ax = x0 * w, ay = y0 * h, bx = x1 * w, by = y1 * h;
+        ctx.strokeStyle = rgba(th.cols[i % 2], 0.07);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        const k = ((t * (0.07 + i * 0.025) + i * 0.33) % 1.25);
+        if (k <= 1) {
+          const px = ax + (bx - ax) * k, py = ay + (by - ay) * k;
+          const ang = Math.atan2(by - ay, bx - ax);
+          const g = ctx.createLinearGradient(px - Math.cos(ang) * w * 0.25, py - Math.sin(ang) * w * 0.25, px, py);
+          g.addColorStop(0, rgba(th.cols[i % 2], 0)); g.addColorStop(1, rgba(th.spark, 0.45));
+          ctx.strokeStyle = g; ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.moveTo(px - Math.cos(ang) * w * 0.25, py - Math.sin(ang) * w * 0.25); ctx.lineTo(px, py); ctx.stroke();
+          ctx.fillStyle = rgba(th.spark, 0.85);
+          tri(px, py, 6, ang);
+          ctx.fill();
+        }
+      });
+      ctx.globalCompositeOperation = 'source-over';
+      // Momentum: tam giác lớn viền mảnh trôi về phía trước
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 4; i++) {
+        const p = ((t * (0.012 + i * 0.004) + i * 0.27) % 1.3) - 0.15;
+        const cx = w * p, cy = h * (0.25 + i * 0.18);
+        const r = Math.max(w, h) * (0.09 + (i % 2) * 0.06);
+        ctx.strokeStyle = rgba(th.cols[i % 2 ? 1 : 0], 0.09);
+        tri(cx, cy, r, t * 0.05 * (i % 2 ? 1 : -1));
+        ctx.stroke();
+      }
+      // bụi tam giác nhỏ
+      ctx.globalCompositeOperation = 'lighter';
+      for (const sp of sparks) {
+        const x = ((sp.x + t * sp.v * 0.08) % 1) * w;
+        const y = (sp.y + 0.02 * Math.sin(t * 0.6 + sp.d)) * h;
+        const tw = 0.5 + 0.5 * Math.sin(t * 2 + sp.d);
+        ctx.fillStyle = rgba(th.spark, sp.a * tw * 0.4);
+        tri(x, y, sp.s * 1.6, sp.d + t * 0.3);
+        ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
     };

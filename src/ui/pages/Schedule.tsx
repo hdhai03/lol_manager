@@ -48,7 +48,8 @@ export function Schedule() {
   useEffect(() => {
     // chỉ cuộn khi ngày hôm nay nằm ngoài vùng nhìn thấy (giữ thanh ngày & bộ lọc ở đầu trang)
     const el = todayRef.current, box = el?.closest('.view');
-    if (el && box && el.getBoundingClientRect().bottom > box.getBoundingClientRect().bottom) el.scrollIntoView({ block: 'start' });
+    // chỉ cuộn vùng nội dung (scrollIntoView cuộn cả khung ngoài → nội dung chui dưới thanh tab)
+    if (el && box && el.getBoundingClientRect().bottom > box.getBoundingClientRect().bottom) box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - 8;
   }, []);
   const setF = (patch: Partial<typeof f>) => { Object.assign(f, patch); refresh(); };
 

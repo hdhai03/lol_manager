@@ -143,3 +143,8 @@ export function RunePage({ r, foot }: { r: RP; foot?: ReactNode }) {
     </div>
   );
 }
+
+/** Match Cut: tam giác quét ngang màn hình khi chuyển trang / giai đoạn (mount lại theo key) */
+export const MatchCut = () => (
+  <div className="mcut" aria-hidden="true"><i className="a" /><i className="b" /><i className="c" /></div>
+);

@@ -3,6 +3,7 @@ import './styles/game.css';
 import './styles/broadcast.css';
 import './styles/match.css';
 import './styles/responsive.css';
+import './styles/fc.css';
 import './styles/tailwind.css';
 import { createRoot } from 'react-dom/client';
 import { loadData, setOnAssets, refreshOpgg } from './engine/data';

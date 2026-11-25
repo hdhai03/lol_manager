@@ -1,0 +1,277 @@
+/* =====================================================================
+   RIFT MANAGER — HỆ THIẾT KẾ "FORMATION"
+   Lấy cảm hứng từ nguyên tắc chuyển động của bộ nhận diện EA SPORTS FC 24 (BUCK):
+   · Tam giác là hình gốc (góc cắt, dấu chỉ hướng, hoạ tiết nền)
+   · Trajectory — mọi thứ đi vào theo đường thẳng chéo, nhanh rồi hãm mượt
+   · Formation  — các khối con xếp đội hình lần lượt (stagger)
+   · Momentum   — tương tác đẩy về phía trước (hover tiến lên, mũi tên trượt)
+   · Match Cuts — chuyển trang bằng nhát cắt tam giác quét ngang
+   Tương phản cao: nền đen sâu, khối đặc (không kính mờ), một màu nhấn chính (volt).
+   ===================================================================== */
+:root {
+  --bg: #05060a;
+  --s0: rgba(10, 12, 19, .84);
+  --s1: #0e111a;
+  --s2: #151925;
+  --s3: #1d2232;
+  --s4: #262c3f;
+  --ink: #f5f6fa;
+  --ink-2: #c9cedb;
+  --muted: #8a92a6;
+  --dim: #5d6579;
+  --volt: #d4ff3a;
+  --volt-d: #a8d11a;
+  --volt-glow: rgba(212, 255, 58, .35);
+  --cyan: #38e1ff;
+  --hot: #ff3d6e;
+  --blue: #3d8bff;
+  --red: #ff4b5c;
+  --teal: var(--volt);
+  --teal-glow: var(--volt-glow);
+  --new: var(--volt);
+  --glass: var(--s0);
+  --glass-2: var(--s2);
+  --glass-3: var(--s3);
+  --sep: rgba(255, 255, 255, .06);
+  --line: var(--sep);
+  --r: 2px;
+  --r-sm: 2px;
+  --cut: 14px;
+  --e-traj: cubic-bezier(.16, 1, .3, 1);
+  --e-mom: cubic-bezier(.65, 0, .25, 1);
+  --shadow: 0 24px 50px -30px #000;
+  --sheen: none;
+}
+html { background: var(--bg); }
+::selection { background: var(--volt); color: #0a0c10; }
+
+/* ---------- Chữ: đậm, chặt, chữ hoa ---------- */
+.k-disp { font-weight: 800; letter-spacing: -.012em; line-height: .98; }
+.k-title { font-family: var(--cond); font-weight: 800; font-size: 1.02rem; letter-spacing: .14em; display: inline-flex; align-items: center; gap: .55rem; }
+.gp > .gp-h > .k-title::before, .gp > .gp-h > h3.k-title::before { content: ''; width: 0; height: 0; border-left: 7px solid var(--volt); border-top: 5px solid transparent; border-bottom: 5px solid transparent; flex: none; }
+.k-label { letter-spacing: .14em; }
+
+/* ---------- Khối: nền đặc, góc trên phải cắt chéo + tam giác nhấn ---------- */
+.gp { background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0) 120px), var(--s0); backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); box-shadow: none; }
+.gp::after { content: ''; position: absolute; top: 0; right: 0; width: var(--cut); height: var(--cut); background: linear-gradient(225deg, var(--volt) 50%, transparent 50%); opacity: .0; transition: opacity .25s; pointer-events: none; }
+.gp:hover::after { opacity: .9; }
+.gp.hl { box-shadow: inset 3px 0 0 var(--volt); }
+.gp > .gp-h { border-bottom: 1px solid var(--sep); padding-bottom: .7rem; margin-bottom: .2rem; }
+
+/* ---------- Nút: góc cắt, hover đẩy tới (Momentum) ---------- */
+.gb { border-radius: 0; background: var(--s3); backdrop-filter: none; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+  transition: background .18s, color .18s, transform .25s var(--e-traj); font-weight: 800; }
+.gb:hover { background: var(--s4); transform: translateX(2px); }
+.gb.primary { background: var(--volt); color: #0b0d06; box-shadow: none; }
+.gb.primary:hover { background: #e4ff74; box-shadow: none; }
+.gb.primary::after { content: ''; width: 0; height: 0; border-left: 6px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: .15em; transition: transform .25s var(--e-traj); }
+.gb.primary:hover::after { transform: translateX(4px); }
+.gb.ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); clip-path: none; }
+.gb.ghost:hover { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); }
+.gb.danger { color: var(--hot); }
+.gb.sm, .gb.xs { border-radius: 0; }
+.gb:disabled { transform: none; }
+
+/* nút chính ở Trung tâm: khối volt hình bình hành, mũi tam giác */
+.pill { border-radius: 0; background: var(--volt); color: #0b0d06; font-family: var(--cond); font-weight: 800; font-size: 1.3rem; letter-spacing: .1em; text-transform: uppercase; padding: 1.05rem 2.8rem 1.05rem 2.2rem; backdrop-filter: none;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%); box-shadow: none; transition: transform .3s var(--e-traj), background .2s; }
+.pill:hover, .pill:focus-visible { background: #e8ff80; color: #0b0d06; transform: translateX(6px); box-shadow: none; }
+.pill.hot { background: var(--volt); color: #0b0d06; animation: pillPulse 1.8s var(--e-mom) infinite; }
+@keyframes pillPulse { 0%, 100% { filter: drop-shadow(0 0 0 var(--volt-glow)); } 50% { filter: drop-shadow(0 0 18px var(--volt-glow)); } }
+.pill kbd { background: rgba(0, 0, 0, .14); color: #0b0d06; border-radius: 0; }
+
+.ib, .arrowb { border-radius: 0; background: var(--s3); backdrop-filter: none; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%); }
+.ib:hover, .arrowb:hover { background: var(--volt); color: #0b0d06; }
+
+/* ---------- Chip / thẻ lọc: hình bình hành ---------- */
+.chp, .chip { border-radius: 0; background: var(--s2); backdrop-filter: none; transform: skewX(-12deg); transition: background .15s, color .15s, transform .25s var(--e-traj); }
+.chp > *, .chip > * { transform: skewX(12deg); }
+.chp:hover, .chip:hover { background: var(--s4); color: #fff; }
+.chp.on, .chip.on { background: var(--volt); color: #0b0d06; }
+.chp.on .ricon, .chip.on .ricon { color: #0b0d06; }
+.seg { gap: .3rem; }
+.lang { border-radius: 0; background: var(--s2); }
+.lang button { border-radius: 0; }
+.lang button.on { background: var(--volt); color: #0b0d06; }
+.gin { border-radius: 0; background: var(--s1); box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .08); }
+.gin:focus { box-shadow: inset 0 -2px 0 var(--volt); }
+.tagx { border-radius: 0; background: var(--volt); color: #0b0d06; font-weight: 800; }
+
+/* ---------- Thanh điều hướng ---------- */
+.hud > .logo, .menu .brand .logo { border-radius: 0; background: var(--volt); color: #0b0d06; box-shadow: none; clip-path: polygon(50% 0, 100% 100%, 0 100%); width: 54px; height: 48px; padding-top: 14px; font-size: .78rem; font-style: normal; }
+.hud .sect::after { background: rgba(255, 255, 255, .12); width: 2px; transform: skewX(-16deg); }
+.nv { font-family: var(--cond); font-weight: 700; font-size: 1.12rem; letter-spacing: .06em; text-transform: uppercase; }
+.nv.on::after { height: 4px; border-radius: 0; background: var(--volt); box-shadow: 0 0 16px var(--volt-glow); clip-path: polygon(0 0, 100% 0, calc(100% - 4px) 100%, 4px 100%); animation: navIn .45s var(--e-traj) both; transform-origin: left; }
+@keyframes navIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.nv .nb { border-radius: 0; background: var(--volt); clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%); }
+.club-w { border-radius: 0; background: var(--s2); backdrop-filter: none; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.club-w .segs i { border-radius: 0; transform: skewX(-20deg); }
+.club-w .segs i.on, .club-w .segs i.cur { background: var(--volt); box-shadow: none; }
+.subnav button { border-radius: 0; font-weight: 800; position: relative; }
+.subnav button.on { background: var(--volt); color: #0b0d06; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+
+/* ---------- Bảng ---------- */
+.gt th { background: var(--s1); color: var(--dim); font-weight: 800; }
+.gt td { border-bottom: 1px solid var(--sep); transition: background .15s; }
+.gt tr.click:hover td { background: rgba(212, 255, 58, .05); }
+.gt tr.click:hover td:first-child { box-shadow: inset 3px 0 0 var(--volt); }
+.gt tr.me td { background: rgba(212, 255, 58, .08); }
+.gt tr.me td:first-child { box-shadow: inset 3px 0 0 var(--volt); }
+.gt tr.sel td { background: rgba(56, 225, 255, .1); }
+.rk { border-radius: 0 !important; clip-path: polygon(0 0, 100% 0, 100% 100%, 5px 100%); }
+
+/* ---------- Trang chủ ---------- */
+.ctr .date { font-size: clamp(2rem, 3.6vw, 3.6rem); }
+.ctr .next::after { background: linear-gradient(90deg, var(--volt), transparent 60%); height: 2px; }
+.task { border-radius: 0; }
+.task.sel { background: linear-gradient(100deg, rgba(212, 255, 58, .2), rgba(212, 255, 58, .02) 70%); box-shadow: inset 3px 0 0 var(--volt); backdrop-filter: none; }
+.task .go { color: var(--volt); }
+.week .d { border-radius: 0; background: var(--s2); }
+.week .d.today { background: var(--volt); box-shadow: none; }
+.week .d.today b, .week .d.today { color: #0b0d06; }
+.ytp, .social, .pc2, .bst, .ev-card, .mt-hero, .tl-row, .rune-pg, .sp-c, .fac-c, .mis, .car-o, .tp-hero, .tp-p, .sc-p, .stf-b, .ach, .rpl-row, .dr-sg, .sc-t, .bc-p { border-radius: 0 !important; }
+.ytp { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.social { clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); }
+.social .flag { border-radius: 0; background: var(--volt); clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%); }
+.pc2 { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); backdrop-filter: none; background: linear-gradient(170deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0) 60%), var(--s1); }
+.pc2:hover { box-shadow: inset 0 -3px 0 var(--volt); }
+.pc2-ovr b { color: var(--volt); }
+.pc2-foot b { color: var(--ink); }
+
+/* ---------- Modal & toast ---------- */
+.modal-wrap { background: rgba(3, 4, 8, .78); backdrop-filter: none; }
+.modal { border-radius: 0; background: var(--s1); backdrop-filter: none; clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px)); box-shadow: none; animation: modalIn .5s var(--e-traj) both; }
+.modal::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 3px; background: var(--volt); transform-origin: left; animation: navIn .6s .1s var(--e-traj) both; }
+@keyframes modalIn { from { opacity: 0; transform: translate(-40px, 24px); clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } to { opacity: 1; transform: none; } }
+.modal-x { border-radius: 0 !important; background: var(--s3) !important; }
+.modal-x:hover { background: var(--volt) !important; color: #0b0d06; }
+.toast { border-radius: 0; background: var(--s2) !important; backdrop-filter: none; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); padding: .8rem 2rem; animation: toastIn .45s var(--e-traj) both; }
+.toast-ok { background: var(--volt) !important; color: #0b0d06; }
+.toast-err { background: var(--hot) !important; color: #fff; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-60px) skewX(-10deg); } to { opacity: 1; transform: none; } }
+
+/* ---------- Thanh tiến trình / mét ---------- */
+.mtr, .bar, .cond-mini, .prob { border-radius: 0 !important; }
+.mtr i, .bar i, .cond-mini i { border-radius: 0 !important; transform-origin: left; animation: fillIn .9s var(--e-traj) both; }
+@keyframes fillIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* =====================================================================
+   CHUYỂN ĐỘNG
+   ===================================================================== */
+/* Trajectory: trang & khối vào theo đường chéo */
+.view > * { animation: traj .7s var(--e-traj) both; }
+@keyframes traj { from { opacity: 0; transform: translate(-48px, 22px); } to { opacity: 1; transform: none; } }
+/* Formation: con của các lưới / danh sách xếp vào lần lượt */
+.stag > *, .pcards > *, .tl-ch > *, .yt > *, .ach-g > *, .sc-part > *, .stf > *, .fac-g > *, .sp-g > *, .mis-list > *, .rp-list > *, .bst-list > *, .sq-list > *, .dev-list > *, .tp-roster > *, .sc-ps > *, .car-top > *, .cer-ps > *, .vsx-p, .dr-sug > *, .chips > *, .week > *, .gt tbody tr {
+  animation: form .6s var(--e-traj) both;
+}
+@keyframes form { from { opacity: 0; transform: translate(-22px, 14px); } to { opacity: 1; transform: none; } }
+.chips > *, .chp { animation-name: formChip; }
+@keyframes formChip { from { opacity: 0; transform: translateX(-16px) skewX(-12deg); } to { opacity: 1; transform: skewX(-12deg); } }
+.stag > :nth-child(1), .pcards > :nth-child(1), .tl-ch > :nth-child(1), .gt tbody tr:nth-child(1), .chips > :nth-child(1), .week > :nth-child(1) { animation-delay: .02s; }
+.stag > :nth-child(2), .pcards > :nth-child(2), .tl-ch > :nth-child(2), .gt tbody tr:nth-child(2), .chips > :nth-child(2), .week > :nth-child(2), .yt > :nth-child(2), .sc-part > :nth-child(2), .ach-g > :nth-child(2) { animation-delay: .06s; }
+.stag > :nth-child(3), .pcards > :nth-child(3), .tl-ch > :nth-child(3), .gt tbody tr:nth-child(3), .chips > :nth-child(3), .week > :nth-child(3), .yt > :nth-child(3), .sc-part > :nth-child(3), .ach-g > :nth-child(3) { animation-delay: .1s; }
+.stag > :nth-child(4), .pcards > :nth-child(4), .tl-ch > :nth-child(4), .gt tbody tr:nth-child(4), .chips > :nth-child(4), .week > :nth-child(4), .yt > :nth-child(4), .sc-part > :nth-child(4), .ach-g > :nth-child(4) { animation-delay: .14s; }
+.stag > :nth-child(5), .pcards > :nth-child(5), .tl-ch > :nth-child(5), .gt tbody tr:nth-child(5), .chips > :nth-child(5), .week > :nth-child(5), .yt > :nth-child(5), .sc-part > :nth-child(5), .ach-g > :nth-child(5) { animation-delay: .18s; }
+.stag > :nth-child(6), .pcards > :nth-child(6), .tl-ch > :nth-child(6), .gt tbody tr:nth-child(6), .chips > :nth-child(6), .week > :nth-child(6), .sc-part > :nth-child(6), .ach-g > :nth-child(6) { animation-delay: .22s; }
+.pcards > :nth-child(7), .tl-ch > :nth-child(7), .gt tbody tr:nth-child(7), .chips > :nth-child(7), .week > :nth-child(7), .ach-g > :nth-child(7) { animation-delay: .26s; }
+.pcards > :nth-child(8), .tl-ch > :nth-child(8), .gt tbody tr:nth-child(8), .ach-g > :nth-child(8) { animation-delay: .3s; }
+.pcards > :nth-child(9), .tl-ch > :nth-child(9), .gt tbody tr:nth-child(9) { animation-delay: .34s; }
+.pcards > :nth-child(10), .tl-ch > :nth-child(10), .gt tbody tr:nth-child(10) { animation-delay: .38s; }
+.pcards > :nth-child(n+11), .tl-ch > :nth-child(n+11), .gt tbody tr:nth-child(n+11) { animation-delay: .42s; }
+.yt > :nth-child(1) { animation-delay: .25s; } .yt > :nth-child(n+2) { animation-delay: calc(.25s + .07s * var(--i, 1)); }
+
+/* Kinetic type: chữ lớn trồi lên từ sau mặt nạ */
+.ctr .date, .vsx .k-disp, .cer-title, .wr-big, .mt-hero-t b, .tp-t > b, .sc-h .k-disp, .car-kpi .k-disp { animation: kin .9s var(--e-traj) both; }
+@keyframes kin { from { clip-path: inset(0 0 100% 0); transform: translateY(40%); } to { clip-path: inset(0 0 -10% 0); transform: none; } }
+
+/* Momentum: thẻ tiến về phía trước khi rê chuột */
+.pc2, .ytp, .tl-c, .bst, .sc-t, .rpl-row, .tp-p, .car-o, .sp-c, .ach, .dr-sg, .task { transition: transform .35s var(--e-traj), background .2s, box-shadow .2s; }
+.pc2:hover, .ytp:hover { transform: translate(3px, -4px); }
+.task:hover, .rpl-row:hover, .tp-p:hover, .dr-sg:hover { transform: translateX(5px); }
+
+/* Match Cut: nhát cắt tam giác quét ngang khi đổi trang */
+.mcut { position: fixed; inset: 0; z-index: 55; pointer-events: none; overflow: hidden; }
+.mcut i { position: absolute; top: -10%; bottom: -10%; width: 70vw; left: -80vw; clip-path: polygon(30% 0, 100% 0, 70% 100%, 0 100%); animation: cut .62s var(--e-mom) both; }
+.mcut .a { background: var(--volt); animation-delay: 0s; }
+.mcut .b { background: #0b0d06; animation-delay: .05s; opacity: .9; }
+.mcut .c { background: var(--cyan); animation-delay: .1s; width: 30vw; opacity: .9; }
+@keyframes cut { 0% { transform: translateX(0); } 100% { transform: translateX(200vw); } }
+/* chỉ chạy nhát cắt mạnh khi đổi giai đoạn trận; đổi trang thường dùng phiên bản mảnh hơn */
+.shell > .mcut i { width: 36vw; left: -40vw; }
+.shell > .mcut .a { opacity: .95; } .shell > .mcut .b { display: none; } .shell > .mcut .c { width: 12vw; }
+
+@media (prefers-reduced-motion: reduce) {
+  .view > *, .stag > *, .pcards > *, .gt tbody tr, .chips > *, .mcut, .ctr .date, .modal, .toast, .mtr i { animation: none !important; }
+  .mcut { display: none; }
+}
+
+/* =====================================================================
+   MÀN TRẬN ĐẤU & CÁC MÀN ĐẶC BIỆT
+   ===================================================================== */
+.vsx-mid { border-radius: 0 !important; background: var(--s1) !important; clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px)); }
+.vsx-mid .k-disp { color: var(--volt); }
+.vsx-prob { border-radius: 0 !important; background: var(--s0) !important; }
+.prob i { background: linear-gradient(90deg, var(--blue), var(--cyan)) !important; }
+.md-actions .gb { min-height: 3.2rem; }
+.dr-c { border-radius: 0 !important; }
+.dr-c.on { box-shadow: inset 0 0 0 3px var(--volt) !important; }
+.dr-slot { border-radius: 0 !important; }
+.sb-team, .sb-k, .sb-c { border-radius: 0 !important; }
+.ovl.cer { background: radial-gradient(circle at 50% 35%, rgba(212, 255, 58, .18), rgba(5, 6, 10, .96) 60%); backdrop-filter: none; }
+.ovl.wr { background: radial-gradient(circle at 50% 25%, rgba(56, 225, 255, .14), rgba(5, 6, 10, .97) 60%); backdrop-filter: none; }
+.wr-s { border-radius: 0 !important; background: var(--s1) !important; clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px)); }
+.cer-title { color: var(--volt) !important; }
+.confetti i { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+
+/* menu chính */
+.mi { border-radius: 0 !important; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); transition: transform .35s var(--e-traj), background .2s !important; }
+.mi:hover, .mi:focus-visible { transform: translateX(8px); box-shadow: inset 4px 0 0 var(--volt) !important; }
+.menu .mi { animation: form .6s var(--e-traj) both; }
+.menu .mi:nth-child(2) { animation-delay: .08s; } .menu .mi:nth-child(3) { animation-delay: .16s; } .menu .mi:nth-child(4) { animation-delay: .24s; } .menu .mi:nth-child(5) { animation-delay: .32s; }
+
+/* sửa chi tiết */
+.menu .brand .logo { width: 84px; height: 74px; padding-top: 26px; font-size: 1.15rem; display: grid; place-items: center; }
+.mi { background: transparent; }
+.mi:hover, .mi:focus-visible, .mi.on { background: linear-gradient(90deg, rgba(212, 255, 58, .16), rgba(212, 255, 58, 0) 80%) !important; }
+.gt tr.sel td, .gt tr.sel:hover td { background: rgba(212, 255, 58, .1) !important; }
+.gt tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--volt); }
+.standings tr.q .rk, .rk { background: var(--s3) !important; color: var(--ink) !important; }
+.standings tr.q .rk { background: var(--volt) !important; color: #0b0d06 !important; }
+.gp.ag, .ag { border-radius: 0 !important; }
+
+/* =====================================================================
+   MÀN TRẬN: cấm/chọn · HUD phát sóng · tổng kết ván — góc vuông, cắt chéo
+   ===================================================================== */
+.vsx-p, .vsx-p .o, .vsx-prob .prob, .dr-panel, .dr-roles, .dr-roles button, .dr-search, .dr-c img, .dr-c .champ, .dr-c .hx, .dr-c .fit, .dr-foot .gb, .dr-ban, .dr-progress, .dr-slot .art, .dr-slot .ft, .dr-center, .dr-center .wins i,
+.bc .sb-sub, .bc .gdiff, .bc .buff, .bc .bc-timers > div, .bc .bc-p, .bc .bc-p .ph, .bc .bc-p .lv, .bc .bc-p .hp, .bc .bc-p .mp, .bc .kf, .bc .bc-bottom, .bc .bc-row .it img, .bc .bc-row .it span, .bc .bc-mini, .bc .bc-cast, .bc .bc-ctrl, .bc .bc-ctrl .chip, .bc .banner, .bc-ord,
+.pg-head, .pg-panel, .pg-row, .pg-bar, .pg-cont, .pg-sub .gb, .md-wide .md-actions .gb, .sx-end .md-actions .gb, .vsx .md-actions .gb, .press, .sc-style, .vsx-bst .gb { border-radius: 0 !important; }
+.vsx-p { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0)), var(--s1) !important; }
+.vsx-p .o { background: var(--volt) !important; color: #0b0d06 !important; }
+.dr-panel, .dr-center, .pg-panel { background: var(--s0) !important; backdrop-filter: none !important; clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
+.dr-roles { background: var(--s1) !important; }
+.dr-roles button.on { background: var(--volt) !important; color: #0b0d06 !important; }
+.dr-search input, .dr-search { background: var(--s1) !important; border-radius: 0 !important; }
+.dr-c .hx { background: var(--volt) !important; color: #0b0d06 !important; }
+.dr-c:hover img { transform: scale(1.04); }
+.dr-c img { transition: transform .3s var(--e-traj); }
+.dr-progress i, .dr-progress > * { background: var(--volt) !important; }
+.dr-slot { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.dr-slot.on, .dr-slot.cur { box-shadow: inset 0 -4px 0 var(--volt) !important; }
+.dr-slot .art { animation: kin .7s var(--e-traj) both; }
+.pg-head { clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); }
+.pg-cont, .pg-act .gb:first-child, .pg .gb.primary { background: var(--volt) !important; color: #0b0d06 !important; }
+.pg-row:nth-child(odd) { background: rgba(255, 255, 255, .03) !important; }
+.bc .bc-p { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
+.bc .bc-ctrl .chip.on { background: var(--volt) !important; color: #0b0d06 !important; }
+.bc .banner { clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); animation: bannerIn .5s var(--e-traj) both; }
+@keyframes bannerIn { from { opacity: 0; transform: translateX(-60px) skewX(-8deg); } to { opacity: 1; transform: none; } }
+.bc .bc-cast { clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.bc .bc-cast.pop { animation: bannerIn .45s var(--e-traj) both; }
+.bc .kf { animation: form .4s var(--e-traj) both; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+/* ô nhập: vuông, gạch chân phát sáng */
+input.gin, select.gin, .gin, input[type=search] { border-radius: 0 !important; }
+/* viên thuốc bo tròn còn sót → góc vuông */
+.shd, .tp-cup, .win-b, .derby, .dr-comp .syn, .pt-c, .ng-msg, .ab, .tg-chip { border-radius: 0 !important; }
+.pt-c img, .tl-c img { border-radius: 0 !important; }

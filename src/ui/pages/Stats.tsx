@@ -87,7 +87,7 @@ export function Replays() {
   if (!list.length) return <p className="muted">{t('rp.none')}</p>;
   return (
     <div className="rp-list">{list.map((r) => (
-      <button key={r.id} className={`rp-row ${r.star ? 'star' : ''}`} data-replay={r.id} onClick={() => { ui.replay = r.id; refresh(); }}>
+      <button key={r.id} className={`rpl-row ${r.star ? 'star' : ''}`} data-replay={r.id} onClick={() => { ui.replay = r.id; refresh(); }}>
         <span className="rp-t">{r.star ? '★ ' : ''}{r.comp} {r.season} · {t('dr.game', { n: r.game })}</span>
         <span className="rp-m"><Badge id={r.a} size="sm" /><b className={r.winner === r.a ? 'up' : ''}>{S.teams[r.a]?.short}</b><span className="k-num">{r.k[0]} - {r.k[1]}</span><b className={r.winner === r.b ? 'up' : ''}>{S.teams[r.b]?.short}</b><Badge id={r.b} size="sm" /></span>
         <span className="muted text-sm">{Math.floor(r.durS / 60)}:{String(r.durS % 60).padStart(2, '0')} · ▶ {t('rp.watch')}</span>
