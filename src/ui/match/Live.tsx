@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { DB, champImg, champTile, itemImg, mapImg } from '../../engine/data';
 import { S } from '../../engine/state';
-import { simulateGame, recordGame, simSeries } from '../../engine/sim';
+import { simulateGame, recordGame, simSeries, resimGame } from '../../engine/sim';
+import type { Order, OrderKind } from '../../engine/engine';
 import { ROLES } from '../../engine/util';
 import { MIR, BLUE_TOWERS, BASE, PIT } from '../../engine/engine';
 import { t } from '../../i18n';
@@ -18,6 +19,8 @@ const icon = (id: string | undefined, size: number) => (id ? `<img class="champ"
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const kf = (n: number) => (n / 1000).toFixed(1) + 'K';
 const KEY_SPEED = 'lolm_speed2';
+const ORDERS: OrderKind[] = ['fight', 'baron', 'dragon', 'push', 'defend'];
+const MAX_ORDERS = 3;
 
 function RiftMap() {
   const sides: Side[] = ['B', 'R'];
@@ -53,8 +56,10 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
   const [tl] = useState(() => new Timeline(g));
   const [speed, setSpeedS] = useState<number>(() => { try { return +(localStorage.getItem(KEY_SPEED) || 8); } catch { return 8; } });
   const [paused, setPaused] = useState(false);
+  const [ordLeft, setOrdLeft] = useState(MAX_ORDERS);
+  const mySide: Side | null = g.blue === S.userTeam ? 'B' : g.red === S.userTeam ? 'R' : null;
   const root = useRef<HTMLDivElement>(null);
-  const ctl = useRef<{ setSpeed: (x: number) => void; pause: (p: boolean) => void; toggleView: () => void; skip: () => void; skipAll: () => void } | null>(null);
+  const ctl = useRef<{ order: (k: OrderKind) => void; setSpeed: (x: number) => void; pause: (p: boolean) => void; toggleView: () => void; skip: () => void; skipAll: () => void } | null>(null);
   const comp = S.comps[m.comp];
   const teamOf = (s: Side) => (s === 'B' ? g.blue : g.red);
   const tShort = (s: Side) => S.teams[teamOf(s)].short;
@@ -68,7 +73,10 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
   useEffect(() => {
     const r = root.current!;
     const $ = <T extends HTMLElement = HTMLElement>(sel: string) => r.querySelector(sel) as T;
-    const F = g.frames || [];
+    let cur = g;
+    let F = g.frames || [];
+    const orders: Order[] = [];
+    let ordUntil = 0, ordKind = '';
     const map = $('#map');
     let alive = true, raf = 0, spd = speed, isPaused = false;
     let gt = 0, last = performance.now(), evIdx = 0, finishing = 0;
@@ -187,6 +195,8 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
         bb.textContent = bLeft > 0 ? `BARON ${mmss(bLeft)}` : eLeft > 0 ? `ELDER ${mmss(eLeft)}` : '';
         bb.className = `buff ${bLeft > 0 ? 'ba' : eLeft > 0 ? 'el' : ''}`;
       }
+      const os = r.querySelector('#ordst');
+      if (os) os.textContent = ordUntil > gt ? `${t('ord.' + ordKind)} · ${mmss(ordUntil - gt)}` : '';
       $('#tDr').textContent = live.nextDr <= gt ? 'LIVE' : mmss(live.nextDr);
       $('#tBa').textContent = live.nextBa <= gt ? 'LIVE' : mmss(live.nextBa);
       const now = performance.now();
@@ -214,7 +224,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
       } else vp.style.display = 'none';
     };
 
-    const finish = () => { if (!alive) return; alive = false; cancelAnimationFrame(raf); arena?.dispose(); arena = null; onEnd(g); };
+    const finish = () => { if (!alive) return; alive = false; cancelAnimationFrame(raf); arena?.dispose(); arena = null; onEnd(cur); };
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const rdt = Math.min(.25, (now - last) / 1000); last = now;
@@ -246,6 +256,24 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
     let want3D = true;
     try { want3D = localStorage.getItem('lolm_view') !== '2d'; } catch { /* */ }
     ctl.current = {
+      // lệnh trong trận: mô phỏng lại từ cùng seed, có hiệu lực từ nhịp kế tiếp
+      order: (k) => {
+        if (!mySide || orders.length >= MAX_ORDERS || gt >= tl.end - 20) return;
+        const t0 = (Math.floor(gt / 15) + 2) * 15;
+        orders.push({ t: t0, side: mySide, kind: k });
+        const n = resimGame(cur, [...orders]);
+        cur = n;
+        F = n.frames || [];
+        Object.assign(tl, new Timeline(n));
+        evIdx = 0;
+        while (evIdx < tl.evs.length && tl.evs[evIdx].d <= gt) evIdx++;
+        lastFrame = -1;
+        // bản 3D tính trước lịch trụ/quái từ dòng thời gian → dựng lại theo diễn biến mới
+        if (arena) { arena.dispose(); arena = null; void start3D(); }
+        ordUntil = t0 + 150; ordKind = k;
+        setOrdLeft(MAX_ORDERS - orders.length);
+        banner(t('ord.' + k), t('ord.issued'), mySide);
+      },
       setSpeed: (x) => { spd = x; try { localStorage.setItem(KEY_SPEED, String(x)); } catch { /* */ } },
       pause: (p) => { isPaused = p; },
       toggleView: async () => {
@@ -255,7 +283,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
       skip: () => { gt = tl.end; while (evIdx < tl.evs.length) applyEv(tl.evs[evIdx++]); finish(); },
       skipAll: () => {
         alive = false; cancelAnimationFrame(raf); arena?.dispose(); arena = null;
-        if (!g.recorded) { g.recorded = true; recordGame(m, g, true); }
+        if (!cur.recorded) { cur.recorded = true; recordGame(m, cur, true); }
         if (!m.done) simSeries(m);
         onSkipAll();
       },
@@ -320,6 +348,13 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
       </div>
       <div className="bc-mini"><img src={mapImg()} alt="" /><i className="vp" id="vp" />{keys.map((k) => <i key={k} className={`md md-${k[0]}`} id={`md-${k}`}><Champ id={pk(k[0] as Side, k.slice(1))} size={22} /></i>)}</div>
       <div className="banner" id="banner" />
+      {mySide && (
+        <div className="bc-ord">
+          <small className="k-label">{t('ord.title')} · {ordLeft}/{MAX_ORDERS}</small>
+          <div className="bc-ord-b">{ORDERS.map((k) => <button key={k} className="chip sm" data-order={k} disabled={!ordLeft} title={t('ord.' + k + 'D')} onClick={() => ctl.current?.order(k)}>{t('ord.' + k)}</button>)}</div>
+          <span id="ordst" className="ord-st" />
+        </div>
+      )}
       <div className="bc-ctrl">
         <button className={`chip sm ${paused ? 'on' : ''}`} data-pause title="Space" onClick={() => { const p = !paused; setPaused(p); ctl.current?.pause(p); }}>{paused ? '▶' : '❚❚'}</button>
         {SPEEDS.map((x) => <button key={x} className={`chip sm ${speed === x ? 'on' : ''}`} data-sp={x} onClick={() => { setSpeedS(x); ctl.current?.setSpeed(x); }}>{x}x</button>)}

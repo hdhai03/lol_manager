@@ -24,7 +24,22 @@ export const ATTR_W = Object.fromEntries((Object.keys(W_ROLE) as Role[]).map((r)
   return [r, Object.fromEntries(ATTRS.map((a) => [a, w[a] / tot])) as Record<Attr, number>];
 })) as Record<Role, Record<Attr, number>>;
 
-export const rand = Math.random;
+// bộ sinh số ngẫu nhiên: mặc định Math.random; trong một ván có seed thì dùng mulberry32 để mô phỏng lại y hệt
+let gen: () => number = Math.random;
+export const rand = (): number => gen();
+export function mulberry32(a: number): () => number {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+export function withSeed<T>(seed: number, fn: () => T): T {
+  const prev = gen;
+  gen = mulberry32(seed);
+  try { return fn(); } finally { gen = prev; }
+}
 export const randInt = (a: number, b: number): number => a + Math.floor(rand() * (b - a + 1));
 export const pick = <T>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
 export const clamp = (x: number, a: number, b: number): number => Math.max(a, Math.min(b, x));

@@ -1,9 +1,9 @@
 // Màn tổng kết ván (kiểu bảng kết quả phát sóng): chỉ số trận, sát thương lên tướng trước/sau 14 phút, chênh lệch vàng.
 import { useState } from 'react';
-import { champSplash } from '../../engine/data';
+import { DB, champSplash, itemImg } from '../../engine/data';
 import { S } from '../../engine/state';
 import { recordGame } from '../../engine/sim';
-import { t } from '../../i18n';
+import { t, iname } from '../../i18n';
 import { Badge, Champ, Face, RoleTag, RuneMini } from '../components';
 import type { ReactNode } from 'react';
 import type { GameResult, Match, Side } from '../../engine/types';
@@ -32,13 +32,14 @@ function GoldChart({ gd }: { gd: number[] }) {
 
 function Scoreboard({ g }: { g: GameResult }) {
   const table = (s: Side) => (
-    <table className="tbl sb gt"><thead><tr><th /><th><span className="flex items-center gap-2"><Badge id={s === 'B' ? g.blue : g.red} size="sm" />{S.teams[s === 'B' ? g.blue : g.red].short}</span></th><th>KDA</th><th>CS</th><th>{t('pg.gold')}</th><th>DMG</th></tr></thead>
+    <table className="tbl sb gt"><thead><tr><th /><th><span className="flex items-center gap-2"><Badge id={s === 'B' ? g.blue : g.red} size="sm" />{S.teams[s === 'B' ? g.blue : g.red].short}</span></th><th>KDA</th><th>CS</th><th>{t('pg.gold')}</th><th>DMG</th><th className="pg-itm-h">{t('pg.items')}</th></tr></thead>
       <tbody>{g.players.filter((x) => x.side === s).map((x) => {
         const p = x.pid ? S.players[x.pid] : undefined;
         return (
           <tr key={x.pid ?? x.role} className={g.mvp === x.pid ? 'mvp' : ''}>
             <td><span className="flex items-center gap-1"><Champ id={x.champ} size={28} /><RuneMini r={g.runes?.[x.side + x.role]} size={18} /></span></td><td><span className="flex items-center gap-2"><Face p={p} size="xs" /><RoleTag r={x.role} /><b>{p ? p.ign : '?'}</b></span></td>
             <td className="n">{x.k}/{x.d}/{x.a}</td><td className="n">{x.cs}</td><td className="n">{(x.gold / 1000).toFixed(1)}k</td><td className="n">{(x.dmg / 1000).toFixed(1)}k</td>
+            <td className="pg-itm"><span>{(x.build || []).slice(0, 6).filter((i) => DB.items[i]).map((i, k) => <img key={k} src={itemImg(i)} width={20} height={20} alt={iname(i)} title={iname(i)} />)}{x.adapt && x.adapt !== 'none' && <em className={`ad ad-${x.adapt}`} title={t('pg.adapt.' + x.adapt)}>{x.adapt === 'miss' ? '!' : x.adapt === 'mr' ? 'MR' : 'AR'}</em>}</span></td>
           </tr>
         );
       })}</tbody></table>

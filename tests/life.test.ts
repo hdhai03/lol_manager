@@ -37,10 +37,11 @@ describe('đời sống đội tuyển', () => {
     expect(S.scrims?.length).toBe(1);
     const k = grantBoost('focus');
     expect(k).toBe('focus');
-    activateBoost(S.boosts![0].id);
+    const fid = S.boosts!.find((b) => b.kind === 'focus')!.id;
+    activateBoost(fid);
     expect(boostMods().day).toBeGreaterThan(0);
     consumeBoost();
-    expect(S.boosts!.length).toBe(0);
+    expect(S.boosts!.some((b) => b.id === fid)).toBe(false);
     expect(S.boostActive).toBeNull();
   }));
 

@@ -4,6 +4,13 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'ord.title': 'Lệnh', 'ord.issued': 'Đã ra lệnh (hiệu lực ~2,5 phút)', 'ord.fight': 'Giao tranh', 'ord.baron': 'Ép Baron', 'ord.dragon': 'Ép Rồng', 'ord.push': 'Đẩy trụ', 'ord.defend': 'Phòng thủ',
+  'ord.fightD': 'Chủ động tìm giao tranh tổng', 'ord.baronD': 'Dồn lực đánh Baron dù rủi ro', 'ord.dragonD': 'Ưu tiên rồng / Rồng Ngàn Tuổi', 'ord.pushD': 'Gom đội công trụ', 'ord.defendD': 'Lùi về, tránh giao tranh, giữ trụ',
+  'pg.items': 'Trang bị', 'pg.adapt.mr': 'Lên kháng phép đúng lúc', 'pg.adapt.armor': 'Lên giáp đúng lúc', 'pg.adapt.miss': 'Không lên đồ phòng thủ phù hợp với đối thủ',
+  'tac.phase': 'Kế hoạch theo giai đoạn', 'tac.h.phase': 'Đổi nhịp độ theo từng giai đoạn trận (thay cho nhịp độ chung).', 'tac.phaseOn': 'Dùng kế hoạch theo giai đoạn', 'tac.ph.early': 'Đầu trận (<14\')', 'tac.ph.mid': 'Giữa trận (14-25\')', 'tac.ph.late': 'Cuối trận', 'tac.pp.early': 'Tấn công', 'tac.pp.balanced': 'Cân bằng', 'tac.pp.late': 'Thận trọng',
+  'ri.Top.lane': 'Giữ đường', 'ri.Top.weak': 'Chịu khổ', 'ri.Top.split': 'Đẩy lẻ', 'ri.Jungle.std': 'Linh hoạt', 'ri.Jungle.invade': 'Xâm lấn', 'ri.Mid.std': 'Linh hoạt', 'ri.Mid.lane': 'Giữ đường', 'ri.Mid.roam': 'Đi roam',
+  'ri.Bot.std': 'Linh hoạt', 'ri.Bot.aggro': 'Ép đường', 'ri.Bot.scale': 'Chờ cuối trận', 'ri.Support.std': 'Linh hoạt', 'ri.Support.roam': 'Đi roam', 'ri.Support.lane': 'Bám đường', 'ri.Support.vision': 'Kiểm soát tầm nhìn',
+  'ri.laneD': 'Ở lại đường, ít đi hỗ trợ', 'ri.weakD': 'Chơi an toàn, nhường tài nguyên cho đồng đội', 'ri.splitD': 'Luôn đẩy lẻ đường trên ở giữa/cuối trận', 'ri.stdD': 'Tự quyết theo tình huống', 'ri.invadeD': 'Hung hăng, gank sớm và vào rừng đối thủ', 'ri.roamD': 'Thường xuyên đi hỗ trợ đường khác', 'ri.aggroD': 'Ép đối thủ ở đường dưới', 'ri.scaleD': 'Farm an toàn, mạnh dần về cuối', 'ri.visionD': 'Cắm mắt: cả đội khó bị gank hơn',
   'nav.career': 'Sự nghiệp', 'tp.season': 'Mùa này', 'tp.trophies': 'Danh hiệu', 'tp.h2h': 'Đối đầu với đội bạn', 'tp.recent': 'Kết quả gần đây', 'tp.noTrophy': 'Chưa có danh hiệu.',
   't2.tier1': 'Hạng 1', 't2.tier2': 'Hạng 2 (học viện)', 't2.tag': 'Hạng 2', 't2.hint': 'Đội học viện của các CLB thi đấu vào những ngày giải chính có trận. Đội học viện của bạn mạnh lên theo các tuyển thủ trong Academy.', 'news.t2Champ': '{team} vô địch {league}!',
   'car.rep': 'Uy tín HLV', 'car.conf': 'Niềm tin ban lãnh đạo', 'car.obj': 'Mục tiêu mùa giải', 'car.objRank': 'Cần xếp hạng {n} trở lên ở giải quốc nội', 'car.record': 'Thành tích (loạt trận)', 'car.titles': '{n} danh hiệu',
@@ -290,6 +297,13 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'ord.title': 'Orders', 'ord.issued': 'Order issued (~2.5 min)', 'ord.fight': 'Fight', 'ord.baron': 'Force Baron', 'ord.dragon': 'Force Dragon', 'ord.push': 'Push', 'ord.defend': 'Defend',
+  'ord.fightD': 'Look for a teamfight', 'ord.baronD': 'Commit to Baron despite the risk', 'ord.dragonD': 'Prioritise dragon / Elder', 'ord.pushD': 'Group and siege towers', 'ord.defendD': 'Fall back, avoid fights, hold towers',
+  'pg.items': 'Items', 'pg.adapt.mr': 'Built magic resist at the right time', 'pg.adapt.armor': 'Built armor at the right time', 'pg.adapt.miss': 'Missed the right defensive item vs this comp',
+  'tac.phase': 'Phase plan', 'tac.h.phase': 'Change the tempo per game phase (overrides the general tempo).', 'tac.phaseOn': 'Use a phase plan', 'tac.ph.early': 'Early (<14\')', 'tac.ph.mid': 'Mid (14-25\')', 'tac.ph.late': 'Late', 'tac.pp.early': 'Aggressive', 'tac.pp.balanced': 'Balanced', 'tac.pp.late': 'Cautious',
+  'ri.Top.lane': 'Hold lane', 'ri.Top.weak': 'Weak side', 'ri.Top.split': 'Split push', 'ri.Jungle.std': 'Flexible', 'ri.Jungle.invade': 'Invade', 'ri.Mid.std': 'Flexible', 'ri.Mid.lane': 'Hold lane', 'ri.Mid.roam': 'Roam',
+  'ri.Bot.std': 'Flexible', 'ri.Bot.aggro': 'Lane bully', 'ri.Bot.scale': 'Scale', 'ri.Support.std': 'Flexible', 'ri.Support.roam': 'Roam', 'ri.Support.lane': 'Stay in lane', 'ri.Support.vision': 'Vision control',
+  'ri.laneD': 'Stay in lane, roam less', 'ri.weakD': 'Play safe, give resources to teammates', 'ri.splitD': 'Always split top in mid/late game', 'ri.stdD': 'Decide by situation', 'ri.invadeD': 'Aggressive, early ganks and invades', 'ri.roamD': 'Roam often to other lanes', 'ri.aggroD': 'Bully the bot lane', 'ri.scaleD': 'Farm safely, scale to late game', 'ri.visionD': 'Ward up: the team is harder to gank',
   'nav.career': 'Career', 'tp.season': 'This season', 'tp.trophies': 'Trophies', 'tp.h2h': 'Head-to-head vs your team', 'tp.recent': 'Recent results', 'tp.noTrophy': 'No trophies yet.',
   't2.tier1': 'Tier 1', 't2.tier2': 'Tier 2 (academy)', 't2.tag': 'Tier 2', 't2.hint': 'Club academy teams play on days when the main league has matches. Your academy team gets stronger with the players in your Academy.', 'news.t2Champ': '{team} won {league}!',
   'car.rep': 'Coach reputation', 'car.conf': 'Board confidence', 'car.obj': 'Season objective', 'car.objRank': 'Finish {n} or better domestically', 'car.record': 'Record (series)', 'car.titles': '{n} titles',

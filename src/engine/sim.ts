@@ -2,7 +2,7 @@
 import { DB } from './data';
 import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
-import { runGame } from './engine';
+import { runGame, type RunInput, type Order } from './engine';
 import { opggAdj } from './runes';
 import { lineChem, chemPairs, boostMods } from './life';
 import { careerOnSeries } from './career';
@@ -172,9 +172,24 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
     return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh }; // phong độ chung của cả đội trong ngày
   };
-  const g = runGame({ blue: d.blue, red: d.red, picks: d.picks, bans: d.bans, lines, fits, tactics: { B: tac('B'), R: tac('R') }, record: !!opts.record, series: opts.series || 0 });
+  // ảnh chụp tuyển thủ lúc vào trận (để phát lại / ra lệnh giữa trận cho đúng diễn biến)
+  const snap = (p: Player | null | undefined): Player | null => (p ? ({ id: p.id, ign: p.ign, role: p.role, stats: { ...p.stats }, cond: p.cond, morale: p.morale, form: p.form } as Player) : null);
+  const snapLines = { B: Object.fromEntries(ROLES.map((r) => [r, snap(lines.B[r])])), R: Object.fromEntries(ROLES.map((r) => [r, snap(lines.R[r])])) } as RunInput['lines'];
+  const rin: RunInput = { blue: d.blue, red: d.red, picks: d.picks, bans: d.bans, lines: snapLines, fits, tactics: { B: tac('B'), R: tac('R') }, record: !!opts.record, series: opts.series || 0, seed: Math.floor(rand() * 2 ** 31) };
+  const g = runGame(rin);
+  g.rin = rin;
   g.pWinB = +logistic((teamPower(d.blue, d.picks.B) - teamPower(d.red, d.picks.R)) / 5.5).toFixed(3);
   return g;
+}
+
+/** mô phỏng lại một ván với các lệnh mới (cùng seed → diễn biến trước lệnh không đổi) */
+export function resimGame(g: GameResult, orders: Order[]): GameResult {
+  if (!g.rin) return g;
+  const rin: RunInput = { ...g.rin, orders, record: true };
+  const n = runGame(rin);
+  n.rin = rin;
+  n.pWinB = g.pWinB;
+  return n;
 }
 
 // cập nhật phong độ/thống kê sau ván

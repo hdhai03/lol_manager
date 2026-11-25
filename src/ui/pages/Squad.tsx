@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { S, userTeam, teamPlayers, teamOvr, lineupPlayers, autoLineup } from '../../engine/state';
 import { askingPrice, makeOffer, releasePlayer, renewContract, renewCost } from '../../engine/season';
 import { ATTR_GROUPS, ROLES, clamp, money } from '../../engine/util';
-import { BAD_TRAITS, PERSONAL_OPTS, TACTIC_OPTS, defaultTactics, groupScore, traitsOf } from '../../engine/attrs';
+import { BAD_TRAITS, PERSONAL_OPTS, ROLE_INS, TACTIC_OPTS, defaultTactics, groupScore, traitsOf } from '../../engine/attrs';
 import { t } from '../../i18n';
 import { ui, refresh, openModal, closeModal, toast } from '../store';
 import { Badge, Champ, Cc, CondMini, Face, FormArrow, RoleIcon, RoleTag, confirmBox, faceSrc } from '../components';
@@ -225,6 +225,15 @@ export function Tactics() {
               ))}</div>
             </div>
           ))}
+          <div className="flex flex-col gap-2 pb-3">
+            <div><b className="k-title" style={{ fontSize: '.92rem' }}>{t('tac.phase')}</b><div className="muted text-sm">{t('tac.h.phase')}</div></div>
+            <label className="tg"><input type="checkbox" data-phase checked={!!T.phase} onChange={(e) => { T.phase = e.target.checked ? { early: T.tempo, mid: T.tempo, late: T.tempo } : undefined; refresh(); }} /> {t('tac.phaseOn')}</label>
+            {T.phase && (['early', 'mid', 'late'] as const).map((ph) => (
+              <div key={ph} className="ph-row"><span className="k-label">{t('tac.ph.' + ph)}</span>
+                <div className="chips">{(['early', 'balanced', 'late'] as const).map((o) => <button key={o} className={`chp sm ${T.phase![ph] === o ? 'on' : ''}`} data-ph={`${ph}:${o}`} onClick={() => { T.phase![ph] = o; refresh(); }}>{t('tac.pp.' + o)}</button>)}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       <div className="gp">
@@ -236,9 +245,14 @@ export function Tactics() {
               <RoleTag r={role} /><Face p={p} size="sm" />
               <div className="grow min-w-0"><b>{p ? p.ign : '—'}</b>
                 {p && <div className="muted text-xs">{t('attr.aggression')} {p.stats.aggression} · {t('attr.patience')} {p.stats.patience}{traitsOf(p).length ? ' · ' + traitsOf(p).map((x) => t('trait.' + x)).join(', ') : ''}</div>}</div>
-              <div className="chips">{PERSONAL_OPTS.map((o) => (
-                <button key={o} className={`chp sm ${(T.personal[role] || 'standard') === o ? 'on' : ''}`} data-pr={role} data-pv={o} onClick={() => { T.personal[role] = o; refresh(); }}>{t('tac.pt.' + o)}</button>
-              ))}</div>
+              <div className="flex flex-col gap-1 items-end">
+                <div className="chips">{PERSONAL_OPTS.map((o) => (
+                  <button key={o} className={`chp sm ${(T.personal[role] || 'standard') === o ? 'on' : ''}`} data-pr={role} data-pv={o} onClick={() => { T.personal[role] = o; refresh(); }}>{t('tac.pt.' + o)}</button>
+                ))}</div>
+                <div className="chips">{ROLE_INS[role].map((o, i) => (
+                  <button key={o} className={`chp sm ri ${(T.roleIns?.[role] || ROLE_INS[role][0]) === o ? 'on' : ''}`} data-ri={`${role}:${o}`} title={t('ri.' + o + 'D')} onClick={() => { T.roleIns ??= {}; if (i === 0) delete T.roleIns[role]; else T.roleIns[role] = o; refresh(); }}>{t('ri.' + role + '.' + o)}</button>
+                ))}</div>
+              </div>
             </div>
           ))}
         </div>

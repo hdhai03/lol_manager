@@ -5,7 +5,7 @@
 //   judgment → đọc giao tranh, rút lui đúng lúc; aggression/patience → tần suất ăn thua; creativity → outplay, cướp mục tiêu;
 //   focus → lỗi vị trí; composure → khi bị dẫn; stamina → cuối trận/series; teamwork/leadership → phối hợp; adaptability → tướng lạ.
 import { DB } from './data';
-import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util';
+import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted, withSeed } from './util';
 import { traitsOf } from './attrs';
 import { simulateCombat, type CUnit, type Cls } from './combat';
 import { pickRunes, opggAdj, KS, type RunePick } from './runes';
@@ -21,7 +21,7 @@ interface Unit {
   atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
   lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
   hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
-  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick;
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick; build?: string[]; adapt?: 'mr' | 'armor' | 'none' | 'miss';
 }
 interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
 interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
@@ -34,7 +34,17 @@ export interface RunInput {
   blue: string; red: string; picks: Picks; bans: Bans;
   lines: Record<Side, Partial<Record<Role, Player | null>>>; fits: Record<Side, Partial<Record<Role, number>>>;
   tactics: Record<Side, Tactics>; record?: boolean; series?: number;
+  /** seed: cùng seed + cùng đầu vào → cùng diễn biến (phát lại / ra lệnh giữa trận) */
+  seed?: number; orders?: Order[];
 }
+export type OrderKind = 'baron' | 'dragon' | 'push' | 'defend' | 'fight';
+export interface Order { t: number; side: Side; kind: OrderKind }
+export const ORDER_DUR = 150; // giây hiệu lực của một lệnh
+// trang bị phòng thủ theo lớp tướng
+const SIT_ITEM: Record<Cls, { mr: string; armor: string }> = {
+  Tank: { mr: '4401', armor: '3075' }, Fighter: { mr: '3156', armor: '6333' }, Assassin: { mr: '3156', armor: '6333' },
+  Mage: { mr: '3102', armor: '3157' }, Marksman: { mr: '3139', armor: '3026' }, Support: { mr: '3190', armor: '3110' },
+};
 
 export const TICK = 15; // giây / nhịp
 export const MIR = ([x, y]: Pt): Pt => [100 - x, 100 - y];
@@ -84,6 +94,11 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
   // độ ăn ý với đồng đội: phối hợp, phán đoán, nhận thức bản đồ
   const ch = (tac.chem?.[role] ?? 58) - 58;
   at.teamwork += ch * 0.16; at.judgment += ch * 0.06; at.awareness += ch * 0.05;
+  const ins = tac.roleIns?.[role];
+  if (ins === 'weak') { at.aggression -= 10; at.patience += 8; at.positioning += 3; }
+  if (ins === 'aggro' || ins === 'invade') { at.aggression += 10; at.patience -= 6; }
+  if (ins === 'scale') { at.patience += 10; at.farm += 3; at.aggression -= 6; }
+  if (tac.roleIns?.Support === 'vision') at.awareness += 2.5;
   const pt = tac.personal?.[role] || 'standard';
   if (pt === 'aggressive') { at.aggression += 14; at.patience -= 10; }
   if (pt === 'safe') { at.aggression -= 14; at.patience += 10; at.positioning += 3; }
@@ -102,7 +117,7 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     k: side + role, side, role, lane: LANE_OF[role], pid: p ? p.id : null, champ, at, tr, pt,
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
     scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
-    early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025,
+    early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025 + (ins === 'scale' ? -0.04 : ins === 'invade' ? 0.03 : 0),
     meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0)),
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
@@ -114,10 +129,32 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
 
 // ---------------- mô phỏng ----------------
 export function runGame(input: RunInput): GameResult {
-  const { blue, red, picks, bans, lines, fits, tactics, record, series = 0 } = input;
+  return input.seed != null ? withSeed(input.seed, () => runGameInner(input)) : runGameInner(input);
+}
+function runGameInner(input: RunInput): GameResult {
+  const { blue, red, picks, bans, lines, fits, record, series = 0 } = input;
+  // bản sao chiến thuật: nhịp độ thay đổi theo giai đoạn / lệnh trong trận
+  const tactics: Record<Side, Tactics> = { B: { ...input.tactics.B }, R: { ...input.tactics.R } };
+  const orders = input.orders || [];
   const U: Record<string, Unit> = {};
   for (const sd of SIDES) for (const r of ROLES) U[sd + r] = mkUnit(sd, r, lines[sd][r], picks[sd][r] ?? '', fits[sd][r] ?? 50, tactics[sd]);
   const team = (sd: Side): Unit[] => ROLES.map((r) => U[sd + r]);
+  // lên đồ theo tình huống: đối thủ thiên phép → kháng phép, thiên vật lý → giáp (phán đoán tốt thì chọn đúng)
+  for (const sd of SIDES) {
+    const foes = ROLES.map((r) => DB.champions[picks[OPP[sd]][r] ?? '']).filter(Boolean);
+    const ap = foes.length ? foes.filter((c) => c.tags[0] === 'Mage' || (c.info.magic > c.info.attack && c.tags[0] !== 'Marksman')).length / foes.length : 0.5;
+    const need: 'mr' | 'armor' | 'none' = ap >= 0.6 ? 'mr' : ap <= 0.3 ? 'armor' : 'none';
+    for (const r of ROLES) {
+      const u = U[sd + r];
+      const core = (DB.champions[u.champ]?.build || []).slice(0, 4);
+      if (need === 'none') { u.adapt = 'none'; u.build = [...core, ...(DB.champions[u.champ]?.build || []).slice(4, 6)]; continue; }
+      const ok = rand() < clamp(0.45 + (u.at.judgment - 60) / 70 + (u.at.adaptability - 60) / 140, 0.2, 0.95);
+      const it = SIT_ITEM[u.cls][need];
+      u.adapt = ok ? need : 'miss';
+      u.build = ok ? [...core, it, (DB.champions[u.champ]?.build || [])[4]].filter(Boolean) as string[] : [...core, ...(DB.champions[u.champ]?.build || []).slice(4, 6)];
+      u.hpB *= ok ? 1.045 : 0.985;
+    }
+  }
   const alive = (sd: Side): Unit[] => team(sd).filter((u) => !u.dead);
   const towers: Record<string, Tower> = {};
   for (const sd of SIDES) for (const [lane, arr] of Object.entries(BLUE_TOWERS)) arr.forEach((pt, i) => {
@@ -147,6 +184,26 @@ export function runGame(input: RunInput): GameResult {
   let tick = 0, sec = 0, firstBlood = false, firstTower = false;
   let winner: Side | null = null, soulType: string | null = null;
   const tac = tactics;
+  /** lệnh đang có hiệu lực của một phe */
+  const ord = (sd: Side): OrderKind | null => {
+    let o: Order | null = null;
+    for (const x of orders) if (x.side === sd && x.t <= sec && sec < x.t + ORDER_DUR && (!o || x.t > o.t)) o = x;
+    return o ? o.kind : null;
+  };
+  const applyPlans = (): void => {
+    for (const sd of SIDES) {
+      const base = input.tactics[sd];
+      const ph = base.phase;
+      const m = sec / 60;
+      let tempo = ph ? (m < 14 ? ph.early : m < 25 ? ph.mid : ph.late) : base.tempo;
+      let style = base.style;
+      const o = ord(sd);
+      if (o === 'push') tempo = 'early';
+      if (o === 'defend') tempo = 'late';
+      if (o === 'fight') style = 'teamfight';
+      tac[sd].tempo = tempo; tac[sd].style = style;
+    }
+  };
   const shot = (sd: Side): Unit => team(sd).reduce((b, u) => (u.at.leadership > b.at.leadership ? u : b));
   const minute = () => sec / 60;
   const ev = (type: string, side: Side, data: Record<string, unknown> = {}): number => events.push({ t: tick, m: Math.floor(sec / 60), s: sec, type, side, ...data });
@@ -405,7 +462,7 @@ export function runGame(input: RunInput): GameResult {
       jg.pos = jit(pick(CAMPS[sd]), 1.5);
       if (sec < 180) continue;
       const jt = tac[sd].jungle;
-      const pG = 0.075 * (0.5 + jg.at.aggression / 100) * TEMPO[tac[sd].tempo] * (jt === 'farm' ? 0.4 : 1);
+      const pG = 0.075 * (0.5 + jg.at.aggression / 100) * TEMPO[tac[sd].tempo] * (jt === 'farm' ? 0.4 : 1) * (tac[sd].roleIns?.Jungle === 'invade' ? 1.2 : 1);
       if (rand() < pG) {
         const lanes = LANES.map((l) => {
           const foes = present(OPP[sd], l);
@@ -423,7 +480,8 @@ export function runGame(input: RunInput): GameResult {
       for (const role of ['Mid', 'Support']) {
         const u = U[sd + role];
         if (u.dead || u.recall || u.task !== 'lane' || sec < 240 || u.hp < 0.6) continue;
-        const p = (role === 'Mid' ? 0.022 : 0.016) * clamp((u.at.creativity + u.at.awareness - 100) / 80, 0.2, 1.6) * TEMPO[tac[sd].tempo];
+        const ri = tac[sd].roleIns?.[role as Role];
+        const p = (role === 'Mid' ? 0.022 : 0.016) * clamp((u.at.creativity + u.at.awareness - 100) / 80, 0.2, 1.6) * TEMPO[tac[sd].tempo] * (ri === 'roam' ? 1.9 : ri === 'lane' ? 0.5 : 1);
         if (rand() < p) {
           const dest: Lane = role === 'Mid' ? pick<Lane>(['top', 'bot']) : 'mid';
           if (present(OPP[sd], dest).length) { note('roam', sd, { who: role, lane: dest }); resolveGank(u, dest, true); }
@@ -438,7 +496,7 @@ export function runGame(input: RunInput): GameResult {
     const targets = present(os, lane);
     if (!targets.length) return;
     // phát hiện gank: awareness của mục tiêu (+hỗ trợ cắm mắt) so với creativity/awareness của người gank
-    const aw = Math.max(...targets.map((u) => u.at.awareness + (u.tr.has('visionary') ? 8 : 0)));
+    const aw = Math.max(...targets.map((u) => u.at.awareness + (u.tr.has('visionary') ? 8 : 0))) + (tac[os].roleIns?.Support === 'vision' ? 6 : 0);
     const pDetect = clamp(0.22 + (aw - g.at.creativity * 0.5 - g.at.awareness * 0.3) / 100, 0.05, 0.72);
     if (rand() < pDetect) {
       note('dodged', os, { who: targets[0].role, lane });
@@ -477,10 +535,15 @@ export function runGame(input: RunInput): GameResult {
       if ((k === 'grubs' || k === 'herald') && t.obj === 'dragon') thr += 0.15;
       thr -= (avg(mine, (u) => u.at.aggression) - 62) / 250 + (t.tempo === 'early' && sec < 900 ? 0.08 : 0);
       thr -= clamp((sec - Math.max(obj[k], objSeen[k])) / 600, 0, k === 'baron' ? 0.15 : 0.35); // để lâu thì dễ đánh hơn
+      const o = ord(sd);
+      if (o === 'baron' && k === 'baron') thr -= 0.3;
+      if (o === 'dragon' && (k === 'dragon' || k === 'elder')) thr -= 0.3;
+      if (o === 'fight') thr -= 0.1;
+      if (o === 'defend') thr += 0.2;
       const ratio = estimate(sd, mine, theirs.filter((u) => !u.dead));
       const liveT = theirs.filter((u) => !u.dead).length;
       // Baron rất rủi ro: chỉ đánh khi hơn người hoặc áp đảo hẳn (như thi đấu chuyên nghiệp)
-      want[sd] = (ratio > thr && (k !== 'baron' || mine.length > liveT || ratio > 1.7)) || (liveT <= 2 && mine.length >= 3 && (k !== 'baron' || rand() < 0.45));
+      want[sd] = (ratio > thr && (k !== 'baron' || mine.length > liveT || ratio > (o === 'baron' ? 1.35 : 1.7))) || (liveT <= 2 && mine.length >= 3 && (k !== 'baron' || rand() < 0.45));
     }
     if (!want.B && !want.R) return;
     let takerSide: Side;
@@ -547,7 +610,7 @@ export function runGame(input: RunInput): GameResult {
       const mine = alive(sd).filter((u) => !u.recall), theirs = alive(os);
       const ratio = estimate(sd, mine, theirs);
       // tách đường: đi đường trên đẩy lẻ nếu chiến thuật cho phép
-      const splitter = t.style === 'split' ? U[sd + 'Top'] : null;
+      const splitter = t.style === 'split' || t.roleIns?.Top === 'split' ? U[sd + 'Top'] : null;
       for (const u of team(sd)) if (u.task === 'split' || u.task === 'splitdef') u.task = 'group';
       if (splitter && !splitter.dead && !splitter.recall && splitter.hp > 0.5) splitter.task = 'split';
       // chọn đường để công trụ: đường có trụ ngoài cùng dễ nhất
@@ -562,9 +625,11 @@ export function runGame(input: RunInput): GameResult {
       const aggro = (avg(mine, (u) => u.at.aggression) - 62) / 220;
       const m = minute();
       const need = 1.1 - aggro - (t.tempo === 'early' ? 0.06 : t.tempo === 'late' && m < 28 ? -0.08 : 0) - clamp((m - 24) / 40, 0, 0.25);
+      const o = ord(sd);
+      const needO = need + (o === 'push' ? -0.14 : o === 'fight' ? -0.08 : o === 'defend' ? 0.3 : 0);
       let plan: { kind: 'farm' | 'siege'; lane?: Lane } = { kind: 'farm' };
       const splitting = splitter && splitter.task === 'split';
-      if (mine.length >= 3 && (ratio > need + (splitting ? 0.12 : 0) || buff[sd].baron > sec || buff[sd].elder > sec || mine.length - theirs.length >= 2)) plan = { kind: 'siege', lane: best };
+      if (mine.length >= 3 && (ratio > needO + (splitting ? 0.12 : 0) || buff[sd].baron > sec || buff[sd].elder > sec || mine.length - theirs.length >= 2)) plan = { kind: 'siege', lane: best };
       if (regroup[sd] > tick) plan = { kind: 'farm' };
       plans[sd] = { ...plan, ratio };
     }
@@ -684,6 +749,7 @@ export function runGame(input: RunInput): GameResult {
   const MAX_TICKS = 4 * 60; // 60 phút
   while (!winner && tick < MAX_TICKS) {
     tick++; sec = tick * TICK;
+    applyPlans();
     for (const u of [...team('B'), ...team('R')]) {
       if (u.dead) { u.dead--; u.pos = [...BASE[u.side]]; if (!u.dead) { u.hp = 1; u.task = u.role === 'Jungle' && sec < 840 ? 'jungle' : 'lane'; } continue; }
       if (sec >= 65) giveGold(u, 30.6);
@@ -737,7 +803,7 @@ export function runGame(input: RunInput): GameResult {
   const players = [];
   for (const u of [...team('B'), ...team('R')]) {
     const dmg = Math.round(u.dealt * 600 + dur * 60), early = Math.round(u.dealtEarly * 600 + Math.min(dur, 14) * 60);
-    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg) });
+    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg), build: u.build?.slice(0, 6), adapt: u.adapt });
   }
   const score = (x: PlayerLine): number => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
   const mvp = players.filter((x) => x.side === winner && x.pid).sort((a, b) => score(b) - score(a))[0];

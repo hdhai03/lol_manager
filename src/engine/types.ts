@@ -62,6 +62,10 @@ export interface Tactics {
   personal: Record<Role, PersonalTactic>; day?: number;
   /** độ ăn ý từng vị trí; thẻ tăng cường: ngọc / thể lực */
   chem?: Partial<Record<Role, number>>; runeB?: number; fresh?: boolean;
+  /** kế hoạch nhịp độ theo giai đoạn (đầu < 14', giữa < 25', cuối) */
+  phase?: { early: 'early' | 'balanced' | 'late'; mid: 'early' | 'balanced' | 'late'; late: 'early' | 'balanced' | 'late' };
+  /** chỉ đạo riêng từng vị trí */
+  roleIns?: Partial<Record<Role, string>>;
 }
 export interface NewsItem { id?: number; key: string; params: Record<string, unknown>; day: number; season: number; important: boolean }
 export interface FinanceEntry { key: string; amount: number; params?: Record<string, unknown>; day: number; season: number }
@@ -154,6 +158,7 @@ export interface Draft {
 }
 export interface PlayerLine {
   side: Side; role: Role; pid: string | null; champ: string; k: number; d: number; a: number; cs: number; gold: number; dmg: number; dmgEarly?: number;
+  build?: string[]; adapt?: 'mr' | 'armor' | 'none' | 'miss';
 }
 export interface GameEvent { t: number; m: number; s: number; type: string; side: Side; [k: string]: unknown }
 /** khung hình: [x, y, máu, chết(nhịp), cấp, vàng, cs, hạ, chết, hỗ trợ] */
@@ -165,6 +170,8 @@ export interface GameResult {
   drakes: Record<Side, string[]>; soul: Side | null; obj: Record<Side, ObjTally>;
   players: PlayerLine[]; mvp: string | null; picks: Picks; bans: Bans; frames: Record<string, FrameUnit>[] | null;
   pWinB?: number; recorded?: boolean; fights?: FightRec[];
+  /** đầu vào để mô phỏng lại (chỉ trong bộ nhớ / bản phát lại) */
+  rin?: import('./engine').RunInput;
   runes?: Record<string, { p: number; pr: number[]; s: number; sr: number[]; sh: number[]; kind: string; bonus: number; wr?: number }>;
 }
 /** một pha giao tranh ghi lại để phát lại: s0 = giây bắt đầu, ts = hệ số nén thời gian; frames: [t, x,y,hp × mỗi tướng] */

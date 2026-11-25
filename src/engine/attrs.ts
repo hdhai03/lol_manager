@@ -94,7 +94,7 @@ export const BAD_TRAITS = new Set(['hothead', 'tilter', 'glass']);
 export const groupScore = (p: Player, g: AttrGroup): number => Math.round(ATTR_GROUPS[g].filter((a) => a !== 'aggression').reduce((s, a) => s + p.stats[a], 0) / ATTR_GROUPS[g].filter((a) => a !== 'aggression').length);
 
 // Chiến thuật
-export const TACTIC_OPTS: { [K in Exclude<keyof Tactics, 'personal' | 'day' | 'chem' | 'runeB' | 'fresh'>]: Tactics[K][] } = {
+export const TACTIC_OPTS: { [K in Exclude<keyof Tactics, 'personal' | 'day' | 'chem' | 'runeB' | 'fresh' | 'phase' | 'roleIns'>]: Tactics[K][] } = {
   tempo: ['early', 'balanced', 'late'],
   obj: ['dragon', 'balanced', 'top'],
   style: ['teamfight', 'pick', 'split'],
@@ -102,6 +102,10 @@ export const TACTIC_OPTS: { [K in Exclude<keyof Tactics, 'personal' | 'day' | 'c
   jungle: ['auto', 'top', 'mid', 'bot', 'farm'],
 };
 export const PERSONAL_OPTS: PersonalTactic[] = ['safe', 'standard', 'aggressive'];
+/** chỉ đạo riêng theo vị trí (giá trị đầu tiên = mặc định) */
+export const ROLE_INS: Record<Role, string[]> = {
+  Top: ['lane', 'weak', 'split'], Jungle: ['std', 'invade'], Mid: ['std', 'lane', 'roam'], Bot: ['std', 'aggro', 'scale'], Support: ['std', 'roam', 'lane', 'vision'],
+};
 export const defaultTactics = (): Tactics => ({ tempo: 'balanced', obj: 'balanced', style: 'teamfight', focus: 'auto', jungle: 'auto', personal: Object.fromEntries(ROLES.map((r) => [r, 'standard'])) as Record<Role, PersonalTactic> });
 
 // AI chọn chiến thuật theo đội hình đã chọn
