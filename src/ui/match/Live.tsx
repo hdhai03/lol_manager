@@ -51,13 +51,13 @@ const IcGold = () => <svg viewBox="0 0 16 16" className="ico"><circle cx="8" cy=
 const IcTower = () => <svg viewBox="0 0 16 16" className="ico"><path d="M4 2h2v2h1.2V2h1.6v2H10V2h2v4l-1.3 1.3V13H12v1.5H4V13h1.3V7.3L4 6z" fill="currentColor" /></svg>;
 const IcGrub = () => <svg viewBox="0 0 16 16" className="ico"><ellipse cx="8" cy="9" rx="5" ry="4" fill="#b27cff" /><circle cx="6" cy="8" r="1" fill="#fff" /><circle cx="10" cy="8" r="1" fill="#fff" /></svg>;
 
-export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd: (g: GameResult) => void; onSkipAll: () => void }) {
-  const [g] = useState<GameResult>(() => simulateGame(d, { record: true, series: m.games.length }));
+export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d: Draft | null; onEnd: (g: GameResult) => void; onSkipAll: () => void; game?: GameResult; replay?: string }) {
+  const [g] = useState<GameResult>(() => game || simulateGame(d!, { record: true, series: m.games.length }));
   const [tl] = useState(() => new Timeline(g));
   const [speed, setSpeedS] = useState<number>(() => { try { return +(localStorage.getItem(KEY_SPEED) || 8); } catch { return 8; } });
   const [paused, setPaused] = useState(false);
   const [ordLeft, setOrdLeft] = useState(MAX_ORDERS);
-  const mySide: Side | null = g.blue === S.userTeam ? 'B' : g.red === S.userTeam ? 'R' : null;
+  const mySide: Side | null = replay ? null : g.blue === S.userTeam ? 'B' : g.red === S.userTeam ? 'R' : null;
   const root = useRef<HTMLDivElement>(null);
   const ctl = useRef<{ order: (k: OrderKind) => void; setSpeed: (x: number) => void; pause: (p: boolean) => void; toggleView: () => void; skip: () => void; skipAll: () => void } | null>(null);
   const comp = S.comps[m.comp];
@@ -330,7 +330,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
           <span className="gdiff" id="gdiff" />
           <div className="side r"><span className="st g"><IcGold /><em id="gR">0</em></span><span className="st"><IcTower /><em id="twR">0</em></span><span className="st"><IcGrub /><em id="grR">0</em></span><span className="dk r" id="dkR" /><span className="buff" id="bbR" /></div>
         </div>
-        <div className="sb-lg"><LeagueBadge id={compLogoId(comp)} size="xs" />{compTitle(comp)} · {t('dr.game', { n: m.games.length + 1 })}</div>
+        <div className="sb-lg">{comp && <LeagueBadge id={compLogoId(comp)} size="xs" />}{replay ?? (comp ? compTitle(comp) : '')} · {t('dr.game', { n: replay ? m.games.length : m.games.length + 1 })}</div>
       </div>
       <div className="bc-timers"><div><span className="ob dr" /><span id="tDr">05:00</span></div><div><span className="ob ba" /><span id="tBa">20:00</span></div></div>
       {sideCol('B')}
@@ -360,7 +360,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
         {SPEEDS.map((x) => <button key={x} className={`chip sm ${speed === x ? 'on' : ''}`} data-sp={x} onClick={() => { setSpeedS(x); ctl.current?.setSpeed(x); }}>{x}x</button>)}
         <button className="chip sm" data-view onClick={() => ctl.current?.toggleView()}>2D/3D</button>
         <button className="chip sm" data-skip onClick={() => ctl.current?.skip()}>{t('m.skip')}</button>
-        {!m.done && <button className="chip sm" data-skipall onClick={() => ctl.current?.skipAll()}>{t('m.skipAll')}</button>}
+        {!m.done && !replay && <button className="chip sm" data-skipall onClick={() => ctl.current?.skipAll()}>{t('m.skipAll')}</button>}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 // Sự nghiệp HLV + Tài chính (thương hiệu, sổ thu chi theo tuần)
 import { S, userTeam, teamPlayers, teamSalary, saveGame } from '../../engine/state';
+import { Achievements } from './Stats';
 import { money } from '../../engine/util';
 import { ensureCareer, ensureBrand, objTarget, switchTeam, setContent, upgradeMerch, fanFestival, merchPerDay, CONTENT_COST, MERCH_UPGRADE, FEST_COST, TICKS, LEDGER_CATS, type LedgerCat } from '../../engine/career';
 import { t } from '../../i18n';
@@ -53,6 +54,7 @@ export function Career() {
           </div>
         </div>
       )}
+      <Achievements />
       <div className="gp">
         <div className="gp-h"><h3 className="k-title">{t('car.history')}</h3></div>
         <div className="gp-b" style={{ overflowX: 'auto' }}>

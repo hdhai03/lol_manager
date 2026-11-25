@@ -41,7 +41,7 @@ export interface Db {
 }
 
 // ---------- trạng thái game ----------
-export interface SeasonStats { g: number; w: number; k: number; d: number; a: number; cs: number; mvp: number; dmg: number; gold: number; min: number }
+export interface SeasonStats { g: number; w: number; k: number; d: number; a: number; cs: number; mvp: number; dmg: number; gold: number; min: number; tk?: number; rt?: number }
 export interface Player {
   id: string; ign: string; name: string; native: string; country: string; age: number; role: Role;
   teamId: string | null; stats: Stats; ovr: number; potential: number; pool: PoolEntry[];
@@ -52,6 +52,8 @@ export interface Player {
   retired?: boolean; titles?: string[]; awards?: string[]; academyOf?: string | null; ovrStart?: number;
   clause?: number; promise?: 'starter' | 'rotation'; bonus?: boolean;
   t2?: { g: number; w: number; r: number }; loan?: { from: string; until: number };
+  /** điểm phong độ 20 ván gần nhất (0-10) */
+  fh?: number[];
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -144,6 +146,9 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  replays?: { id: string; season: number; day: number; comp: string; a: string; b: string; winner: string; durS: number; k: [number, number]; game: number; rin: import('./engine').RunInput; star?: boolean }[];
+  ceremony?: { title: string; tier: string; season: number; team: string } | null;
+  wrapped?: { season: number; team: string; w: number; l: number; titles: string[]; best?: { pid: string; rt: number; g: number }; topK?: { pid: string; k: number }; fans: [number, number]; allpro: Partial<Record<string, string>>; seen?: boolean } | null;
   dev?: Record<string, { focus: 'laning' | 'mechanics' | 'macro' | 'mental' | 'leader' | 'pool'; prog: number }>;
   scouted?: { team: string; day: number; bans: string[] }; pressDay?: number;
   staff?: { assistant: number; analyst: number; psych: number; fitness: number };

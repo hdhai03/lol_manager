@@ -19,14 +19,18 @@ import { Power, Records } from '../pages/Rankings';
 import { Meta, World } from '../pages/Office';
 import { Career, Finance } from '../pages/Career';
 import { Staff } from '../pages/Staff';
+import { Stats } from '../pages/Stats';
+import { checkAch } from '../../engine/ach';
+import { useEffect } from 'react';
+import { toast } from '../store';
 
 const PAGES: Record<string, () => ReactElement> = {
   dashboard: Home, inbox: Inbox, roster: Roster, tactics: Tactics, practice: Practice, transfers: Transfers,
   training: Training, youth: Youth, ladder: Ladder,
-  schedule: Schedule, standings: Standings, power: Power, records: Records, meta: Meta, world: World, finance: Finance, career: Career, staff: Staff,
+  schedule: Schedule, standings: Standings, power: Power, records: Records, meta: Meta, world: World, finance: Finance, career: Career, staff: Staff, stats: Stats,
 };
 /** trang tự cuộn (danh sách dài); còn lại vừa đúng một màn hình */
-const SCROLLS = new Set(['schedule', 'standings', 'records', 'meta', 'world', 'finance', 'power']);
+const SCROLLS = new Set(['schedule', 'standings', 'records', 'meta', 'world', 'finance', 'power', 'stats', 'career']);
 
 export function GameShell() {
   const ut = userTeam();
@@ -37,6 +41,8 @@ export function GameShell() {
   const unread = unreadCount();
   const phaseIdx = S.phase ? PHASES.indexOf(S.phase) : PHASES.length;
   const Page = PAGES[ui.tab] || Home;
+  // thành tựu: kiểm tra sau mỗi lần trạng thái đổi
+  useEffect(() => { for (const id of checkAch()) toast(`${t('ach.new')}: ${t('ach.' + id)}`, 'ok'); });
   return (
     <div className="shell game">
       <header className="hud">

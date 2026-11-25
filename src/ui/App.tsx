@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { t } from '../i18n';
 import { ui, useVersion } from './store';
+import { S } from '../engine/state';
 import { ModalHost, ToastHost } from './components';
 import { Backdrop } from './Backdrop';
 import { onKey } from './actions';
@@ -8,6 +9,7 @@ import { MenuScreen, AboutScreen, LoadScreen } from './screens/Menu';
 import { NewGameScreen } from './screens/NewGame';
 import { GameShell } from './screens/GameShell';
 import { MatchDay } from './match/MatchDay';
+import { Ceremony, Wrapped, ReplayView } from './Overlays';
 
 export function App() {
   useVersion();
@@ -24,7 +26,10 @@ export function App() {
       {s === 'about' && <AboutScreen />}
       {s === 'load' && <LoadScreen />}
       {s === 'new' && <NewGameScreen />}
-      {s === 'game' && !ui.matchDay && <GameShell />}
+      {s === 'game' && !ui.matchDay && !ui.replay && <GameShell />}
+      {s === 'game' && !ui.matchDay && ui.replay && <ReplayView key={ui.replay} />}
+      {s === 'game' && !ui.matchDay && !ui.replay && <Ceremony />}
+      {s === 'game' && !ui.matchDay && !ui.replay && !S.ceremony && <Wrapped />}
       {s === 'game' && ui.matchDay && <MatchDay key={ui.matchDay.id} match={ui.matchDay} />}
       <ModalHost />
       <ToastHost />

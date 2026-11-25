@@ -4,6 +4,18 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'nav.stats': 'Thống kê', 'stx.title': 'Thống kê tuyển thủ {y}', 'stx.pick2': 'Tích 2 tuyển thủ để so sánh', 'stx.compare': 'So sánh', 'stx.clear': 'Bỏ chọn', 'stx.form': 'Phong độ', 'stx.formLast': 'Phong độ {n} ván gần nhất', 'stx.none': 'Chưa có tuyển thủ nào đủ {n} ván.',
+  'stx.g': 'Ván', 'stx.wr': 'Thắng', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'ST/phút', 'stx.cspm': 'CS/phút', 'stx.gpm': 'Vàng/phút', 'stx.mvp': 'MVP', 'stx.rt': 'Điểm',
+  'rec.tab.replays': 'Xem lại', 'rp.none': 'Chưa có ván nào được lưu. Các ván của đội bạn và các trận chung kết sẽ được lưu để xem lại.', 'rp.watch': 'Xem lại', 'rp.title': 'Phát lại', 'rp.close': 'Đóng',
+  'cer.champions': 'Nhà vô địch', 'cer.continue': 'Tiếp tục',
+  'wr.title': 'Mùa giải {y} của bạn', 'wr.record': 'Thành tích loạt trận', 'wr.wr': 'Tỉ lệ thắng {n}%', 'wr.titles': 'Danh hiệu', 'wr.noTitle': 'Chưa có danh hiệu mùa này', 'wr.best': 'Tuyển thủ xuất sắc nhất', 'wr.rating': 'Điểm trung bình {r} · {g} ván', 'wr.topK': 'Sát thủ số 1', 'wr.kills': '{n} mạng hạ gục', 'wr.fans': 'Người hâm mộ', 'wr.allpro': 'Đội hình tiêu biểu giải', 'wr.next': 'Tiếp', 'wr.done': 'Sang mùa mới',
+  'ach.title': 'Thành tựu', 'ach.new': 'Thành tựu mới',
+  'ach.firstWin': 'Khởi đầu', 'ach.firstWinD': 'Thắng loạt trận đầu tiên', 'ach.streak5': 'Chuỗi thắng', 'ach.streak5D': 'Thắng 5 loạt trận liên tiếp', 'ach.clean': 'Sạch lưới', 'ach.cleanD': 'Thắng một loạt Bo5 3-0',
+  'ach.reverse': 'Lội ngược dòng', 'ach.reverseD': 'Thắng Bo5 sau khi bị dẫn 0-2', 'ach.giantKiller': 'Hạ gục người khổng lồ', 'ach.giantKillerD': 'Thắng đội mạnh hơn ít nhất 5 OVR', 'ach.league': 'Lên ngôi', 'ach.leagueD': 'Giành danh hiệu đầu tiên',
+  'ach.intl': 'Vươn ra thế giới', 'ach.intlD': 'Vô địch một giải quốc tế', 'ach.worlds': 'Đỉnh cao', 'ach.worldsD': 'Vô địch CKTG', 'ach.double': 'Cú đúp', 'ach.doubleD': '2 danh hiệu trong một mùa', 'ach.dynasty': 'Đế chế', 'ach.dynastyD': '5 danh hiệu trong sự nghiệp',
+  'ach.underdog': 'Kẻ ngáng đường', 'ach.underdogD': 'Vô địch khi mục tiêu chỉ là vào playoffs hoặc phát triển', 'ach.rich': 'Đại gia', 'ach.richD': 'Ngân sách đạt $20M', 'ach.fans': 'Hiện tượng', 'ach.fansD': '2 triệu người hâm mộ',
+  'ach.chem': 'Một khối', 'ach.chemD': 'Độ ăn ý đội hình đạt 85', 'ach.staff': 'Bộ máy hoàn hảo', 'ach.staffD': 'Mọi vị trí ban huấn luyện đạt cấp hàng đầu', 'ach.academy': 'Lò đào tạo', 'ach.academyD': 'Tuyển thủ học viện được đôn lên đá chính',
+  'ach.trait': 'Lột xác', 'ach.traitD': 'Một tuyển thủ mở khoá đặc điểm mới', 'ach.boosts': 'Nhà sưu tầm', 'ach.boostsD': 'Giữ đủ 6 thẻ tăng cường', 'ach.veteran': 'Lão làng', 'ach.veteranD': 'Hoàn thành 3 mùa giải', 'ach.journeyman': 'Du mục', 'ach.journeymanD': 'Dẫn dắt 2 đội khác nhau',
   'nav.staff': 'Ban huấn luyện', 'stf.lv0': 'Không có', 'stf.lv1': 'Cơ bản', 'stf.lv2': 'Giỏi', 'stf.lv3': 'Hàng đầu', 'fin.staffHire': 'Ký hợp đồng {role}',
   'stf.assistant': 'Trợ lý HLV', 'stf.assistantD': 'Giáo án, kèm cặp từng tuyển thủ', 'stf.assistantE': 'Tốc độ tập luyện +{pct}%, lộ trình cá nhân nhanh hơn.',
   'stf.analyst': 'Nhà phân tích', 'stf.analystD': 'Phân tích đối thủ, cấm/chọn', 'stf.analystE': 'Trinh sát sâu hơn ({n} tướng tủ thêm), phong độ trong trận nhỉnh hơn.',
@@ -328,6 +340,18 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'nav.stats': 'Stats', 'stx.title': 'Player stats {y}', 'stx.pick2': 'Tick 2 players to compare', 'stx.compare': 'Compare', 'stx.clear': 'Clear', 'stx.form': 'Form', 'stx.formLast': 'Form over the last {n} games', 'stx.none': 'No players with {n}+ games yet.',
+  'stx.g': 'Games', 'stx.wr': 'Win', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'DPM', 'stx.cspm': 'CSPM', 'stx.gpm': 'GPM', 'stx.mvp': 'MVP', 'stx.rt': 'Rating',
+  'rec.tab.replays': 'Replays', 'rp.none': 'No saved games yet. Your team\'s games and finals are saved for replay.', 'rp.watch': 'Watch', 'rp.title': 'Replay', 'rp.close': 'Close',
+  'cer.champions': 'Champions', 'cer.continue': 'Continue',
+  'wr.title': 'Your {y} season', 'wr.record': 'Series record', 'wr.wr': '{n}% win rate', 'wr.titles': 'Titles', 'wr.noTitle': 'No titles this season', 'wr.best': 'Player of the season', 'wr.rating': 'Average rating {r} · {g} games', 'wr.topK': 'Top killer', 'wr.kills': '{n} kills', 'wr.fans': 'Fans', 'wr.allpro': 'League All-Pro team', 'wr.next': 'Next', 'wr.done': 'On to next season',
+  'ach.title': 'Achievements', 'ach.new': 'Achievement unlocked',
+  'ach.firstWin': 'First steps', 'ach.firstWinD': 'Win your first series', 'ach.streak5': 'On fire', 'ach.streak5D': 'Win 5 series in a row', 'ach.clean': 'Clean sweep', 'ach.cleanD': 'Win a Bo5 3-0',
+  'ach.reverse': 'Reverse sweep', 'ach.reverseD': 'Win a Bo5 after going 0-2 down', 'ach.giantKiller': 'Giant killer', 'ach.giantKillerD': 'Beat a team at least 5 OVR stronger', 'ach.league': 'Crowned', 'ach.leagueD': 'Win your first title',
+  'ach.intl': 'World stage', 'ach.intlD': 'Win an international event', 'ach.worlds': 'The summit', 'ach.worldsD': 'Win Worlds', 'ach.double': 'Double', 'ach.doubleD': '2 titles in one season', 'ach.dynasty': 'Dynasty', 'ach.dynastyD': '5 career titles',
+  'ach.underdog': 'Underdog', 'ach.underdogD': 'Win a title when the goal was playoffs or development', 'ach.rich': 'Deep pockets', 'ach.richD': 'Reach a $20M budget', 'ach.fans': 'Phenomenon', 'ach.fansD': '2 million fans',
+  'ach.chem': 'One mind', 'ach.chemD': 'Reach 85 lineup chemistry', 'ach.staff': 'Perfect machine', 'ach.staffD': 'Every staff role at elite level', 'ach.academy': 'Talent factory', 'ach.academyD': 'An academy graduate in the starting lineup',
+  'ach.trait': 'Breakthrough', 'ach.traitD': 'A player unlocks a new trait', 'ach.boosts': 'Collector', 'ach.boostsD': 'Hold 6 boost cards', 'ach.veteran': 'Veteran', 'ach.veteranD': 'Complete 3 seasons', 'ach.journeyman': 'Journeyman', 'ach.journeymanD': 'Coach 2 different teams',
   'nav.staff': 'Staff', 'stf.lv0': 'None', 'stf.lv1': 'Basic', 'stf.lv2': 'Good', 'stf.lv3': 'Elite', 'fin.staffHire': 'Hired {role}',
   'stf.assistant': 'Assistant coach', 'stf.assistantD': 'Drills and individual coaching', 'stf.assistantE': 'Training speed +{pct}%, faster development plans.',
   'stf.analyst': 'Analyst', 'stf.analystD': 'Opponent analysis, draft prep', 'stf.analystE': 'Deeper scouting (+{n} pocket picks), slightly better in-game form.',

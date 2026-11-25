@@ -87,6 +87,7 @@ function finishComp(c: Comp): void {
   const champ = order[0], runner = order[1];
   const title = `${c.trophy.title} ${y}`;
   S.teams[champ].trophies.push(title);
+  if (champ === ut) S.ceremony = { title, tier: c.trophy.tier, season: y, team: ut };
   S.history.unshift({ season: y, title, champ, runner, kind: c.trophy.tier, league: c.league });
   addNews(['fst', 'msi', 'worlds'].includes(c.trophy.tier) ? 'news.intlChamp' : 'news.leagueChamp', { team: S.teams[champ].name, title, runner: S.teams[runner].name }, true);
   for (const pid of S.teams[champ].roster) {
@@ -179,6 +180,7 @@ export function setAutoSave(fn: () => void): void { autoSaveHook = fn; }
 export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
+  seasonWrapped();
   careerNewSeason();
   returnLoans();
   t2NewSeason();
@@ -380,3 +382,22 @@ export function seasonDate(day: number): Date {
   return new Date(from + off * 864e5);
 }
 export { clamp };
+
+/** tổng kết mùa ("Wrapped") của đội người chơi, gọi trước khi xoá số liệu mùa */
+function seasonWrapped(): void {
+  const y = S.season;
+  const ut = userTeam();
+  const ms = Object.values(S.comps).filter((c) => c.id.startsWith(`${y}-`)).flatMap((c) => c.matches).filter((m) => m.done && (m.a === ut.id || m.b === ut.id));
+  const w = ms.filter((m) => m.winner === ut.id).length;
+  const ps = teamPlayers(ut).filter((p) => p.season.g >= 3);
+  const best = [...ps].sort((a, b) => (b.season.rt || 0) / b.season.g - (a.season.rt || 0) / a.season.g)[0];
+  const topK = [...ps].sort((a, b) => b.season.k - a.season.k)[0];
+  const hall = (S.hall || []).find((h) => h.season === y && h.league === ut.league);
+  S.wrapped = {
+    season: y, team: ut.id, w, l: ms.length - w, titles: ut.trophies.filter((x) => x.endsWith(String(y))),
+    best: best ? { pid: best.id, rt: +((best.season.rt || 0) / best.season.g).toFixed(2), g: best.season.g } : undefined,
+    topK: topK ? { pid: topK.id, k: topK.season.k } : undefined,
+    fans: [S.brand?.fansStart ?? 0, S.brand?.fans ?? 0],
+    allpro: hall ? Object.fromEntries(Object.entries(hall.allpro || {}).map(([r, x]) => [r, (x as { pid: string }).pid])) : {},
+  };
+}

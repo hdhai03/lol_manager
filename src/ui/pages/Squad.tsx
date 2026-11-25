@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Spark } from './Stats';
 import { loanModal } from './Staff';
 import { sendDown } from '../../engine/staff';
 import { negoModal } from './Nego';
@@ -97,6 +98,7 @@ export function PlayerDetail({ p }: { p: Player }) {
           </div>
         </div>
       )}
+      {(p.fh || []).length > 1 && <div><div className="sub-h">{t('stx.formLast', { n: p.fh!.length })}</div><Spark v={p.fh!} w={320} h={44} /></div>}
       {(p.titles || []).length > 0 && <div><div className="sub-h">{t('p.titles')}</div><div className="text-sm">{(p.titles || []).join(' · ')}</div></div>}
       {(p.awards || []).length > 0 && <div><div className="sub-h">{t('p.awards')}</div><div className="text-sm">{(p.awards || []).map((x, i) => { const [k, ev] = x.split('|'); return <span key={i} className="mr-2"><span className="tagx">{t('rec.' + k)}</span> {ev}</span>; })}</div></div>}
       <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-line">

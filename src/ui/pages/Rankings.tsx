@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Replays } from './Stats';
 import { openTeam } from './TeamProfile';
 import { DB } from '../../engine/data';
 import { S } from '../../engine/state';
@@ -76,11 +77,12 @@ export function Records() {
   const f = ui.filters;
   f.recTab ??= 'hall'; f.recLg ??= 'all';
   S.hall ??= []; S.records ??= { game: {}, event: {} }; S.evstats ??= {};
-  const tabs = ['hall', 'events', 'records', 'titles', 'career'];
+  const tabs = ['hall', 'events', 'records', 'titles', 'career', 'replays'];
   const lgOk = (lg?: string) => f.recLg === 'all' || lg === f.recLg;
   const who = (pid: string): Who => { const p = S.players[pid]; return { pid, ign: p?.ign ?? '?', team: p?.teamId ? S.teams[p.teamId].short : '' }; };
   let body: ReactNode;
-  if (f.recTab === 'hall') {
+  if (f.recTab === 'replays') body = <Replays />;
+  else if (f.recTab === 'hall') {
     const list = S.hall.filter((h) => lgOk(h.league));
     body = list.length ? (
       <table className="gt rec-t"><thead><tr><th>{t('rec.event')}</th><th>{t('rec.champ')}</th><th>{t('rec.mvp')}</th><th>{t('rec.fmvp')}</th><th>{t('rec.allpro')}</th><th>{t('rec.rookie')}</th></tr></thead>

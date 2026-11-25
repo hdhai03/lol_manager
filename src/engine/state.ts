@@ -49,7 +49,7 @@ export function newGame({ teamId, manager }: { teamId: string; manager: string }
   return s;
 }
 
-export function blankStats(): SeasonStats { return { g: 0, w: 0, k: 0, d: 0, a: 0, cs: 0, mvp: 0, dmg: 0, gold: 0, min: 0 }; }
+export function blankStats(): SeasonStats { return { g: 0, w: 0, k: 0, d: 0, a: 0, cs: 0, mvp: 0, dmg: 0, gold: 0, min: 0, tk: 0, rt: 0 }; }
 
 export const team = (id: string): Team => S.teams[id];
 export const player = (id: string): Player => S.players[id];

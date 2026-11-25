@@ -203,9 +203,14 @@ export function applyGameResult(g: GameResult): void {
     const p = x.pid ? S.players[x.pid] : undefined;
     if (!p) continue;
     const win = x.side === g.winner;
+    // điểm phong độ ván (0-10) và tổng mạng hạ của đội (tính KP%)
+    const tk = g.players.filter((y) => y.side === x.side).reduce((s, y) => s + y.k, 0);
+    const rt = clamp(6 + (x.k + x.a * 0.6 - x.d * 0.9) / 3 + (win ? 0.6 : -0.4) + (g.mvp === p.id ? 1 : 0), 1, 10);
+    p.fh = [...(p.fh || []), +rt.toFixed(1)].slice(-20);
     for (const k of ['season', 'career'] as const) {
       const st = p[k];
       st.g++; if (win) st.w++;
+      st.tk = (st.tk || 0) + tk; st.rt = (st.rt || 0) + rt;
       st.k += x.k; st.d += x.d; st.a += x.a; st.cs += x.cs;
       st.dmg = (st.dmg || 0) + (x.dmg || 0); st.gold = (st.gold || 0) + (x.gold || 0); st.min = (st.min || 0) + (g.durS ? g.durS / 60 : g.dur);
       if (g.mvp === p.id) st.mvp++;
@@ -237,6 +242,16 @@ export function simSeries(match: Match): void {
 
 export function recordGame(match: Match, g: GameResult, detailed: boolean): void {
   applyGameResult(g);
+  // lưu bản phát lại: các ván của đội người chơi và các trận chung kết
+  const comp = S.comps[match.comp];
+  const fin = !!match.node && /^(GF|F)$/.test(match.node);
+  if (g.rin && (match.a === S.userTeam || match.b === S.userTeam || fin)) {
+    const rin = { ...g.rin, record: false, orders: g.rin.orders };
+    S.replays = [{ id: `${match.id}#${match.games.length}`, season: S.season, day: S.day, comp: comp ? comp.name : '', a: g.blue, b: g.red, winner: g.winnerId, durS: g.durS, k: [g.kills.B, g.kills.R] as [number, number], game: match.games.length + 1, rin, star: fin }, ...(S.replays || [])];
+    // giữ 16 ván gần nhất + tối đa 10 ván chung kết
+    const stars = S.replays.filter((r) => r.star).slice(0, 10), rest = S.replays.filter((r) => !r.star).slice(0, 16);
+    S.replays = [...stars, ...rest].sort((a, b) => b.season - a.season || b.day - a.day);
+  }
   archiveGame(match, g);
   if (match.bo > 1) match.fearless = [...(match.fearless || []), ...(Object.values(g.picks.B) as string[]), ...(Object.values(g.picks.R) as string[])];
   if (g.winnerId === match.a) match.winsA++; else match.winsB++;
