@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Replays } from './Stats';
+import { Replays, SkinsView, AllStarView } from './Stats';
 import { openTeam } from './TeamProfile';
 import { DB } from '../../engine/data';
 import { S } from '../../engine/state';
@@ -77,11 +77,13 @@ export function Records() {
   const f = ui.filters;
   f.recTab ??= 'hall'; f.recLg ??= 'all';
   S.hall ??= []; S.records ??= { game: {}, event: {} }; S.evstats ??= {};
-  const tabs = ['hall', 'events', 'records', 'titles', 'career', 'replays'];
+  const tabs = ['hall', 'events', 'records', 'titles', 'career', 'skins', 'allstar', 'replays'];
   const lgOk = (lg?: string) => f.recLg === 'all' || lg === f.recLg;
   const who = (pid: string): Who => { const p = S.players[pid]; return { pid, ign: p?.ign ?? '?', team: p?.teamId ? S.teams[p.teamId].short : '' }; };
   let body: ReactNode;
   if (f.recTab === 'replays') body = <Replays />;
+  else if (f.recTab === 'skins') body = <SkinsView />;
+  else if (f.recTab === 'allstar') body = <AllStarView />;
   else if (f.recTab === 'hall') {
     const list = S.hall.filter((h) => lgOk(h.league));
     body = list.length ? (

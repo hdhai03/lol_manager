@@ -4,6 +4,11 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'rec.tab.skins': 'Trang phục vô địch', 'rec.tab.allstar': 'All-Star', 'sk.none': 'Chưa có đội nào vô địch CKTG trong sự nghiệp của bạn.', 'sk.name': 'Trang phục {team} {y}', 'news.skins': 'Riot ra mắt bộ trang phục vô địch của {team}: {champs}!',
+  'as.none': 'All-Star diễn ra khi mùa giải kết thúc.', 'as.1v1': 'Vô địch giải 1v1', 'as.final': 'Chung kết: {a} vs {b}', 'as.aram': 'Showmatch ARAM', 'as.east': 'Phương Đông thắng', 'as.west': 'Phương Tây thắng',
+  'news.allstar': 'All-Star: {n} tuyển thủ của bạn được bình chọn ({players}). Vô địch 1v1: {winner}.', 'rec.allstar': 'All-Star',
+  'cl.title': 'Clash cuối tuần', 'cl.none': 'Cần ít nhất 3 tuyển thủ học viện để đăng ký Clash (14 ngày/lần).', 'cl.res': 'Vô địch: {winner} · MVP {mvp}',
+  'news.clash': '{team} về hạng {rank} ở Clash (vô địch: {winner}). Tài năng nổi bật: {mvp}.', 'news.clashWin': '{team} vô địch Clash cuối tuần! MVP: {mvp}.',
   'pg.vision': 'Tầm nhìn', 'pg.visionT': 'Điểm tầm nhìn', 'pg.wards': 'Cắm {w} mắt · phá {k} mắt', 'ld.click': 'Bấm để vào trận', 'an.double': 'HAI MẠNG', 'an.triple': 'BA MẠNG', 'an.quadra': 'BỐN MẠNG', 'an.penta': 'NĂM MẠNG!', 'an.shutdown': 'CHẶN ĐỨNG', 'an.spree': 'Liên tục hạ gục', 'an.rampage': 'Không thể cản phá', 'an.unstoppable': 'Không thể ngăn chặn', 'an.dominating': 'Áp đảo', 'an.godlike': 'Như thần', 'an.legendary': 'HUYỀN THOẠI',
   'mst.title': 'Thông thạo cấp {n}', 'mst.soloq': 'xếp hạng', 'news.rankReward': '{player} kết thúc mùa xếp hạng ở hạng {rank} máy chủ {server}.', 'rkr.best': '· Hạng {n} {sv} mùa {y}',
   'hon.title': 'Vinh danh', 'hon.cool': 'Bình tĩnh', 'hon.shotcall': 'Chỉ huy xuất sắc', 'hon.gg': 'Tinh thần đồng đội', 'hon.from': 'từ {player}', 'hon.lv': 'Cấp vinh danh {n}', 'news.honorUp': '{player} đạt cấp vinh danh {lv}!',
@@ -376,6 +381,11 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'rec.tab.skins': 'Championship skins', 'rec.tab.allstar': 'All-Star', 'sk.none': 'No Worlds champions during your career yet.', 'sk.name': '{team} {y} skins', 'news.skins': 'Riot reveals the {team} championship skins: {champs}!',
+  'as.none': 'All-Star happens when the season ends.', 'as.1v1': '1v1 champion', 'as.final': 'Final: {a} vs {b}', 'as.aram': 'ARAM showmatch', 'as.east': 'East wins', 'as.west': 'West wins',
+  'news.allstar': 'All-Star: {n} of your players were voted in ({players}). 1v1 champion: {winner}.', 'rec.allstar': 'All-Star',
+  'cl.title': 'Weekend Clash', 'cl.none': 'Need at least 3 academy players to enter Clash (every 14 days).', 'cl.res': 'Winner: {winner} · MVP {mvp}',
+  'news.clash': '{team} finished #{rank} in Clash (winner: {winner}). Standout: {mvp}.', 'news.clashWin': '{team} won the weekend Clash! MVP: {mvp}.',
   'pg.vision': 'Vision', 'pg.visionT': 'Vision score', 'pg.wards': '{w} wards placed · {k} destroyed', 'ld.click': 'Click to start', 'an.double': 'DOUBLE KILL', 'an.triple': 'TRIPLE KILL', 'an.quadra': 'QUADRA KILL', 'an.penta': 'PENTAKILL!', 'an.shutdown': 'SHUTDOWN', 'an.spree': 'Killing spree', 'an.rampage': 'Rampage', 'an.unstoppable': 'Unstoppable', 'an.dominating': 'Dominating', 'an.godlike': 'Godlike', 'an.legendary': 'LEGENDARY',
   'mst.title': 'Mastery level {n}', 'mst.soloq': 'ranked', 'news.rankReward': '{player} finished the ranked season #{rank} on {server}.', 'rkr.best': '· #{n} {sv} season {y}',
   'hon.title': 'Honors', 'hon.cool': 'Stayed cool', 'hon.shotcall': 'Great shotcalling', 'hon.gg': 'GG <3', 'hon.from': 'from {player}', 'hon.lv': 'Honor level {n}', 'news.honorUp': '{player} reached honor level {lv}!',

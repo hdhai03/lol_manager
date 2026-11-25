@@ -1,9 +1,9 @@
 // Thống kê nâng cao, so sánh 2 tuyển thủ, danh sách phát lại, thành tựu
-import { DB } from '../../engine/data';
+import { DB, champSplash as champSplashUrl } from '../../engine/data';
 import { S } from '../../engine/state';
 import { ROLES } from '../../engine/util';
 import { ACH, achUnlocked } from '../../engine/ach';
-import { t } from '../../i18n';
+import { t, cname } from '../../i18n';
 import { ui, refresh } from '../store';
 import { Badge, Face, LeagueBadge, RoleTag } from '../components';
 import { openPlayer } from './Squad';
@@ -108,6 +108,40 @@ export function Achievements() {
           <div className="min-w-0"><b>{t('ach.' + a.id)}</b><small>{have[a.id] ? have[a.id] : t('ach.' + a.id + 'D')}</small></div>
         </div>
       ))}</div></div>
+    </div>
+  );
+}
+
+// ---------- trang phục vô địch & All-Star ----------
+export function SkinsView() {
+  const list = S.skins || [];
+  if (!list.length) return <p className="muted">{t('sk.none')}</p>;
+  return (
+    <div className="sk-list">{list.map((s) => (
+      <div key={s.season + s.team} className={`sk-set ${s.team === S.userTeam ? 'me' : ''}`}>
+        <div className="sk-h"><Badge id={s.team} size="md" /><div><b>{t('sk.name', { team: S.teams[s.team]?.short ?? s.team, y: s.season })}</b><small className="muted">{s.title}</small></div></div>
+        <div className="sk-g">{s.picks.map((x) => (
+          <div key={x.role} className="sk-c"><div className="sk-art" style={{ backgroundImage: `url('${champSplashUrl(x.champ)}')` }} /><div className="sk-cap"><b>{x.ign}</b><small>{cname(x.champ)}</small></div></div>
+        ))}</div>
+      </div>
+    ))}</div>
+  );
+}
+export function AllStarView() {
+  const as = S.allstar;
+  if (!as) return <p className="muted">{t('as.none')}</p>;
+  const P = (id?: string) => (id ? S.players[id] : undefined);
+  return (
+    <div className="as">
+      <div className="as-top">
+        <div className="as-k"><small>{t('as.1v1')}</small><b>{P(as.oneVone)?.ign}</b><span className="muted text-xs">{t('as.final', { a: P(as.oneVoneFinal[0])?.ign ?? '', b: P(as.oneVoneFinal[1])?.ign ?? '' })}</span></div>
+        <div className="as-k"><small>{t('as.aram')}</small><b>{t('as.' + as.aram)}</b></div>
+      </div>
+      <div className="as-rows">{Object.entries(as.roster).map(([lg, r]) => (
+        <div key={lg} className="as-row"><span className="as-lg"><LeagueBadge id={lg} size="sm" />{lg}</span>
+          {ROLES.map((role) => { const p = P(r[role]); return <span key={role} className={`as-p ${p?.teamId === S.userTeam ? 'me' : ''}`}>{p && <><Face p={p} size="sm" /><span><b>{p.ign}</b><small className="muted">{p.teamId ? S.teams[p.teamId].short : ''}</small></span></>}</span>; })}
+        </div>
+      ))}</div>
     </div>
   );
 }

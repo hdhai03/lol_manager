@@ -149,6 +149,9 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  skins?: { season: number; team: string; title: string; picks: { role: Role; pid: string; ign: string; champ: string }[] }[]; skinRevenue?: { left: number; per: number };
+  allstar?: { season: number; roster: Record<string, Partial<Record<Role, string>>>; oneVone: string; oneVoneFinal: [string, string]; aram: 'east' | 'west' } | null;
+  clash?: { day: number; teams: string[]; winner: string; mineRank: number; mvp: string; mvpAcc?: string }[]; clashDay?: number;
   lastHonor?: { match: string; list: { kind: 'cool' | 'shotcall' | 'gg'; to: string; from: string }[] } | null;
   caps?: Record<string, { cap: number; floor: number; season: number }>; luxTax?: number;
   valueHist?: { key: string; season: number; phase: string; v: number }[];

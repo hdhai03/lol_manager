@@ -71,6 +71,10 @@ export function Youth() {
             </div>
           )) : <p className="muted text-sm">{t('ac.emptyAcad')}</p>}
           <p className="muted text-sm">{t('ac.promoteHint')}</p>
+          <div className="sub-h mt-3">{t('cl.title')}</div>
+          {(S.clash || []).length ? (S.clash || []).slice(0, 5).map((c, i) => (
+            <div key={i} className={`cl-r ${c.mineRank === 1 ? 'w' : ''}`}><b>#{c.mineRank}</b><span className="grow">{t('cl.res', { winner: c.winner, mvp: c.mvp })}</span><small className="muted">{S.day - c.day <= 0 ? t('feed.today') : t('feed.daysAgo', { n: S.day - c.day })}</small></div>
+          )) : <p className="muted text-sm">{t('cl.none')}</p>}
         </div>
       </div>
       <div className="gp">

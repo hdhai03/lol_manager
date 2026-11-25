@@ -78,6 +78,8 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
       const kiin = Object.values(S.players).find((p) => p.teamId === S.userTeam)!;
       expect(masteryLv(kiin, kiin.pool[0].c)).toBeGreaterThanOrEqual(3);
       expect(S.lastHonor?.list.length).toBe(3);
+      expect((S.skins || []).length).toBe(1);
+      expect(S.allstar?.season).toBe(S.season);
       expect(Object.values(S.players).some((p) => (p.hype ?? 50) > 55)).toBe(true);
       expect(S.ledger!.some((r) => (r.sponsor as number) > 0)).toBe(true);
       expect(Object.keys(S.patch!.mods).length).toBeGreaterThan(0);

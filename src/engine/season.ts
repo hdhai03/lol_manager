@@ -15,6 +15,7 @@ import { injuryDay, missionDay, dealDay, dealSeasonEnd, transferDay } from './cl
 import { socialDay, coachCarousel } from './world';
 import { capDay, capSeasonEnd, valueSnap } from './squadx';
 import { bankMastery, rankRewards } from './lolx';
+import { championSkins, skinDay, runAllStar, clashDay } from './events';
 import { ladder as soloLadder, SERVERS } from './academy';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
@@ -39,6 +40,7 @@ export function startPhase(phase: Phase): void {
   (S.phaseStart ??= {})[phase] = S.day;
   startStages(phase);
   addNews(PHASE_NEWS[phase], { season: S.season }, true);
+  if (phase === 'offseason') runAllStar();
 }
 
 export const allPhaseMatches = (): Match[] => S.phaseComps.flatMap((id) => S.comps[id].matches);
@@ -94,6 +96,7 @@ function finishComp(c: Comp): void {
   const title = `${c.trophy.title} ${y}`;
   S.teams[champ].trophies.push(title);
   if (champ === ut) S.ceremony = { title, tier: c.trophy.tier, season: y, team: ut };
+  if (c.trophy.tier === 'worlds') championSkins(champ, title);
   S.history.unshift({ season: y, title, champ, runner, kind: c.trophy.tier, league: c.league });
   addNews(['fst', 'msi', 'worlds'].includes(c.trophy.tier) ? 'news.intlChamp' : 'news.leagueChamp', { team: S.teams[champ].name, title, runner: S.teams[runner].name }, true);
   for (const pid of S.teams[champ].roster) {
@@ -120,6 +123,8 @@ function dailyTick(): void {
   transferDay();
   socialDay();
   capDay();
+  skinDay();
+  clashDay();
   valueSnap();
   devDay();
   loanDay(playing);
