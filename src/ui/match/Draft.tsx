@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { DB, champImg, champArt, champTile } from '../../engine/data';
 import { S, lineupPlayers } from '../../engine/state';
-import { DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, draftTaken, openRoles, champFit, swapPicks, compTraits } from '../../engine/sim';
+import { DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, draftTaken, openRoles, champFit, swapPicks, compTraits, draftSuggest } from '../../engine/sim';
+import { synergies } from '../../engine/synergy';
 import { ROLES } from '../../engine/util';
 import { t, cname } from '../../i18n';
 import { Badge, LeagueBadge, RoleIcon, RuneMini } from '../components';
@@ -103,9 +104,18 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
               </button>
             );
           }); })()}</div>
+          {myTurn && type === 'pick' && !done && (
+            <div className="dr-sug"><small className="k-label">{t('dr.suggest')}</small>
+              {draftSuggest(draft, ms).map((x) => (
+                <button key={x.champ} className={`dr-sg ${dsel === x.champ ? 'on' : ''}`} data-sg={x.champ} onClick={() => setDsel(x.champ)}>
+                  <img src={champImg(x.champ)} alt="" /><span><b>{cname(x.champ)}</b><small>{t('role.' + x.role)}{x.why.map((w) => ` · ${t('dr.why.' + w)}`).join('')}</small></span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="dr-foot">
             <span className="msg">{done ? t('dr.swapHint') : myTurn ? (dsel ? cname(dsel) : t(type === 'ban' ? 'dr.selectBan' : 'dr.selectPick')) : t('dr.waiting')}
-              <br /><span className="dr-comp">{t('m.tanks')}: {tr.tanks} · {t('m.apShare')}: {Math.round(tr.apShare * 100)}% · {t('dr.swapHint')}</span></span>
+              <br /><span className="dr-comp">{t('m.tanks')}: {tr.tanks} · {t('m.apShare')}: {Math.round(tr.apShare * 100)}%{synergies(Object.values(draft.picks[ms])).map((x, i) => <em key={i} className="syn" title={x.champs.map((c) => cname(c)).join(' + ')}>{t('syn.' + x.kind)}</em>)}</span></span>
             {done ? <button className="gb primary" data-start style={{ minHeight: '3rem', padding: '0 2rem' }} onClick={() => onStart(draft)}>{t('m.startGame')}</button>
               : <button className={`gb ${myTurn && dsel ? 'primary' : ''}`} data-confirm disabled={!(myTurn && dsel)} onClick={() => { if (dsel) { applyDraftAction(draft, dsel, null); setDsel(null); bump(); } }}>{t(type === 'ban' ? 'dr.ban' : 'dr.pick')}</button>}
           </div>

@@ -7,7 +7,8 @@ import { simulateGame, recordGame, simSeries, resimGame } from '../../engine/sim
 import type { Order, OrderKind } from '../../engine/engine';
 import { ROLES } from '../../engine/util';
 import { MIR, BLUE_TOWERS, BASE, PIT } from '../../engine/engine';
-import { t } from '../../i18n';
+import { t, hasKey } from '../../i18n';
+import { synergies } from '../../engine/synergy';
 import { Badge, Champ, LeagueBadge, RoleIcon, RuneMini } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { loadThree, webglOk, createArena, type Arena } from './arena';
@@ -97,6 +98,16 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
       clearTimeout(bh);
       bh = setTimeout(() => { b.className = 'banner'; }, 2600);
     };
+    const castText = (side: Side, at: number, text: string) => {
+      const el = $('#cast');
+      el.innerHTML = '';
+      const sp = document.createElement('span');
+      sp.className = side; sp.textContent = mmss(at);
+      el.append(sp, ' ' + text);
+      el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    };
+    // bình luận: mỗi tình huống có vài câu khác nhau
+    const cmT = (key: string, p: Record<string, unknown>) => { const alts = ['', '2', '3', '4'].map((x) => `cm.${key}${x}`).filter(hasKey); return t(alts.length ? alts[Math.floor(Math.random() * alts.length)] : `cm.${key}`, p); };
     const cast = (key: string, e: DispEv) => {
       const el = $('#cast');
       const os: Side = e.side === 'B' ? 'R' : 'B';
@@ -104,7 +115,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
       el.innerHTML = '';
       const sp = document.createElement('span');
       sp.className = e.side; sp.textContent = mmss(e.d);
-      el.append(sp, ' ' + t('cm.' + key, p));
+      el.append(sp, ' ' + cmT(key, p));
       el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
     };
     const NOTE_BANNER = new Set(['steal', 'ace']);
@@ -224,12 +235,34 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
       } else vp.style.display = 'none';
     };
 
+    // bình luận viên: giới thiệu đội hình, cập nhật thế trận mỗi 5 phút, lật kèo
+    let introDone = false, lastStatus = 0, leader: Side | null = null;
+    const synName = (sd: Side) => { const s = synergies(Object.values(cur.picks[sd]) as string[]); return s.length ? s.map((x) => t('syn.' + x.kind)).join(', ') : t('cm.noSyn'); };
+    const commentate = () => {
+      if (!introDone && gt > 4) { introDone = true; castText('B', gt, t('cm.intro', { a: tShort('B'), sa: synName('B'), b: tShort('R'), sb: synName('R') })); return; }
+      const fr = F[tl.frameIdx(gt)];
+      if (!fr) return;
+      let gB = 0, gR = 0;
+      for (const k of keys) { if (k[0] === 'B') gB += fr[k][5]; else gR += fr[k][5]; }
+      const diff = gB - gR, lead: Side = diff >= 0 ? 'B' : 'R';
+      if (Math.abs(diff) > 2500 && gt > 600) {
+        if (leader && leader !== lead) castText(lead, gt, cmT('comeback', { team: tShort(lead), gold: kf(Math.abs(diff)) }));
+        leader = lead;
+      }
+      const m5 = Math.floor(gt / 300);
+      if (m5 > lastStatus && gt > 290) {
+        lastStatus = m5;
+        if (Math.abs(diff) < 1000) castText(lead, gt, cmT('even', { m: Math.floor(gt / 60) }));
+        else castText(lead, gt, cmT('status', { m: Math.floor(gt / 60), team: tShort(lead), gold: kf(Math.abs(diff)), k: live.kills[lead], ko: live.kills[lead === 'B' ? 'R' : 'B'] }));
+      }
+    };
     const finish = () => { if (!alive) return; alive = false; cancelAnimationFrame(raf); arena?.dispose(); arena = null; onEnd(cur); };
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const rdt = Math.min(.25, (now - last) / 1000); last = now;
       if (!isPaused && gt < tl.end) gt = Math.min(tl.end, gt + rdt * spd);
       while (evIdx < tl.evs.length && tl.evs[evIdx].d <= gt) applyEv(tl.evs[evIdx++]);
+      commentate();
       const fi = tl.frameIdx(gt);
       if (fi !== lastFrame) { lastFrame = fi; drawFrame(fi); }
       drawLive();

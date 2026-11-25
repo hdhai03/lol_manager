@@ -65,7 +65,7 @@ export interface Tactics {
   focus: 'auto' | 'carry' | 'weakest'; jungle: 'auto' | 'top' | 'mid' | 'bot' | 'farm';
   personal: Record<Role, PersonalTactic>; day?: number;
   /** độ ăn ý từng vị trí; thẻ tăng cường: ngọc / thể lực */
-  chem?: Partial<Record<Role, number>>; runeB?: number; fresh?: boolean;
+  chem?: Partial<Record<Role, number>>; runeB?: number; fresh?: boolean; synB?: number;
   /** kế hoạch nhịp độ theo giai đoạn (đầu < 14', giữa < 25', cuối) */
   phase?: { early: 'early' | 'balanced' | 'late'; mid: 'early' | 'balanced' | 'late'; late: 'early' | 'balanced' | 'late' };
   /** chỉ đạo riêng từng vị trí */

@@ -22,7 +22,7 @@ interface Unit {
   atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
   lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
   hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
-  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick; build?: string[]; adapt?: 'mr' | 'armor' | 'none' | 'miss';
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick; build?: string[]; mom: number; tiltNoted?: boolean; adapt?: 'mr' | 'armor' | 'none' | 'miss';
 }
 interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
 interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
@@ -119,8 +119,8 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
     scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
     early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025 + (ins === 'scale' ? -0.04 : ins === 'invade' ? 0.03 : 0),
-    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0) + patchMod(champ)),
-    lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
+    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0) + patchMod(champ) + (tac.synB || 0)),
+    mom: 0, lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
     fhp: 0, out: false, hitBy: new Set(), caught: false,
     cls: (['Fighter', 'Tank', 'Assassin', 'Mage', 'Marksman', 'Support'].includes(main) ? main : 'Fighter') as Cls,
@@ -216,7 +216,7 @@ function runGameInner(input: RunInput): GameResult {
     const tim = 1 + u.early * (1 - clamp((m - 12) / 18, 0, 1.6));
     const b = buff[u.side];
     return (1 + (u.lvl - 1) * 0.085) * (1 + ((u.gold - 500) / 7000) * u.scale) * tim * u.meta
-      * (b.baron > sec ? 1.1 : 1) * (b.elder > sec ? 1.18 : 1) * (b.soul ? 1.06 : 1) * (1 + b.drakes.length * 0.012);
+      * (b.baron > sec ? 1.1 : 1) * (b.elder > sec ? 1.18 : 1) * (b.soul ? 1.06 : 1) * (1 + b.drakes.length * 0.012) * (1 + u.mom);
   };
   const atkOf = (u: Unit): number => u.atkB * stat(u);
   const hpOf = (u: Unit): number => u.hpB * stat(u);
@@ -326,6 +326,12 @@ function runGameInner(input: RunInput): GameResult {
     giveGold(killer, bounty); giveXp(killer, 150 + v.lvl * 25);
     for (const a of assists) { a.assists++; giveGold(a, Math.round(bounty * 0.5 / Math.max(assists.length, 1)) + 25); giveXp(a, 60 + v.lvl * 10); }
     kills[killer.side]++;
+    // tâm lý: chết liên tục dễ mất bình tĩnh (bản lĩnh thấp, "tilter"), hạ gục liên tục thì hưng phấn
+    const comp = v.at.composure / 100;
+    v.mom = clamp(v.mom - (1.05 - comp) * 0.05 * (v.tr.has('tilter') ? 1.6 : 1) * (v.tr.has('calm') ? 0.5 : 1), -0.12, 0.08);
+    killer.mom = clamp(killer.mom + 0.006 + killer.at.composure / 100 * 0.008, -0.12, 0.08);
+    if (v.mom < -0.06 && !v.tiltNoted) { v.tiltNoted = true; note('tilt', v.side, { who: v.role }); }
+    if (killer.streak === 3) note('hot', killer.side, { who: killer.role });
     const pos: Pt = [clamp(at[0], 2, 98), clamp(at[1], 2, 98)];
     v.mv = tick;
     if (!firstBlood) { firstBlood = true; giveGold(killer, 100); ev('firstblood', killer.side, { killer: killer.role, victim: v.role, at: pos, ft }); }
@@ -751,6 +757,7 @@ function runGameInner(input: RunInput): GameResult {
   while (!winner && tick < MAX_TICKS) {
     tick++; sec = tick * TICK;
     applyPlans();
+    for (const sd of SIDES) for (const r of ROLES) { const u = U[sd + r]; u.mom *= 0.97; if (u.mom > -0.03) u.tiltNoted = false; }
     for (const u of [...team('B'), ...team('R')]) {
       if (u.dead) { u.dead--; u.pos = [...BASE[u.side]]; if (!u.dead) { u.hp = 1; u.task = u.role === 'Jungle' && sec < 840 ? 'jungle' : 'lane'; } continue; }
       if (sec >= 65) giveGold(u, 30.6);

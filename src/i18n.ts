@@ -4,6 +4,16 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'dr.suggest': 'Gợi ý', 'dr.why.syn': 'hợp đội hình', 'dr.why.counter': 'khắc chế', 'dr.why.buff': 'vừa được tăng sức mạnh', 'dr.why.comfort': 'tướng tủ',
+  'syn.pair': 'Combo', 'syn.engage': 'Giao tranh tổng', 'syn.poke': 'Cấu rỉa', 'syn.dive': 'Lao vào', 'syn.protect': 'Bảo kê', 'syn.early': 'Đánh nhanh',
+  'cm.intro': 'Hai đội đã vào trận! {a} đi lối {sa}, còn {b} chọn {sb}.', 'cm.noSyn': 'đội hình linh hoạt',
+  'cm.status': 'Phút {m}: {team} đang dẫn {gold} vàng, tỉ số mạng {k}-{ko}.', 'cm.status2': 'Phút {m}, {team} nắm thế chủ động với cách biệt {gold} vàng.', 'cm.status3': '{m} phút trôi qua, {team} kiểm soát bản đồ tốt hơn (+{gold}).',
+  'cm.even': 'Phút {m}: thế trận vẫn rất cân bằng!', 'cm.even2': 'Phút {m}, hai đội bám đuổi từng chút vàng.',
+  'cm.comeback': 'LẬT KÈO! {team} đã vượt lên dẫn {gold} vàng!', 'cm.comeback2': 'Không thể tin nổi, {team} lội ngược dòng và giờ dẫn {gold}!',
+  'cm.tilt': '{who} bên {team} có vẻ đang mất bình tĩnh sau những pha bị hạ gục liên tiếp.', 'cm.tilt2': '{who} ({team}) chơi rất ức chế, cần bình tĩnh lại!',
+  'cm.hot': '{who} ({team}) đang vào phom, 3 mạng liên tiếp!', 'cm.hot2': 'Không ai cản nổi {who} lúc này! {team} có người gánh đội.',
+  'cm.solo2': 'Solo kill ở {lane}! {team} thắng kèo đối đầu.', 'cm.roam2': '{who} ({team}) biến mất khỏi đường, đi hỗ trợ {lane}.', 'cm.steal2': 'KHÔNG THỂ TIN ĐƯỢC! {team} cướp {obj} ngay trước mũi đối thủ!',
+  'cm.ace2': 'Đội hình {team} quét sạch đối thủ, ACE!', 'cm.split2': '{team} kéo giãn bản đồ bằng đẩy lẻ.', 'cm.caught2': '{who} ({team}) đứng sai vị trí và trả giá.',
   'pt.title': 'Bản cập nhật trong game {v}', 'pt.next': 'Bản kế tiếp sau {n} ngày', 'pt.none': 'Chưa có thay đổi cân bằng nào.', 'pt.mod': 'Vừa được chỉnh trong bản cập nhật', 'news.patch': 'Bản cập nhật {v}: tăng sức mạnh {buffs}; giảm sức mạnh {nerfs}.',
   'nav.stats': 'Thống kê', 'stx.title': 'Thống kê tuyển thủ {y}', 'stx.pick2': 'Tích 2 tuyển thủ để so sánh', 'stx.compare': 'So sánh', 'stx.clear': 'Bỏ chọn', 'stx.form': 'Phong độ', 'stx.formLast': 'Phong độ {n} ván gần nhất', 'stx.none': 'Chưa có tuyển thủ nào đủ {n} ván.',
   'stx.g': 'Ván', 'stx.wr': 'Thắng', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'ST/phút', 'stx.cspm': 'CS/phút', 'stx.gpm': 'Vàng/phút', 'stx.mvp': 'MVP', 'stx.rt': 'Điểm',
@@ -341,6 +351,16 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'dr.suggest': 'Suggested', 'dr.why.syn': 'synergy', 'dr.why.counter': 'counter', 'dr.why.buff': 'just buffed', 'dr.why.comfort': 'comfort pick',
+  'syn.pair': 'Combo', 'syn.engage': 'Teamfight', 'syn.poke': 'Poke', 'syn.dive': 'Dive', 'syn.protect': 'Protect', 'syn.early': 'Early game',
+  'cm.intro': 'We are live! {a} goes for {sa}, while {b} picks {sb}.', 'cm.noSyn': 'a flexible comp',
+  'cm.status': 'Minute {m}: {team} leads by {gold} gold, kills {k}-{ko}.', 'cm.status2': 'Minute {m}, {team} in control with a {gold} gold lead.', 'cm.status3': '{m} minutes in, {team} controls the map (+{gold}).',
+  'cm.even': 'Minute {m}: still dead even!', 'cm.even2': 'Minute {m}, both teams trading blow for blow.',
+  'cm.comeback': 'THE COMEBACK! {team} now leads by {gold}!', 'cm.comeback2': 'Unbelievable, {team} turns it around and leads by {gold}!',
+  'cm.tilt': '{who} on {team} looks shaken after dying again and again.', 'cm.tilt2': '{who} ({team}) is getting frustrated, needs to reset!',
+  'cm.hot': '{who} ({team}) is on fire, three kills in a row!', 'cm.hot2': 'Nobody can stop {who} right now! {team} has a carry.',
+  'cm.solo2': 'Solo kill in {lane}! {team} wins the matchup.', 'cm.roam2': '{who} ({team}) vanishes from lane to help {lane}.', 'cm.steal2': 'UNBELIEVABLE! {team} steals {obj} right under their nose!',
+  'cm.ace2': '{team} wipes the enemy, ACE!', 'cm.split2': '{team} stretches the map with a split push.', 'cm.caught2': '{who} ({team}) is out of position and pays for it.',
   'pt.title': 'In-game patch {v}', 'pt.next': 'Next patch in {n} days', 'pt.none': 'No balance changes yet.', 'pt.mod': 'Changed in the latest patch', 'news.patch': 'Patch {v}: buffs {buffs}; nerfs {nerfs}.',
   'nav.stats': 'Stats', 'stx.title': 'Player stats {y}', 'stx.pick2': 'Tick 2 players to compare', 'stx.compare': 'Compare', 'stx.clear': 'Clear', 'stx.form': 'Form', 'stx.formLast': 'Form over the last {n} games', 'stx.none': 'No players with {n}+ games yet.',
   'stx.g': 'Games', 'stx.wr': 'Win', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'DPM', 'stx.cspm': 'CSPM', 'stx.gpm': 'GPM', 'stx.mvp': 'MVP', 'stx.rt': 'Rating',
@@ -1035,6 +1055,7 @@ export function setLang(l: string): void {
   try { localStorage.setItem('lolm_lang', lang); } catch { /* */ }
   document.documentElement.lang = lang;
 }
+export const hasKey = (key: string): boolean => key in DICTS[lang] || key in DICTS.vi;
 export function t(key: string, params?: Record<string, unknown>): string {
   let s = DICTS[lang][key] ?? DICTS.vi[key] ?? key;
   if (params) s = s.replace(/\{(\w+)\}/g, (_, k: string) => String(params[k] ?? `{${k}}`));

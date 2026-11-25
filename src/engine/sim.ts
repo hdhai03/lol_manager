@@ -3,7 +3,8 @@ import { DB } from './data';
 import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
 import { runGame, type RunInput, type Order } from './engine';
-import { opggAdj } from './runes';
+import { opggAdj, opggPos } from './runes';
+import { synergyScore, synergyBonus } from './synergy';
 import { patchMod, patchFitBonus } from './patch';
 import { lineChem, chemPairs, boostMods } from './life';
 import { careerOnSeries } from './career';
@@ -87,35 +88,70 @@ export function aiChoose(d: Draft): { champ: string; role?: Role } {
     const oppLine = lineupMap(opp);
     const roles = openRoles(d, oppSide);
     let best: string | null = null, bestS = -1e9;
+    const oppPicks = Object.values(d.picks[oppSide]);
     for (const c of DB.champList) {
       if (taken.has(c.id)) continue;
       let s = -1e9;
       for (const r of roles) {
         if (!c.roles.includes(r)) continue;
-        s = Math.max(s, champFit(oppLine[r], c.id, r) + c.power * 0.3);
+        // cấm nhắm vào tuyển thủ: tướng tủ của người giỏi bị cấm trước; tướng mạnh sau bản cập nhật cũng vậy
+        const p = oppLine[r];
+        const w = p ? clamp((p.ovr - 70) / 18, 0.4, 1.4) : 0.6;
+        s = Math.max(s, champFit(p, c.id, r) * w + c.power * 0.25 + patchMod(c.id) * 300 + opggAdj(c.id, r) * 150);
       }
       if (s < -1e8) continue;
-      s += rand() * 8;
+      // không để đối thủ hoàn thành combo
+      s += (synergyScore([...oppPicks, c.id]) - synergyScore(oppPicks)) * 6;
+      s += rand() * 6;
       if (s > bestS) { bestS = s; best = c.id; }
     }
     return { champ: best ?? DB.champList.find((x) => !taken.has(x.id))!.id };
   }
   const roles = openRoles(d, side);
-  const current = Object.values(d.picks[side]);
-  let best = null, bestS = -1e9;
-  for (const c of DB.champList) {
-    if (taken.has(c.id)) continue;
-    for (const r of roles) {
-      if (!c.roles.includes(r)) continue;
-      const s = champFit(myLine[r], c.id, r) + compScore([...current, c.id]) * 3 + rand() * 7;
-      if (s > bestS) { bestS = s; best = { champ: c.id, role: r }; }
-    }
+  let best: { champ: string; role: Role } | null = null, bestS = -1e9;
+  for (const x of pickScores(d, side)) {
+    const s = x.s + rand() * 6;
+    if (s > bestS) { bestS = s; best = { champ: x.champ, role: x.role }; }
   }
   if (!best) { // dự phòng: tướng bất kỳ
     const c = DB.champList.find((x) => !taken.has(x.id))!;
     best = { champ: c.id, role: roles[0] };
   }
   return best;
+}
+
+/** điểm chọn tướng cho một phe: độ hợp tuyển thủ + đội hình cân bằng + bản sắc + khắc chế đường đối diện */
+export function pickScores(d: Draft, side: Side): { champ: string; role: Role; s: number; why: string[] }[] {
+  const taken = draftTaken(d);
+  const me = side === 'B' ? d.blue : d.red;
+  const oppSide: Side = side === 'B' ? 'R' : 'B';
+  const myLine = lineupMap(me);
+  const roles = openRoles(d, side);
+  const current = Object.values(d.picks[side]);
+  const synNow = synergyScore(current);
+  const out: { champ: string; role: Role; s: number; why: string[] }[] = [];
+  for (const c of DB.champList) {
+    if (taken.has(c.id)) continue;
+    for (const r of roles) {
+      if (!c.roles.includes(r)) continue;
+      const why: string[] = [];
+      let s = champFit(myLine[r], c.id, r) + compScore([...current, c.id]) * 3;
+      const syn = synergyScore([...current, c.id]) - synNow;
+      if (syn > 0) { s += syn * 5; why.push('syn'); }
+      // khắc chế: tướng nằm trong danh sách "khắc chế bởi" của tướng đối diện
+      const vs = d.picks[oppSide][r];
+      if (vs && opggPos(vs, r)?.counters?.includes(c.id)) { s += 7; why.push('counter'); }
+      if (patchMod(c.id) > 0.01) { why.push('buff'); }
+      if (myLine[r]?.pool.slice(0, 3).some((x) => x.c === c.id)) why.push('comfort');
+      out.push({ champ: c.id, role: r, s, why });
+    }
+  }
+  return out;
+}
+/** gợi ý cho người chơi: 3 lựa chọn tốt nhất (khác tướng) */
+export function draftSuggest(d: Draft, side: Side, n = 3) {
+  const seen = new Set<string>();
+  return pickScores(d, side).sort((a, b) => b.s - a.s).filter((x) => (seen.has(x.champ) ? false : (seen.add(x.champ), true))).slice(0, n);
 }
 
 export function applyDraftAction(d: Draft, champ: string, role?: Role | null): void {
@@ -158,7 +194,7 @@ export function teamPower(teamId: string, picks: Picks[Side]): number {
   const line = lineupMap(teamId);
   let sum = 0;
   for (const r of ROLES) sum += effRating(line[r], picks[r], r);
-  return sum / 5 + compScore(Object.values(picks));
+  return sum / 5 + compScore(Object.values(picks)) + synergyScore(Object.values(picks)) * 0.6;
 }
 
 export function simulateGame(d: Draft, opts: { record?: boolean; series?: number } = {}): GameResult {
@@ -173,7 +209,7 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
     if (mine) bm.day += analystDay();
     const chem = lineChem(tid);
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
-    return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh }; // phong độ chung của cả đội trong ngày
+    return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) }; // phong độ chung của cả đội trong ngày
   };
   // ảnh chụp tuyển thủ lúc vào trận (để phát lại / ra lệnh giữa trận cho đúng diễn biến)
   const snap = (p: Player | null | undefined): Player | null => (p ? ({ id: p.id, ign: p.ign, role: p.role, stats: { ...p.stats }, cond: p.cond, morale: p.morale, form: p.form } as Player) : null);

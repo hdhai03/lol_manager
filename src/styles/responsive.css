@@ -663,3 +663,13 @@
 .pc2-foot .gb { height: 1.85rem; min-height: 0; padding: 0 .7rem; font-size: .66rem; letter-spacing: .06em; }
 @media (max-width: 720px) { .pcards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .6rem; } .pc2-foot { flex-direction: row; align-items: center; } .pc2-foot .gb { width: auto; } }
 @media (max-width: 420px) { .pc2-foot { flex-direction: column; align-items: stretch; } .pc2-foot .gb { width: 100%; } }
+/* ===== Gợi ý cấm/chọn & bản sắc đội hình ===== */
+.dr-sug { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding: .5rem .2rem 0; }
+.dr-sg { display: flex; align-items: center; gap: .5rem; padding: .3rem .6rem .3rem .3rem; border: 0; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; text-align: left; }
+.dr-sg:hover { background: rgba(255, 255, 255, .1); }
+.dr-sg.on { background: rgba(124, 196, 255, .22); }
+.dr-sg img { width: 30px; height: 30px; border-radius: 6px; }
+.dr-sg span { display: flex; flex-direction: column; line-height: 1.15; }
+.dr-sg b { font-size: .82rem; }
+.dr-sg small { font-size: .66rem; color: #8b95a8; }
+.dr-comp .syn { font-style: normal; margin-left: .45rem; padding: .05rem .4rem; border-radius: 99px; background: rgba(110, 231, 168, .16); color: #6ee7a8; font-size: .66rem; }
