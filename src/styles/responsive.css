@@ -643,3 +643,23 @@
 .pt-c.up small { color: #6ee7a8; } .pt-c.down small { color: #ff8f8f; }
 .dr-c .pm { position: absolute; left: .35rem; top: .35rem; font-size: .62rem; font-weight: 800; padding: .05rem .25rem; border-radius: 4px; background: rgba(10, 14, 24, .75); }
 .dr-c .pm.up { color: #6ee7a8; } .dr-c .pm.down { color: #ff8f8f; }
+
+/* ===== Thẻ cầu thủ chuyển nhượng: rộng hơn, chữ & nút gọn hơn ===== */
+.pcards { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important; gap: .9rem; }
+.pc2-top { aspect-ratio: 1 / .78; }
+.pc2-ovr b { font-size: 1.45rem; }
+.pc2-body { gap: .45rem; padding: .6rem .75rem .7rem; }
+.pc2-name b { font-size: 1.05rem; letter-spacing: .04em; }
+.pc2-name .cc { font-size: .6rem; }
+.pc2-chips span { font-size: .66rem; padding: .1rem .4rem; }
+.pc2-chips span b { font-size: .74rem; }
+.pc2-stats { min-height: 2.1rem; }
+.pc2-stats b { font-size: .85rem; }
+.pc2-stats small { font-size: .56rem; }
+.pc2-stats .none { font-size: .68rem; padding: .25rem; }
+.pc2-foot { align-items: center; }
+.pc2-foot small { font-size: .56rem; letter-spacing: .06em; }
+.pc2-foot b { font-size: 1.02rem; }
+.pc2-foot .gb { height: 1.85rem; min-height: 0; padding: 0 .7rem; font-size: .66rem; letter-spacing: .06em; }
+@media (max-width: 720px) { .pcards { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .6rem; } .pc2-foot { flex-direction: row; align-items: center; } .pc2-foot .gb { width: auto; } }
+@media (max-width: 420px) { .pc2-foot { flex-direction: column; align-items: stretch; } .pc2-foot .gb { width: 100%; } }
