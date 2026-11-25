@@ -1,5 +1,6 @@
 // Ngày thi đấu: màn chuẩn bị → cấm/chọn → xem trận → tổng kết ván → kết thúc loạt.
 import { useState } from 'react';
+import { isRival, h2h } from '../../engine/world';
 import { S, teamOvr, lineupPlayers, addNews, fillLineup, saveGame } from '../../engine/state';
 import { autoDraft, simSeries } from '../../engine/sim';
 import { progressComps } from '../../engine/season';
@@ -60,7 +61,7 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
   );
   return (
     <div className="vsx">
-      <div className="vsx-top k-label"><LeagueBadge id={compLogoId(comp)} size="sm" />{compTitle(comp)} · {t('m.bo', { n: m.bo })} · {t('m.game', { n: m.games.length + 1 })}</div>
+      <div className="vsx-top k-label"><LeagueBadge id={compLogoId(comp)} size="sm" />{compTitle(comp)} · {t('m.bo', { n: m.bo })} · {t('m.game', { n: m.games.length + 1 })}{isRival(m.a, m.b) && <em className="derby" title={t('dby.h2h', h2h(m.a, m.b))}>{t('dby.tag')} · {h2h(m.a, m.b).w}-{h2h(m.a, m.b).l}</em>}</div>
       <div className="vsx-main">
         <Side id={m.a} />
         <div className="vsx-mid"><b className="k-disp">VS</b><div className="k-num vsx-sc">{m.winsA} - {m.winsB}</div></div>

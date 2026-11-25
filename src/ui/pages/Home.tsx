@@ -219,17 +219,36 @@ function SocialCard({ n }: { n: NewsItem }) {
     </article>
   );
 }
+function FanPost({ p }: { p: NonNullable<typeof S.social>[number] }) {
+  const pl = p.pid ? S.players[p.pid] : undefined;
+  const fs = faceSrc(pl);
+  const art = champSplash(pl?.pool[0]?.c || DB.champList.filter((c) => c.tier === 'S')[hash(p.id) % Math.max(1, DB.champList.filter((c) => c.tier === 'S').length)].id);
+  return (
+    <article className={`social fan m-${p.mood}`}>
+      <div className="img" style={{ backgroundImage: `url('${art}')` }} />
+      <div className="shade" />
+      {p.day >= S.day - 1 && <span className="flag">{t('menu.new2')}</span>}
+      <div className="head"><span className="fan-av">{p.handle.slice(1, 3).toUpperCase()}</span><div><b>{p.handle}</b><small>{p.day >= S.day ? t('feed.today') : fmtD(relDay(p.day), { day: 'numeric', month: 'long' })}</small></div></div>
+      <div className="vis">{fs ? <img className="face" src={fs} alt="" /> : p.team ? <Badge id={p.team} size="hero" /> : <LeagueBadge id={userTeam().league} size="xl" />}</div>
+      <div className="cap">
+        <p>{t(p.key, p.params)}</p>
+        <div className="eng"><span><IcHeart />{kfmt(p.likes)}</span><span><IcComment />{kfmt(Math.round(p.likes / 9))}</span><span className="grow" /></div>
+      </div>
+    </article>
+  );
+}
 function Social() {
-  const list = S.news.slice(0, 6);
+  type It = { k: 'n'; n: NewsItem; d: number; id: string } | { k: 'p'; p: NonNullable<typeof S.social>[number]; d: number; id: string };
+  const list: It[] = [...(S.social || []).slice(0, 5).map((p) => ({ k: 'p' as const, p, d: p.day, id: p.id })), ...S.news.slice(0, 5).map((n) => ({ k: 'n' as const, n, d: n.day, id: 'n' + n.id }))].sort((a, b) => b.d - a.d).slice(0, 8);
   ui.newsIdx = clamp(ui.newsIdx || 0, 0, Math.max(list.length - 1, 0));
-  const n = list[ui.newsIdx];
+  const it = list[ui.newsIdx];
   const step = (d: number) => { ui.newsIdx = (ui.newsIdx + d + list.length) % list.length; refresh(); };
   return (
     <div className="social-w">
-      {n ? <SocialCard key={n.id} n={n} /> : <div className="social" />}
+      {it ? (it.k === 'n' ? <SocialCard key={it.id} n={it.n} /> : <FanPost key={it.id} p={it.p} />) : <div className="social" />}
       <div className="dots">
         <button className="arrowb" data-news="-1" aria-label="prev" onClick={() => step(-1)}>‹</button>
-        {list.map((x, i) => <i key={x.id ?? i} className={i === ui.newsIdx ? 'on' : ''} onClick={() => { ui.newsIdx = i; refresh(); }} />)}
+        {list.map((x, i) => <i key={x.id} className={i === ui.newsIdx ? 'on' : ''} onClick={() => { ui.newsIdx = i; refresh(); }} />)}
         <button className="arrowb" data-news="1" aria-label="next" onClick={() => step(1)}>›</button>
       </div>
     </div>

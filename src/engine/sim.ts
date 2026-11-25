@@ -8,6 +8,7 @@ import { synergyScore, synergyBonus } from './synergy';
 import { patchMod, patchFitBonus } from './patch';
 import { lineChem, chemPairs, boostMods } from './life';
 import { careerOnSeries } from './career';
+import { derbySwing, styleTactics, hypeAfterGame, socialOnSeries } from './world';
 import { analystDay } from './staff';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
@@ -204,12 +205,13 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
   const tac = (sd: Side) => {
     const tid = sd === 'B' ? d.blue : d.red;
     const mine = tid === S.userTeam;
-    const base = mine && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
+    const other = sd === 'B' ? d.red : d.blue;
+    const base = mine && S.tactics ? S.tactics : styleTactics(tid, aiTactics(d.picks[sd], lines[sd]));
     const bm = mine ? boostMods() : { day: 0, chem: 0, rune: 0, fresh: false };
     if (mine) bm.day += analystDay();
     const chem = lineChem(tid);
     if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
-    return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) }; // phong độ chung của cả đội trong ngày
+    return { ...base, day: gauss() * 2.6 + bm.day + derbySwing(tid, other), chem, runeB: bm.rune, fresh: bm.fresh, synB: synergyBonus(Object.values(d.picks[sd])) }; // phong độ chung của cả đội trong ngày
   };
   // ảnh chụp tuyển thủ lúc vào trận (để phát lại / ra lệnh giữa trận cho đúng diễn biến)
   const snap = (p: Player | null | undefined): Player | null => (p ? ({ id: p.id, ign: p.ign, role: p.role, stats: { ...p.stats }, cond: p.cond, morale: p.morale, form: p.form } as Player) : null);
@@ -244,6 +246,7 @@ export function applyGameResult(g: GameResult): void {
     const tk = g.players.filter((y) => y.side === x.side).reduce((s, y) => s + y.k, 0);
     const rt = clamp(6 + (x.k + x.a * 0.6 - x.d * 0.9) / 3 + (win ? 0.6 : -0.4) + (g.mvp === p.id ? 1 : 0), 1, 10);
     p.fh = [...(p.fh || []), +rt.toFixed(1)].slice(-20);
+    hypeAfterGame(p, rt, g.mvp === p.id);
     for (const k of ['season', 'career'] as const) {
       const st = p[k];
       st.g++; if (win) st.w++;
@@ -303,5 +306,6 @@ export function recordGame(match: Match, g: GameResult, detailed: boolean): void
     delete match.fearless;
     gprOnSeries(match);
     careerOnSeries(match);
+    socialOnSeries(match);
   }
 }

@@ -697,3 +697,9 @@
 .win-b { font-family: inherit; font-size: .62rem; letter-spacing: .06em; padding: .15rem .5rem; border-radius: 99px; background: rgba(255, 143, 143, .14); color: #ff8f8f; }
 .win-b.open { background: rgba(110, 231, 168, .14); color: #6ee7a8; }
 @media (max-width: 760px) { .fac-g { grid-template-columns: 1fr; } .mis { flex-direction: column; align-items: stretch; } .mis-p { width: auto; } }
+/* ===== Derby, độ nổi tiếng, bài đăng người hâm mộ ===== */
+.derby { font-style: normal; margin-left: .5rem; padding: .1rem .5rem; border-radius: 99px; background: linear-gradient(90deg, rgba(255, 110, 110, .3), rgba(255, 178, 122, .25)); color: #ffd0b0; font-size: .66rem; letter-spacing: .1em; }
+.hype-r { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .7rem; }
+.hype-r .sub-h { margin: 0; }
+.social.fan .fan-av { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #7cc4ff, #c8aaff); color: #0b1020; font-weight: 800; font-size: .8rem; }
+.social.fan.m-neg .cap p { color: #ffd0d0; }

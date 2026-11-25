@@ -1,5 +1,6 @@
 // Hồ sơ đội: đội hình, danh hiệu, thành tích mùa, đối đầu với đội của bạn, kết quả gần đây
 import { S, teamOvr, lineupPlayers, teamPlayers } from '../../engine/state';
+import { coachStyle, isRival } from '../../engine/world';
 import { gprTable } from '../../engine/gpr';
 import { teamChem } from '../../engine/life';
 import { t } from '../../i18n';
@@ -27,7 +28,7 @@ function TeamProfile({ id }: { id: string }) {
       <div className="tp-hero">
         <Badge id={id} size="xl" />
         <div className="tp-t">
-          <small className="k-label flex items-center gap-2"><LeagueBadge id={tm.league} size="xs" />{tm.league}{tm.coach ? ` · HLV ${tm.coach}` : ''}</small>
+          <small className="k-label flex items-center gap-2"><LeagueBadge id={tm.league} size="xs" />{tm.league}{tm.coach ? ` · HLV ${tm.coach}` : ''}{id !== S.userTeam ? ` · ${t('cs.' + coachStyle(id))}` : ''}{id !== S.userTeam && isRival(id, S.userTeam) && <em className="derby">{t('dby.tag')}</em>}</small>
           <b className="k-disp">{tm.name}</b>
           <div className="tp-kpis">
             <span><small>OVR</small><Ovr v={teamOvr(tm)} /></span>

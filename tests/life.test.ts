@@ -73,6 +73,8 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
       expect(S.career!.w + S.career!.l).toBeGreaterThan(5);
       expect(S.patch!.n).toBeGreaterThan(5);
       expect((S.missions || []).length).toBeGreaterThan(0);
+      expect((S.social || []).length).toBeGreaterThan(5);
+      expect(Object.values(S.players).some((p) => (p.hype ?? 50) > 55)).toBe(true);
       expect(S.ledger!.some((r) => (r.sponsor as number) > 0)).toBe(true);
       expect(Object.keys(S.patch!.mods).length).toBeGreaterThan(0);
     });

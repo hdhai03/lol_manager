@@ -12,6 +12,7 @@ import { contractsDay } from './contracts';
 import { staffDay, devDay, loanDay, returnLoans, trainMul } from './staff';
 import { patchDay } from './patch';
 import { injuryDay, missionDay, dealDay, dealSeasonEnd, transferDay } from './club';
+import { socialDay, coachCarousel } from './world';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -114,6 +115,7 @@ function dailyTick(): void {
   missionDay();
   dealDay();
   transferDay();
+  socialDay();
   devDay();
   loanDay(playing);
   brandDay();
@@ -188,6 +190,7 @@ export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
   dealSeasonEnd();
+  coachCarousel();
   seasonWrapped();
   careerNewSeason();
   returnLoans();

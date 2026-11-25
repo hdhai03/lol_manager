@@ -4,6 +4,13 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'dby.tag': 'DERBY', 'dby.h2h': 'Đối đầu: {w} thắng - {l} thua', 'news.derbyWin': '{team} thắng derby trước {opp}! Cả đội và người hâm mộ vỡ oà.', 'news.derbyLoss': '{team} thua derby trước {opp}, áp lực đè nặng.', 'news.newRival': 'Một cặp kình địch mới hình thành: bạn và {opp}!',
+  'cs.aggressive': 'HLV ưa tấn công', 'cs.safe': 'HLV thận trọng', 'cs.teamfight': 'HLV giao tranh tổng', 'cs.macro': 'HLV chiến thuật bản đồ', 'cs.flex': 'HLV linh hoạt', 'sc.coach': 'HLV {coach}: {style}',
+  'news.coachSacked': '{team} sa thải HLV {old}, bổ nhiệm {coach}.',
+  'so.hypeL': 'Độ nổi tiếng',
+  'so.win': '{team} thắng {opp} {score}! Đội hình này đang bay cao 🔥', 'so.loss': '{team} thua {opp} {score}... cần thay đổi gì đó ngay', 'so.derbyWin': 'DERBY THUỘC VỀ {team}!!! {score} trước {opp}, đêm nay không ngủ 🎉', 'so.derbyLoss': 'Thua derby {score} trước {opp}. Đau quá {team} ơi 💔',
+  'so.star': '{player} hôm nay quá đỉnh, xứng đáng MVP 👑', 'so.star2': 'Ai cản được {player} đây?? Phong độ hủy diệt', 'so.flop': '{player} chơi như bị cắm điện ngược 😩', 'so.flop2': 'Có nên cho {player} ngồi dự bị trận tới không?',
+  'so.meme': 'Bot lane {opp} sau khi gặp {team}: 💀💀💀', 'so.hype': '{player} ({team}) đang là cái tên được nhắc đến nhiều nhất cộng đồng', 'so.patch': 'Patch {v} ra rồi, meta lại đảo lộn hết 😵',
   'task.mission': 'Ban lãnh đạo giao {n} nhiệm vụ mới', 'task.sponsor': 'Chọn nhà tài trợ chính cho mùa giải',
   'inj.wrist': 'Chấn thương cổ tay', 'inj.back': 'Đau lưng', 'inj.burnout': 'Kiệt sức (burnout)', 'inj.d': 'n', 'news.injury': '{player} gặp vấn đề: {kind}, nghỉ khoảng {n} ngày.', 'news.recovered': '{player} đã bình phục.',
   'mis.title': 'Nhiệm vụ ban lãnh đạo', 'mis.none': 'Chưa có nhiệm vụ nào.', 'mis.done': 'Hoàn thành', 'mis.failed': 'Thất bại', 'mis.left': 'còn {n} ngày', 'mis.reward': 'thưởng {money}',
@@ -363,6 +370,13 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'dby.tag': 'DERBY', 'dby.h2h': 'Head-to-head: {w}W - {l}L', 'news.derbyWin': '{team} win the derby over {opp}! Players and fans go wild.', 'news.derbyLoss': '{team} lose the derby to {opp}, pressure mounts.', 'news.newRival': 'A new rivalry is born: you vs {opp}!',
+  'cs.aggressive': 'Aggressive coach', 'cs.safe': 'Cautious coach', 'cs.teamfight': 'Teamfight coach', 'cs.macro': 'Macro coach', 'cs.flex': 'Flexible coach', 'sc.coach': 'Coach {coach}: {style}',
+  'news.coachSacked': '{team} sacked coach {old} and appointed {coach}.',
+  'so.hypeL': 'Popularity',
+  'so.win': '{team} beat {opp} {score}! This roster is flying 🔥', 'so.loss': '{team} lost to {opp} {score}... something has to change', 'so.derbyWin': 'THE DERBY BELONGS TO {team}!!! {score} over {opp}, no sleep tonight 🎉', 'so.derbyLoss': 'Lost the derby {score} to {opp}. It hurts, {team} 💔',
+  'so.star': '{player} was unreal today, MVP for sure 👑', 'so.star2': 'Who can stop {player}?? Absolute form', 'so.flop': '{player} played like the monitor was off 😩', 'so.flop2': 'Should {player} be benched next match?',
+  'so.meme': '{opp} bot lane after meeting {team}: 💀💀💀', 'so.hype': '{player} ({team}) is the name everyone is talking about', 'so.patch': 'Patch {v} is out, the meta is upside down again 😵',
   'task.mission': 'The board set {n} new mission(s)', 'task.sponsor': 'Pick a main sponsor for the season',
   'inj.wrist': 'Wrist injury', 'inj.back': 'Back pain', 'inj.burnout': 'Burnout', 'inj.d': 'd', 'news.injury': '{player}: {kind}, out for about {n} days.', 'news.recovered': '{player} has recovered.',
   'mis.title': 'Board missions', 'mis.none': 'No missions yet.', 'mis.done': 'Completed', 'mis.failed': 'Failed', 'mis.left': '{n} days left', 'mis.reward': 'reward {money}',

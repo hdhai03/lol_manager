@@ -1,5 +1,6 @@
 // Báo cáo trinh sát đối thủ + họp báo
 import { useState } from 'react';
+import { coachStyle } from '../../engine/world';
 import { S } from '../../engine/state';
 import { scoutReport, applyScout, pressQuestion, pressAnswer, type PressCtx, type PressTone } from '../../engine/scout';
 import { t, cname } from '../../i18n';
@@ -14,7 +15,7 @@ function ScoutBody({ opp, close }: { opp: string; close: () => void }) {
     <div className="sc">
       <div className="sc-h"><Badge id={opp} size="lg" /><div className="grow"><small className="k-label">{t('sc.title')}</small><b className="k-disp">{tm.name}</b>
         <div className="muted text-sm">{t('sc.recent', { w: r.recent.w, l: r.recent.l })} · {t('sc.depth', { n: r.depth })}</div></div></div>
-      <div className="sc-style"><small className="k-label">{t('sc.style')}</small><b>{t('sc.st.' + r.style)}</b><span className="muted text-sm">{t('sc.why.' + r.styleWhy)}</span></div>
+      <div className="sc-style"><small className="k-label">{t('sc.style')}</small><b>{t('sc.st.' + r.style)}</b><span className="muted text-sm">{t('sc.why.' + r.styleWhy)} · {t('sc.coach', { coach: tm.coach || '?', style: t('cs.' + coachStyle(opp)) })}</span></div>
       <div className="sc-ps">{r.players.map((sp, i) => (
         <div key={sp.role} className={`sc-p ${i === 0 ? 'top' : ''}`}>
           <Face p={sp.p} size="md" />

@@ -140,7 +140,7 @@ export function makeRookie(league: LeagueId, role: Role): Player {
 
 export function refreshValue(p: Player): void {
   const lg = 0.85;
-  p.value = Math.round(clamp((p.ovr - 55) ** 2 * 1.6 * (0.6 + lg * 0.5), 20, 3500) * (2.2 + Math.max(0, 25 - p.age) * 0.15) + Math.max(0, p.potential - p.ovr) * 25);
+  p.value = Math.round((clamp((p.ovr - 55) ** 2 * 1.6 * (0.6 + lg * 0.5), 20, 3500) * (2.2 + Math.max(0, 25 - p.age) * 0.15) + Math.max(0, p.potential - p.ovr) * 25) * (1 + ((p.hype ?? 50) - 50) / 400));
   if (!p.salary) p.salary = Math.round(clamp((p.ovr - 55) ** 2 * 1.6 * 1.0, 20, 3500));
 }
 
