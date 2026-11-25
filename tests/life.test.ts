@@ -69,10 +69,13 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
       const tb = t2Table(lg);
       expect(tb.reduce((s, x) => s + x.w, 0)).toBeGreaterThan(10);
       expect(S.career!.w + S.career!.l).toBeGreaterThan(5);
+      expect(S.patch!.n).toBeGreaterThan(5);
+      expect(Object.keys(S.patch!.mods).length).toBeGreaterThan(0);
     });
     startNewSeason(g);
     withState(g, () => {
       expect(S.career!.hist.length).toBe(1);
+      expect(S.wrapped?.season).toBeGreaterThan(2000);
       expect(ensureT2()).toBeTruthy();
     });
   });

@@ -8,6 +8,7 @@ import { t, cname } from '../../i18n';
 import { Badge, LeagueBadge, RoleIcon, RuneMini } from '../components';
 import { opggPos } from '../../engine/runes';
 import { scoutedBans } from '../../engine/scout';
+import { patchVersion, patchMod } from '../../engine/patch';
 import { compLogoId, compTitle } from '../helpers';
 import { sidesOf } from './MatchDay';
 import type { Draft, Match, Player, Role, Side } from '../../engine/types';
@@ -97,7 +98,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
             const fl = draft.locked.includes(c.id);
             return (
               <button key={c.id} className={`dr-c ${dis ? 'dis' : ''} ${fl ? 'fl' : ''} ${dsel === c.id ? 'on' : ''} ${sug.has(c.id) && type === 'ban' && !dis ? 'sug' : ''}`} title={fl ? t('dr.fearlessUsed') : ''} disabled={dis || !myTurn} data-c={c.id} onClick={() => setDsel(c.id)}>
-                <img loading="lazy" src={champTile(c.id)} alt="" />{['S', 'A'].includes(c.tier) && <span className="hx">{c.tier}</span>}
+                <img loading="lazy" src={champTile(c.id)} alt="" />{patchMod(c.id) ? <span className={`pm ${patchMod(c.id) > 0 ? 'up' : 'down'}`} title={t('pt.mod')}>{patchMod(c.id) > 0 ? '▲' : '▼'}</span> : null}{['S', 'A'].includes(c.tier) && <span className="hx">{c.tier}</span>}
                 {myTurn && type === 'pick' && !dis && <span className="fit">{bestFit(c.id)}</span>}<em>{cname(c.id)}</em>
               </button>
             );
@@ -118,7 +119,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           <div className="t1">{compTitle(comp)} · {t('m.bo', { n: m.bo })} · {t('dr.game', { n: m.games.length + 1 })}</div>
           <div className="t2">{draft.blue === me ? t('dr.firstPick') : ' '}</div>
           <div className="tms"><Badge id={draft.blue} size="lg" /><LeagueBadge id={compLogoId(comp)} size="sm" /><Badge id={draft.red} size="lg" /></div>
-          <div className="tms"><Wins tid={draft.blue} /><span className="t3">PATCH {DB.meta.proPatch}</span><Wins tid={draft.red} /></div>
+          <div className="tms"><Wins tid={draft.blue} /><span className="t3">PATCH {patchVersion()}</span><Wins tid={draft.red} /></div>
           <div className="t3">{done ? t('dr.done') : myTurn ? <>{t(type === 'ban' ? 'dr.bans' : 'dr.picks')} · <b>{t('dr.yourTurn')}</b></> : t('dr.waiting')}</div>
         </div>
         <Slots s="R" />

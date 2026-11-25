@@ -4,6 +4,7 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'pt.title': 'Bản cập nhật trong game {v}', 'pt.next': 'Bản kế tiếp sau {n} ngày', 'pt.none': 'Chưa có thay đổi cân bằng nào.', 'pt.mod': 'Vừa được chỉnh trong bản cập nhật', 'news.patch': 'Bản cập nhật {v}: tăng sức mạnh {buffs}; giảm sức mạnh {nerfs}.',
   'nav.stats': 'Thống kê', 'stx.title': 'Thống kê tuyển thủ {y}', 'stx.pick2': 'Tích 2 tuyển thủ để so sánh', 'stx.compare': 'So sánh', 'stx.clear': 'Bỏ chọn', 'stx.form': 'Phong độ', 'stx.formLast': 'Phong độ {n} ván gần nhất', 'stx.none': 'Chưa có tuyển thủ nào đủ {n} ván.',
   'stx.g': 'Ván', 'stx.wr': 'Thắng', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'ST/phút', 'stx.cspm': 'CS/phút', 'stx.gpm': 'Vàng/phút', 'stx.mvp': 'MVP', 'stx.rt': 'Điểm',
   'rec.tab.replays': 'Xem lại', 'rp.none': 'Chưa có ván nào được lưu. Các ván của đội bạn và các trận chung kết sẽ được lưu để xem lại.', 'rp.watch': 'Xem lại', 'rp.title': 'Phát lại', 'rp.close': 'Đóng',
@@ -340,6 +341,7 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'pt.title': 'In-game patch {v}', 'pt.next': 'Next patch in {n} days', 'pt.none': 'No balance changes yet.', 'pt.mod': 'Changed in the latest patch', 'news.patch': 'Patch {v}: buffs {buffs}; nerfs {nerfs}.',
   'nav.stats': 'Stats', 'stx.title': 'Player stats {y}', 'stx.pick2': 'Tick 2 players to compare', 'stx.compare': 'Compare', 'stx.clear': 'Clear', 'stx.form': 'Form', 'stx.formLast': 'Form over the last {n} games', 'stx.none': 'No players with {n}+ games yet.',
   'stx.g': 'Games', 'stx.wr': 'Win', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'DPM', 'stx.cspm': 'CSPM', 'stx.gpm': 'GPM', 'stx.mvp': 'MVP', 'stx.rt': 'Rating',
   'rec.tab.replays': 'Replays', 'rp.none': 'No saved games yet. Your team\'s games and finals are saved for replay.', 'rp.watch': 'Watch', 'rp.title': 'Replay', 'rp.close': 'Close',

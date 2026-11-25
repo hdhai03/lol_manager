@@ -9,6 +9,7 @@ import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted, withSeed } from './ut
 import { traitsOf } from './attrs';
 import { simulateCombat, type CUnit, type Cls } from './combat';
 import { pickRunes, opggAdj, KS, type RunePick } from './runes';
+import { patchMod } from './patch';
 import type { FightRec, Attr, Bans, FrameUnit, GameEvent, GameResult, ObjTally, Picks, Player, PlayerLine, Role, Side, Tactics, PersonalTactic } from './types';
 
 export type Pt = [number, number];
@@ -118,7 +119,7 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
     scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
     early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025 + (ins === 'scale' ? -0.04 : ins === 'invade' ? 0.03 : 0),
-    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0)),
+    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0) + patchMod(champ)),
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
     fhp: 0, out: false, hitBy: new Set(), caught: false,

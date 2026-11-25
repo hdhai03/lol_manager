@@ -146,6 +146,7 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  patch?: { v: string; day: number; mods: Record<string, number>; notes: { c: string; d: number }[]; n: number; hist?: { v: string; day: number; notes: { c: string; d: number }[] }[] };
   replays?: { id: string; season: number; day: number; comp: string; a: string; b: string; winner: string; durS: number; k: [number, number]; game: number; rin: import('./engine').RunInput; star?: boolean }[];
   ceremony?: { title: string; tier: string; season: number; team: string } | null;
   wrapped?: { season: number; team: string; w: number; l: number; titles: string[]; best?: { pid: string; rt: number; g: number }; topK?: { pid: string; k: number }; fans: [number, number]; allpro: Partial<Record<string, string>>; seen?: boolean } | null;

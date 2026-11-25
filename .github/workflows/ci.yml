@@ -1,0 +1,35 @@
+# Kiểm tra mỗi lần push / pull request: kiểu dữ liệu, test engine, build, và kiểm tra giao diện bằng trình duyệt
+# (đi qua mọi trang + một ván đấu ở 3 cỡ màn hình; báo lỗi JavaScript và chữ đè chữ).
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Install Playwright (Chromium)
+        run: |
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: UI check (overlap + JS errors)
+        run: |
+          npx vite preview --port 8765 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8765/ >/dev/null && break; sleep 2; done
+          node scripts/ui-check.cjs ui-check 1440x900,2000x940,390x844
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-check
+          path: ui-check/

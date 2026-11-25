@@ -4,3 +4,4 @@ public/data/pack-*.json
 public/data/bin/
 node_modules/
 dist/
+ui-check/

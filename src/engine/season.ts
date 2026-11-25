@@ -10,6 +10,7 @@ import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from
 import { lifeDay, chemNewcomer } from './life';
 import { contractsDay } from './contracts';
 import { staffDay, devDay, loanDay, returnLoans, trainMul } from './staff';
+import { patchDay } from './patch';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -107,6 +108,7 @@ function dailyTick(): void {
   lifeDay(playing);
   contractsDay(playing);
   staffDay();
+  patchDay();
   devDay();
   loanDay(playing);
   brandDay();

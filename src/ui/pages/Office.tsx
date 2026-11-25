@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { openTeam } from './TeamProfile';
 import { DB, itemImg, champArt, refreshOpgg } from '../../engine/data';
 import { opgg, opggPos, tierList, TIER_L } from '../../engine/runes';
+import { ensurePatch, PATCH_DAYS } from '../../engine/patch';
 import { S, userTeam, teamOvr, teamPlayers, teamSalary } from '../../engine/state';
 import { ROLES, money } from '../../engine/util';
 import { t, cname, iname, getLang } from '../../i18n';
@@ -13,6 +14,18 @@ import { openPlayer } from './Squad';
 import type { Player, Role } from '../../engine/types';
 
 // ---------- Tướng & Meta ----------
+function PatchNotes() {
+  const P = ensurePatch();
+  const mods = Object.entries(P.mods).sort((a, b) => b[1] - a[1]);
+  return (
+    <div className="pt-box">
+      <div className="pt-h"><b>{t('pt.title', { v: P.v })}</b><span className="muted text-xs">{t('pt.next', { n: Math.max(0, PATCH_DAYS - (S.day - P.day)) })}</span></div>
+      {mods.length ? <div className="pt-list">{mods.map(([c, d]) => (
+        <span key={c} className={`pt-c ${d > 0 ? 'up' : 'down'}`} title={cname(c)}><Champ id={c} size={30} /><small>{d > 0 ? '▲' : '▼'} {Math.abs(d * 100).toFixed(1)}%</small></span>
+      ))}</div> : <p className="muted text-xs m-0">{t('pt.none')}</p>}
+    </div>
+  );
+}
 const ago = (iso?: string): string => {
   if (!iso) return '';
   const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
@@ -100,6 +113,7 @@ export function Meta() {
               <span className="muted">· {t('mt.upd', { when: ago(o.meta.fetched) })} ({t(o.meta.live ? 'mt.live' : 'mt.snap')})</span>
               <button className="gb ghost xs" data-mrefresh disabled={busy} onClick={() => { setBusy(true); void refreshOpgg(true).finally(() => { setBusy(false); refresh(); }); }}>{busy ? '…' : t('mt.refresh')}</button>
             </div>
+            <PatchNotes />
             <div className="tl">
               {TIER_L.map((L, ti) => {
                 const list = rows.filter((x) => x.e.tier === ti + 1);

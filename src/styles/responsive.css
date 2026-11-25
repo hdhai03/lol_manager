@@ -633,3 +633,13 @@
 .ach b { display: block; font-size: .88rem; }
 .ach small { display: block; font-size: .7rem; color: #8b95a8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 640px) { .rp-row { grid-template-columns: 1fr; gap: .3rem; } .rp-row > span:last-child { text-align: left; } .wr-ap { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cmp-r { grid-template-columns: 3.4rem 1fr 4.5rem 1fr 3.4rem; gap: .35rem; } }
+/* ===== Bản cập nhật trong game ===== */
+.pt-box { margin-bottom: .8rem; padding: .7rem .8rem; border-radius: var(--r, 10px); background: rgba(255, 255, 255, .04); display: flex; flex-direction: column; gap: .5rem; }
+.pt-h { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.pt-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+.pt-c { display: flex; align-items: center; gap: .35rem; padding: .2rem .45rem .2rem .2rem; border-radius: 99px; background: rgba(255, 255, 255, .04); }
+.pt-c img { border-radius: 50%; }
+.pt-c small { font-size: .72rem; font-weight: 700; }
+.pt-c.up small { color: #6ee7a8; } .pt-c.down small { color: #ff8f8f; }
+.dr-c .pm { position: absolute; left: .35rem; top: .35rem; font-size: .62rem; font-weight: 800; padding: .05rem .25rem; border-radius: 4px; background: rgba(10, 14, 24, .75); }
+.dr-c .pm.up { color: #6ee7a8; } .dr-c .pm.down { color: #ff8f8f; }
