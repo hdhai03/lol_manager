@@ -7,6 +7,7 @@ import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, p
 import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr';
 import { closeEvent, resetEventStats } from './awards';
 import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy';
+import { lifeDay, chemNewcomer } from './life';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats';
 export { PHASES, standings, compOrder, runnerUp };
@@ -71,6 +72,8 @@ function finishComp(c: Comp): void {
   if (!c.trophy) return;
   const y = S.season;
   const ut = S.userTeam;
+  // nghỉ hè: độ ăn ý quay về mức trung bình một phần
+  for (const k of Object.keys(S.chem || {})) S.chem![k] = +(S.chem![k] - (S.chem![k] - 55) * 0.25).toFixed(2);
   const order = compOrder(c);
   const tiers = PRIZE[c.trophy.tier];
   order.forEach((t, i) => {
@@ -97,6 +100,7 @@ function dailyTick(): void {
   const playing = new Set(matchesOnDay(S.day).flatMap((m) => [m.a, m.b]));
   soloqDay(playing);
   academyDay();
+  lifeDay(playing);
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
   // tập luyện & phát triển
   for (const p of Object.values(S.players)) {
@@ -265,6 +269,7 @@ export function signPlayer(t: Team, p: Player, until: number): void {
   S.freeAgents = S.freeAgents.filter((x) => x !== p.id);
   p.teamId = t.id;
   p.contractUntil = until;
+  chemNewcomer(p, t.id);
   t.roster.push(p.id);
 }
 

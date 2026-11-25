@@ -204,7 +204,7 @@ export function Roster() {
 }
 
 // ---------- Chiến thuật ----------
-type TacKey = Exclude<keyof TacticsT, 'personal' | 'day'>;
+type TacKey = keyof typeof TACTIC_OPTS;
 export function Tactics() {
   const ut = userTeam();
   S.tactics ??= defaultTactics();

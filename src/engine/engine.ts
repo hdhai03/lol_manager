@@ -69,7 +69,7 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
   const at = {} as Record<Attr, number>;
   const s = p ? p.stats : null;
   const tr = new Set(p ? traitsOf(p) : []);
-  const condPen = p ? Math.max(0, 85 - (p.cond ?? 100)) * 0.3 : 0;
+  const condPen = p && !tac.fresh ? Math.max(0, 85 - (p.cond ?? 100)) * 0.3 : 0;
   for (const a of ATTRS) {
     let v = s ? s[a] ?? 60 : 42;
     if (a !== 'aggression') v -= condPen;
@@ -81,6 +81,9 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
   // phong độ trong ngày: cùng chỉ số nhưng mỗi ván một khác (người focus cao dao động ít hơn)
   const swing = gauss() * (p && s ? clamp((100 - (s.focus ?? 70)) / 8, 2, 5.5) : 4) + (tac.day || 0);
   for (const a of ATTRS) if (a !== 'aggression' && a !== 'stamina') at[a] += swing;
+  // độ ăn ý với đồng đội: phối hợp, phán đoán, nhận thức bản đồ
+  const ch = (tac.chem?.[role] ?? 58) - 58;
+  at.teamwork += ch * 0.16; at.judgment += ch * 0.06; at.awareness += ch * 0.05;
   const pt = tac.personal?.[role] || 'standard';
   if (pt === 'aggressive') { at.aggression += 14; at.patience -= 10; }
   if (pt === 'safe') { at.aggression -= 14; at.patience += 10; at.positioning += 3; }
@@ -100,7 +103,7 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
     scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
     early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025,
-    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus),
+    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus + (tac.runeB || 0)),
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
     fhp: 0, out: false, hitBy: new Set(), caught: false,

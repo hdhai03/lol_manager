@@ -5,6 +5,30 @@ import { t } from '../../i18n';
 import { ui, refresh } from '../store';
 import { compTitle, newsText } from '../helpers';
 import { openTab } from '../actions';
+import { EV_CHOICES, resolveEvent, pendingEvents, type GEvent } from '../../engine/life';
+import { Face } from '../components';
+import { toast } from '../store';
+import { fullMoney } from '../helpers';
+
+function EventCard({ e }: { e: GEvent }) {
+  const a = e.pid ? S.players[e.pid] : null, b = e.pid2 ? S.players[e.pid2] : null;
+  const prm = { player: a?.ign || '', player2: b?.ign || '', money: fullMoney(e.amount || 0) };
+  return (
+    <div className={`ev-card k-${e.kind}`} data-ev={e.id}>
+      <div className="ev-faces">{a && <Face p={a} size="md" />}{b && <Face p={b} size="md" />}</div>
+      <div className="ev-body">
+        <small className="k-label">{t('ev.kind')} · {S.day - e.day <= 0 ? t('feed.today') : t('feed.daysAgo', { n: S.day - e.day })}</small>
+        <b>{t('ev.' + e.kind + '.t', prm)}</b>
+        <p>{t('ev.' + e.kind + '.d', prm)}</p>
+        <div className="ev-ch">{EV_CHOICES[e.kind].map((c) => (
+          <button key={c} className="gb sm" data-evc={c} onClick={() => { const out = resolveEvent(e.id, c); if (out) toast(t('ev.out.' + out, prm), 'ok'); refresh(); }}>
+            <b>{t('ev.' + e.kind + '.' + c, prm)}</b><small>{t('ev.' + e.kind + '.' + c + 'D', prm)}</small>
+          </button>
+        ))}</div>
+      </div>
+    </div>
+  );
+}
 
 const NEWS_CAT = (k: string): string => (/userWin|userLoss|splitStart|kickoff|fstStart|springStart|summerStart|msiStart|worldsStart/.test(k) ? 'match'
   : /offer|transfer|signedFA|contract|release|sold|bought/.test(k) ? 'transfer'
@@ -43,6 +67,7 @@ export function Inbox() {
         <span className="gp-r">{items.length + lv.length}</span>
       </div>
       <div className="gp-b scroll in-list" style={{ padding: '0 1.1rem 1rem' }}>
+        {pendingEvents().map((e) => <EventCard key={e.id} e={e} />)}
         {lv.map((x, i) => (
           <button key={'l' + i} className="in-row live task" style={{ fontSize: '.95rem' }} data-tab-go={x.tab} onClick={() => openTab(x.tab)}>
             <span className="tagx">{t('in.cat.' + x.cat)}</span><span className="grow">{x.text}</span><span className="k-label" style={{ fontSize: '.72rem' }}>{t('in.now')}</span>

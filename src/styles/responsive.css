@@ -360,3 +360,70 @@
 .bc-p .ph .rn { position: absolute; left: -4px; bottom: -4px; z-index: 2; }
 .bc-side.r .bc-p .ph .rn { left: auto; right: -4px; }
 .dr-slot .drn { position: absolute; top: .4rem; left: .45rem; z-index: 2; }
+
+/* ===== Luyện tập: scrim, lệnh rank, ăn ý, thẻ ===== */
+.prac { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.prac-l, .prac-r { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.chem-big { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 1.5rem; }
+.c1 { --cv: 255, 110, 110; } .c2 { --cv: 255, 170, 100; } .c3 { --cv: 230, 210, 120; } .c4 { --cv: 120, 220, 160; } .c5 { --cv: 90, 230, 200; }
+.chem-big[class*=" c"] { color: rgb(var(--cv)); }
+.chem-m { display: grid; gap: 4px; align-items: center; }
+.cm-row { display: contents; }
+.cm-h { display: flex; flex-direction: column; align-items: center; gap: .2rem; }
+.cm-n { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+.cm-n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.cm-c { display: grid; place-items: center; height: 40px; border-radius: var(--r-sm, 7px); font-weight: 700; font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; background: rgba(var(--cv, 255, 255, 255), .16); color: rgb(var(--cv, 220, 220, 220)); }
+.cm-c.duo { background: rgba(var(--cv), .28); box-shadow: 0 4px 16px rgba(var(--cv), .18); }
+.cm-c.self { background: rgba(255, 255, 255, .03); }
+.sc-part { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: .4rem; }
+.sc-t { display: flex; flex-direction: column; align-items: center; gap: .25rem; padding: .5rem .3rem; border: 0; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .04); color: inherit; cursor: pointer; transition: background .15s; }
+.sc-t:hover { background: rgba(255, 255, 255, .08); }
+.sc-t.on { background: rgba(255, 255, 255, .16); }
+.sc-t.sc-off { opacity: .45; }
+.sc-t small { font-size: .7rem; font-weight: 700; }
+.sc-auto { width: 36px; height: 36px; display: grid; place-items: center; font-size: 1.2rem; }
+.sc-log { display: flex; flex-direction: column; gap: .3rem; margin-top: .9rem; }
+.sc-r { display: grid; grid-template-columns: 3.2rem 24px 3rem 1fr auto; align-items: center; gap: .5rem; padding: .35rem .55rem; border-radius: var(--r-sm, 7px); background: rgba(255, 255, 255, .035); font-size: .85rem; }
+.sc-r.w b { color: #6ee7a8; } .sc-r.l b { color: #ff8f8f; }
+.sq-list { display: flex; flex-direction: column; gap: .35rem; }
+.sq-row { display: grid; grid-template-columns: minmax(130px, 1fr) 56px auto; align-items: center; gap: .7rem; padding: .3rem .4rem; border-radius: var(--r-sm, 7px); }
+.sq-row:hover { background: rgba(255, 255, 255, .03); }
+.sq-p { display: flex; align-items: center; gap: .5rem; cursor: pointer; min-width: 0; }
+.sq-p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sq-seg .chip { font-size: .72rem; padding: .3rem .55rem; }
+.sq-legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .4rem .9rem; margin-top: .9rem; font-size: .76rem; color: #8b95a8; }
+.sq-legend b { color: #dfe5ef; margin-right: .35rem; }
+.bst-list { display: flex; flex-direction: column; gap: .4rem; }
+.bst-c .bst-list { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+.bst { display: flex; align-items: center; gap: .7rem; padding: .55rem .7rem; border: 0; border-radius: var(--r, 10px); background: rgba(255, 255, 255, .05); color: inherit; text-align: left; cursor: pointer; transition: background .15s, transform .15s; }
+.bst:hover { background: rgba(255, 255, 255, .09); transform: translateY(-1px); }
+.bst.on { background: linear-gradient(135deg, rgba(var(--bc), .35), rgba(var(--bc), .12)); box-shadow: 0 8px 22px rgba(var(--bc), .2); }
+.bst.k-focus { --bc: 125, 196, 255; } .bst.k-synergy { --bc: 110, 231, 168; } .bst.k-meta { --bc: 200, 170, 255; } .bst.k-fresh { --bc: 255, 207, 110; } .bst.k-prep { --bc: 255, 143, 143; }
+.bst .bi { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 1.05rem; background: rgba(var(--bc), .18); color: rgb(var(--bc)); }
+.bst .bt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.bst .bt small { color: #8b95a8; font-size: .72rem; }
+.bst em { font-style: normal; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8b95a8; }
+.bst.on em { color: rgb(var(--bc)); }
+.bst-c .bst { padding: .4rem .6rem; }
+.bst-c .bst .bt small { display: none; }
+.vsx-bst { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .7rem 1.2rem; margin: .4rem auto 0; }
+.ev-card { display: flex; gap: 1rem; padding: 1rem; margin: .8rem 0 .4rem; border-radius: var(--r, 10px); background: linear-gradient(135deg, rgba(255, 207, 110, .1), rgba(255, 255, 255, .04)); }
+.ev-faces { display: flex; flex-direction: column; gap: .4rem; flex: none; }
+.ev-body { display: flex; flex-direction: column; gap: .3rem; min-width: 0; flex: 1; }
+.ev-body > b { font-size: 1.05rem; }
+.ev-body p { margin: 0; color: #c8cfdb; font-size: .9rem; }
+.ev-ch { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .45rem; margin-top: .4rem; }
+.ev-ch .gb { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; height: auto; padding: .55rem .75rem; text-align: left; white-space: normal; }
+.ev-ch .gb small { font-size: .72rem; color: #8b95a8; font-weight: 500; text-transform: none; letter-spacing: 0; }
+@media (max-width: 1100px) { .prac { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .sq-row { grid-template-columns: minmax(0, 1fr) 48px; }
+  .sq-seg { grid-column: 1 / -1; overflow-x: auto; flex-wrap: nowrap; }
+  .cm-c { height: 34px; font-size: .9rem; }
+  .cm-n b { display: none; }
+  .chem-m { grid-template-columns: 44px repeat(5, minmax(0, 1fr)) !important; }
+  .ev-card { flex-direction: column; }
+  .ev-faces { flex-direction: row; }
+}
+.sq-legend > div { display: flex; flex-direction: column; gap: .1rem; }
+.sq-legend b { margin-right: 0; }

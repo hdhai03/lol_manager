@@ -10,6 +10,7 @@ import { IcMenu, IcSave } from '../icons';
 import { Home } from '../pages/Home';
 import { Inbox } from '../pages/Inbox';
 import { Roster, Tactics } from '../pages/Squad';
+import { Practice } from '../pages/Practice';
 import { Transfers } from '../pages/Transfers';
 import { Training, Youth, Ladder } from '../pages/Academy';
 import { Schedule } from '../pages/Schedule';
@@ -18,7 +19,7 @@ import { Power, Records } from '../pages/Rankings';
 import { Meta, World, Finance } from '../pages/Office';
 
 const PAGES: Record<string, () => ReactElement> = {
-  dashboard: Home, inbox: Inbox, roster: Roster, tactics: Tactics, transfers: Transfers,
+  dashboard: Home, inbox: Inbox, roster: Roster, tactics: Tactics, practice: Practice, transfers: Transfers,
   training: Training, youth: Youth, ladder: Ladder,
   schedule: Schedule, standings: Standings, power: Power, records: Records, meta: Meta, world: World, finance: Finance,
 };

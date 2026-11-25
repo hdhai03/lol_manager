@@ -9,6 +9,8 @@ import { ui, refresh } from '../store';
 import { Badge, Champ, Face, LeagueBadge, Ovr, RoleTag, faceSrc } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { DraftScreen } from './Draft';
+import { Boosts } from '../pages/Practice';
+import { teamChem } from '../../engine/life';
 import { LiveGame } from './Live';
 import { PostGame } from './PostGame';
 import type { Draft, GameResult, Match } from '../../engine/types';
@@ -67,6 +69,10 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
         <span className="k-label">{t('m.winProb')}</span>
         <div className="prob"><i style={{ width: `${Math.round(mine * 100)}%` }} /></div>
         <b className="k-num">{Math.round(mine * 100)}%</b>
+      </div>
+      <div className="vsx-bst">
+        <span className="k-label">{t('pr.chem')} <b className="text-white">{Math.round(teamChem(S.userTeam))}</b></span>
+        {(!!S.boosts?.length || !!S.boostActive) && <><span className="k-label">{t('bst.title')}</span><Boosts compact /></>}
       </div>
       <div className="md-actions">
         <button className="gb primary" data-a="manual" style={{ minHeight: '3rem', padding: '0 2rem' }} onClick={() => go('manual')}>{t('m.manualDraft')}</button>

@@ -48,7 +48,7 @@ export function primaryAction(): { act: ActKey; label: string } {
 
 // ----- điều hướng 6 mục -----
 export const GROUPS: Record<string, string[]> = {
-  dashboard: ['dashboard'], inbox: ['inbox'], squad: ['roster', 'tactics'], transfers: ['transfers'],
+  dashboard: ['dashboard'], inbox: ['inbox'], squad: ['roster', 'tactics', 'practice'], transfers: ['transfers'],
   academy: ['training', 'youth', 'ladder'], office: ['schedule', 'standings', 'power', 'records', 'meta', 'world', 'finance'],
 };
 export const TABS = Object.keys(GROUPS);
@@ -56,7 +56,7 @@ export const groupOf = (leaf: string): string => TABS.find((g) => GROUPS[g].incl
 export const unreadCount = (): number => S.news.filter((n) => (n.id || 0) > (S.inboxSeen || 0)).length;
 
 // ----- việc cần làm trong ngày (thay đổi theo ngày, làm xong thì biến mất) -----
-export const TASK_TAB: Record<string, string> = { training: 'training', squad: 'roster', rest: 'roster', scout: 'youth', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
+export const TASK_TAB: Record<string, string> = { event: 'inbox', training: 'training', squad: 'roster', rest: 'roster', scout: 'youth', tactics: 'tactics', finance: 'finance', lineup: 'roster', gpr: 'power', standings: 'standings' };
 export function todayTasks(): DailyTask[] {
   const ut = userTeam();
   if (!S.tasks || S.tasks.day !== S.day) {
@@ -83,6 +83,8 @@ export function todayTasks(): DailyTask[] {
   if (offers.length) list.push({ id: 'offers', kind: 'offers', n: offers.length });
   if (S.phase === 'offseason' && expiring.length) list.push({ id: 'renew', kind: 'renew', n: expiring.length });
   if (ROLES.some((r) => !ut.lineup[r])) list.push({ id: 'lineup', kind: 'lineup' });
+  const evs = (S.events || []).filter((e) => !e.done).length;
+  if (evs) list.unshift({ id: 'event', kind: 'event', n: evs });
   return list;
 }
 /** đánh dấu xong khi người chơi mở đúng mục liên quan */

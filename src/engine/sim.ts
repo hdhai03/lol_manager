@@ -4,6 +4,7 @@ import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
 import { runGame } from './engine';
 import { opggAdj } from './runes';
+import { lineChem, chemPairs, boostMods } from './life';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
 import { archiveGame } from './awards';
@@ -163,8 +164,12 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
   for (const sd of ['B', 'R'] as Side[]) for (const r of ROLES) fits[sd][r] = champFit(lines[sd][r], d.picks[sd][r], r);
   const tac = (sd: Side) => {
     const tid = sd === 'B' ? d.blue : d.red;
-    const base = tid === S.userTeam && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
-    return { ...base, day: gauss() * 2.6 }; // phong độ chung của cả đội trong ngày
+    const mine = tid === S.userTeam;
+    const base = mine && S.tactics ? S.tactics : aiTactics(d.picks[sd], lines[sd]);
+    const bm = mine ? boostMods() : { day: 0, chem: 0, rune: 0, fresh: false };
+    const chem = lineChem(tid);
+    if (bm.chem) for (const r of ROLES) if (chem[r] != null) chem[r]! += bm.chem;
+    return { ...base, day: gauss() * 2.6 + bm.day, chem, runeB: bm.rune, fresh: bm.fresh }; // phong độ chung của cả đội trong ngày
   };
   const g = runGame({ blue: d.blue, red: d.red, picks: d.picks, bans: d.bans, lines, fits, tactics: { B: tac('B'), R: tac('R') }, record: !!opts.record, series: opts.series || 0 });
   g.pWinB = +logistic((teamPower(d.blue, d.picks.B) - teamPower(d.red, d.picks.R)) / 5.5).toFixed(3);
@@ -173,6 +178,9 @@ export function simulateGame(d: Draft, opts: { record?: boolean; series?: number
 
 // cập nhật phong độ/thống kê sau ván
 export function applyGameResult(g: GameResult): void {
+  // đánh giải cùng nhau: tăng độ ăn ý
+  chemPairs(g.blue, 0.35);
+  chemPairs(g.red, 0.35);
   for (const x of g.players) {
     const p = x.pid ? S.players[x.pid] : undefined;
     if (!p) continue;

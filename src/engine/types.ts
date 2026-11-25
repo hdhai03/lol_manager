@@ -60,6 +60,8 @@ export interface Tactics {
   tempo: 'early' | 'balanced' | 'late'; obj: 'dragon' | 'balanced' | 'top'; style: 'teamfight' | 'pick' | 'split';
   focus: 'auto' | 'carry' | 'weakest'; jungle: 'auto' | 'top' | 'mid' | 'bot' | 'farm';
   personal: Record<Role, PersonalTactic>; day?: number;
+  /** độ ăn ý từng vị trí; thẻ tăng cường: ngọc / thể lực */
+  chem?: Partial<Record<Role, number>>; runeB?: number; fresh?: boolean;
 }
 export interface NewsItem { id?: number; key: string; params: Record<string, unknown>; day: number; season: number; important: boolean }
 export interface FinanceEntry { key: string; amount: number; params?: Record<string, unknown>; day: number; season: number }
@@ -132,6 +134,11 @@ export interface GameState {
   pendingSwap?: { up: string; down: string } | null;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
   inboxSeen?: number; goal?: string;
+  chem?: Record<string, number>; boosts?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep'; from: string; day: number }[]; seqB?: number;
+  boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
+  sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
+  scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  events?: { id: string; kind: 'tension' | 'scandal' | 'sick' | 'stream' | 'bootcamp' | 'fanmeet' | 'reschedule'; day: number; pid?: string; pid2?: string; amount?: number; done?: string; out?: string }[]; seqE?: number;
 }
 
 // ---------- cấm/chọn & kết quả ván ----------

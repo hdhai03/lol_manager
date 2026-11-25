@@ -3,6 +3,7 @@
 //   cùng với các tài năng nghiệp dư (chưa thuộc đội nào) để HLV tuyển trạch.
 // - Học viện: tuyển tài năng trẻ từ bảng Thách đấu, cho tập luyện, đôn lên đội chính.
 import { DB } from './data';
+import { sqGames, sqAfter, sqOrder, poolChamp } from './life';
 import { S, makeRookie, refreshValue, teamPlayers, addNews, addFinance } from './state';
 import { signPlayer } from './season';
 import { ROLES, clamp, rand, randInt, pick, logistic, gauss, computeOvr, ATTRS } from './util';
@@ -59,16 +60,22 @@ export function soloqDay(matchToday: Set<string>): void {
     for (const a of srv.acc) {
       const p = a.pid ? S.players[a.pid] : null;
       let n = p ? (matchToday.has(p.teamId ?? "") ? randInt(0, 2) : randInt(2, 6)) : randInt(3, 9);
-      if (p && (p.cond ?? 100) < 55) n = Math.min(n, 1);
+      if (p && (p.cond ?? 100) < 55 && sqOrder(p.id) !== 'grind') n = Math.min(n, 1);
+      if (p) n = sqGames(p, n);
+      const pool = p && sqOrder(p.id) === 'pool';
+      let wins = 0;
       for (let i = 0; i < n; i++) {
         // LP cao thì gặp đối thủ mạnh hơn
         const opp = med + (a.lp - 700) / 55 + gauss() * 3;
         const win = rand() < logistic((accSkill(a) - opp) / 5);
-        const d = win ? randInt(17, 24) : -randInt(15, 21);
+        const d = win ? randInt(17, 24) * (pool ? 0.6 : 1) : -randInt(15, 21);
+        if (win) wins++;
         a.lp = Math.max(0, a.lp + d);
         if (win) a.w++; else a.l++;
-        const champ = p ? (p.pool[Math.floor(Math.pow(rand(), 1.8) * Math.min(p.pool.length, 8))]?.c) : metaChamp(a.pr!.role);
+        const champ = p ? (pool ? poolChamp(p) : p.pool[Math.floor(Math.pow(rand(), 1.8) * Math.min(p.pool.length, 8))]?.c) : metaChamp(a.pr!.role);
         if (champ) a.ch[champ] = (a.ch[champ] || 0) + 1;
+        // luyện tướng: tướng meta dần vào bể tướng (mỗi trận xếp hạng = 0.3 trận thi đấu)
+        if (pool && champ && p) { const pe = p.pool.find((x) => x.c === champ); if (pe) { pe.g += 0.3; if (win) pe.w += 0.3; } else if (p.pool.length < 12) p.pool.push({ c: champ, g: 0.3, w: win ? 0.3 : 0 }); }
       }
       // chỉ giữ 4 tướng chơi nhiều nhất
       const top = Object.entries(a.ch).sort((x, y) => y[1] - x[1]).slice(0, 4);
@@ -78,6 +85,7 @@ export function soloqDay(matchToday: Set<string>): void {
         p.form = clamp((p.form || 0) + (a.w > a.l ? 0.02 : -0.02), -5, 5);
         p.cond = clamp((p.cond ?? 100) - n * 0.6, 20, 100);
       }
+      if (p) sqAfter(p, n, wins);
       // tài năng nghiệp dư tiến bộ dần
       if (!p && a.pr!.ovr < a.pr!.pot && rand() < 0.03 + (a.pr!.pot - a.pr!.ovr) * 0.002) a.pr!.ovr++;
     }
