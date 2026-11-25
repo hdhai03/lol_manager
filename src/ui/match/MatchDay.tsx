@@ -87,6 +87,20 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
   );
 }
 
+function HonorCards({ m }: { m: Match }) {
+  const h = S.lastHonor && S.lastHonor.match === m.id ? S.lastHonor.list : [];
+  if (!h.length) return null;
+  return (
+    <div className="hon">
+      <small className="k-label">{t('hon.title')}</small>
+      <div className="hon-g">{h.map((x) => { const p = S.players[x.to], f = S.players[x.from]; return (
+        <div key={x.kind} className={`hon-c k-${x.kind}`}><span className="hon-i">{x.kind === 'cool' ? '❄' : x.kind === 'shotcall' ? '⚑' : '♥'}</span><Face p={p} size="md" />
+          <div className="min-w-0"><b>{p?.ign}</b><small>{t('hon.' + x.kind)}</small><small className="muted">{t('hon.from', { player: f?.ign || '' })}</small></div></div>
+      ); })}</div>
+    </div>
+  );
+}
+
 function SeriesEnd({ m, onClose }: { m: Match; onClose: () => void }) {
   const won = m.winner === S.userTeam;
   return (
@@ -94,6 +108,7 @@ function SeriesEnd({ m, onClose }: { m: Match; onClose: () => void }) {
       <SeriesHead m={m} />
       <div className={`result ${won ? 'win' : 'loss'}`}>{t('m.seriesWin', { team: S.teams[m.winner!].name, a: Math.max(m.winsA, m.winsB), b: Math.min(m.winsA, m.winsB) })}</div>
       <div className="flex justify-center gap-3 flex-wrap my-6">{lineupPlayers(S.teams[S.userTeam]).map(({ role, p }) => <div key={role} className="flex flex-col items-center gap-1"><Face p={p} size="lg" /><b className="text-sm">{p?.ign}</b></div>)}</div>
+      <HonorCards m={m} />
       <Press ctx={won ? 'win' : 'loss'} opp={m.a === S.userTeam ? m.b : m.a} seed={S.day + m.winsA * 7} />
       <div className="md-actions"><button className="gb primary" data-close style={{ minHeight: '3rem', padding: '0 2.4rem' }} onClick={onClose}>{t('m.finish')}</button></div>
     </div>

@@ -4,6 +4,8 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'mst.title': 'Thông thạo cấp {n}', 'mst.soloq': 'xếp hạng', 'news.rankReward': '{player} kết thúc mùa xếp hạng ở hạng {rank} máy chủ {server}.', 'rkr.best': '· Hạng {n} {sv} mùa {y}',
+  'hon.title': 'Vinh danh', 'hon.cool': 'Bình tĩnh', 'hon.shotcall': 'Chỉ huy xuất sắc', 'hon.gg': 'Tinh thần đồng đội', 'hon.from': 'từ {player}', 'hon.lv': 'Cấp vinh danh {n}', 'news.honorUp': '{player} đạt cấp vinh danh {lv}!',
   'cap.after': 'Lương đội sau ký {pay}/{cap}', 'cv.value': 'Giá trị CLB', 'cv.world': 'thế giới', 'cap.total': 'Tổng lương / trần', 'cap.tax': 'Vượt trần: thuế xa xỉ ≈ {money}/mùa', 'cap.floor': 'Dưới mức sàn {money}: bị phạt', 'cap.ok': 'Trong giới hạn',
   'tr.overCap': 'Vượt trần lương cứng của giải (trần + 15%) — giảm lương hoặc bán bớt trước.', 'news.luxTax': 'Mùa này CLB nộp $ {money}K thuế xa xỉ do vượt trần lương.',
   'tc.title': 'Đồng điệu đội hình', 'tc.none': 'Chưa có', 'tc.lv': 'cấp {n}', 'tc.nation': 'Đồng hương', 'tc.champs': 'Từng vô địch cùng nhau', 'tc.academy': 'Cùng lò học viện', 'tc.duo': 'Cặp chơi chung lâu năm',
@@ -373,6 +375,8 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'mst.title': 'Mastery level {n}', 'mst.soloq': 'ranked', 'news.rankReward': '{player} finished the ranked season #{rank} on {server}.', 'rkr.best': '· #{n} {sv} season {y}',
+  'hon.title': 'Honors', 'hon.cool': 'Stayed cool', 'hon.shotcall': 'Great shotcalling', 'hon.gg': 'GG <3', 'hon.from': 'from {player}', 'hon.lv': 'Honor level {n}', 'news.honorUp': '{player} reached honor level {lv}!',
   'cap.after': 'Payroll after signing {pay}/{cap}', 'cv.value': 'Club value', 'cv.world': 'worldwide', 'cap.total': 'Payroll / cap', 'cap.tax': 'Over the cap: luxury tax ≈ {money}/season', 'cap.floor': 'Below the {money} floor: fined', 'cap.ok': 'Within limits',
   'tr.overCap': 'Exceeds the league hard cap (cap + 15%).', 'news.luxTax': 'The club paid $ {money}K luxury tax this season for exceeding the cap.',
   'tc.title': 'Team color', 'tc.none': 'None', 'tc.lv': 'level {n}', 'tc.nation': 'Same nationality', 'tc.champs': 'Won titles together', 'tc.academy': 'Same academy', 'tc.duo': 'Long-time duo',

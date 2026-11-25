@@ -10,6 +10,7 @@ import { lineChem, chemPairs, boostMods } from './life';
 import { careerOnSeries } from './career';
 import { derbySwing, styleTactics, hypeAfterGame, socialOnSeries } from './world';
 import { teamColor } from './squadx';
+import { masteryFit, honorSeries } from './lolx';
 import { analystDay } from './staff';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
@@ -30,7 +31,7 @@ export const DRAFT_ORDER: [Side, 'ban' | 'pick'][] = [
 export function champFit(p: Player | null | undefined, champId: string | undefined, role: Role): number {
   const c = champId ? DB.champions[champId] : undefined;
   if (!c || !p) return 30;
-  let fit = 22 + c.power * 0.5 + opggAdj(champId!, role) * 300 + patchMod(champId!) * 300 + patchFitBonus(p, champId!);
+  let fit = 22 + c.power * 0.5 + opggAdj(champId!, role) * 300 + patchMod(champId!) * 300 + patchFitBonus(p, champId!) + masteryFit(p, champId!);
   const pe = p.pool.find((x) => x.c === champId);
   if (pe) fit += Math.min(pe.g, 25) * 0.9 + (pe.g >= 3 ? (pe.w / pe.g - 0.5) * 20 : 0);
   if (!c.roles.includes(role)) fit -= 25;
@@ -308,5 +309,6 @@ export function recordGame(match: Match, g: GameResult, detailed: boolean): void
     gprOnSeries(match);
     careerOnSeries(match);
     socialOnSeries(match);
+    honorSeries(match);
   }
 }

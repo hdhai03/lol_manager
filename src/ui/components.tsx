@@ -50,7 +50,7 @@ export const RoleIcon = ({ r }: { r: Role }) => <svg className="ricon" viewBox="
 // vai trò: chỉ hiện biểu tượng (tô màu theo vai trò), tên đầy đủ ở tooltip / aria-label
 export const RoleTag = ({ r }: { r: Role }) => <span className={`role role-${r}`} title={t('role.' + r)} aria-label={t('role.' + r)}><RoleIcon r={r} /></span>;
 // hạng rank: chữ tô màu, không nền
-export const RankTxt = ({ tier, lp }: { tier: string; lp?: number }) => <span className={`rkt t-${tier}`}><b>{t('tier.' + tier)}</b>{lp != null && <small>{lp} LP</small>}</span>;
+export const RankTxt = ({ tier, lp }: { tier: string; lp?: number }) => <span className={`rkt t-${tier}`}><b><RankEmblem tier={tier} size={20} />{t('tier.' + tier)}</b>{lp != null && <small>{lp} LP</small>}</span>;
 export const Ovr = ({ v }: { v: number }) => <span className={`ovr o-${vClass(v)}`}>{v}</span>;
 export function Stars({ ovr }: { ovr: number }) {
   const n = clamp(Math.round((ovr - 58) / 6), 1, 5);
@@ -144,3 +144,27 @@ export function RunePage({ r, foot }: { r: RP; foot?: ReactNode }) {
   );
 }
 
+
+// ---------- Thông thạo, bậc rank, vinh danh ----------
+/** huy hiệu thông thạo M1–M10 (lục giác, màu theo cấp) */
+export const Mastery = ({ lv, size = 'sm' }: { lv: number; size?: 'sm' | 'md' }) => (lv > 0 ? (
+  <span className={`mst-b ${size} l${lv >= 9 ? 'g' : lv >= 7 ? 'p' : lv >= 5 ? 'b' : 'n'}`} title={t('mst.title', { n: lv })}>{lv}</span>
+) : null);
+const RANK_C: Record<string, [string, string]> = { challenger: ['#f7d774', '#5fd3ff'], grandmaster: ['#ff6b6b', '#ffb0b0'], master: ['#c084fc', '#e9d5ff'], diamond: ['#7aa8ff', '#c7dbff'], emerald: ['#34d399', '#a7f3d0'], platinum: ['#5eead4', '#ccfbf1'], gold: ['#f2c230', '#fde68a'], silver: ['#cbd5e1', '#f1f5f9'], bronze: ['#c08457', '#f0c6a3'], iron: ['#8b8b8b', '#cfcfcf'] };
+/** huy hiệu bậc (tự vẽ): khiên + đá quý; Cao Thủ trở lên có cánh */
+export function RankEmblem({ tier, size = 22 }: { tier: string; size?: number }) {
+  const [c1, c2] = RANK_C[tier] || RANK_C.iron;
+  const wings = ['master', 'grandmaster', 'challenger'].includes(tier);
+  return (
+    <svg className="rk-em" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      {wings && <path d="M2 10 L9 14 L9 22 L4 18 Z M30 10 L23 14 L23 22 L28 18 Z" fill={c2} opacity=".8" />}
+      <path d="M16 3 L26 8 L26 18 Q26 25 16 29 Q6 25 6 18 L6 8 Z" fill={c1} />
+      <path d="M16 9 L21 15 L16 22 L11 15 Z" fill={c2} />
+      {tier === 'challenger' && <path d="M16 1 L18 5 L16 4 L14 5 Z" fill={c2} />}
+    </svg>
+  );
+}
+export const HonorBadge = ({ p }: { p: { honor?: number } }) => {
+  const lv = Math.min(5, Math.floor((p.honor ?? 0) / 8));
+  return <span className="hon-b" title={t('hon.lv', { n: lv })}>✦ {lv}</span>;
+};

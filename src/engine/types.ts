@@ -55,6 +55,7 @@ export interface Player {
   /** điểm phong độ 20 ván gần nhất (0-10) */
   fh?: number[];
   hype?: number; fromAcademy?: string;
+  mastery?: Record<string, number>; honor?: number; rankHist?: { season: number; server: string; rank: number; lp: number }[];
   injury?: { kind: 'wrist' | 'back' | 'burnout'; until: number };
 }
 export interface Team {
@@ -148,6 +149,7 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  lastHonor?: { match: string; list: { kind: 'cool' | 'shotcall' | 'gg'; to: string; from: string }[] } | null;
   caps?: Record<string, { cap: number; floor: number; season: number }>; luxTax?: number;
   valueHist?: { key: string; season: number; phase: string; v: number }[];
   social?: { id: string; day: number; handle: string; key: string; params: Record<string, string | number>; likes: number; mood: 'pos' | 'neg' | 'meh'; pid?: string; team?: string }[]; seqP?: number;

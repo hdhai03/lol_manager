@@ -269,3 +269,21 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .tc i { font-style: normal; } .tc b { font-family: var(--cond); }
 .tc.k-nation i { color: #7cc4ff; } .tc.k-champs i { color: var(--gold-chip); } .tc.k-academy i { color: var(--fc); } .tc.k-duo i { color: #c8aaff; }
 @media (max-width: 640px) { .cstrip { grid-template-columns: 1fr; } .cs-k { border-radius: 0 !important; } }
+
+/* thông thạo (lục giác), bậc rank, vinh danh */
+.mst-b { display: inline-grid; place-items: center; width: 20px; height: 22px; font-family: var(--cond); font-weight: 700; font-size: .74rem; color: #fff; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #4a4d55; }
+.mst-b.md { width: 26px; height: 28px; font-size: .9rem; }
+.mst-b.lb { background: #2f6fd6; } .mst-b.lp { background: #8b46d9; } .mst-b.lg { background: linear-gradient(180deg, #f6d36b, #c9921d); color: #2a1c00; }
+.pool .pc-i { position: relative; display: inline-block; }
+.pool .pc-i .mst-b { position: absolute; right: -6px; bottom: -6px; }
+.rkt b { display: inline-flex; align-items: center; gap: .35rem; }
+.rk-em { flex: none; }
+.hon-b { display: inline-flex; align-items: center; gap: .2rem; padding: .05rem .4rem; border-radius: 3px; background: var(--s3); color: #ffd98a; font-size: .74rem; font-weight: 700; }
+.hon { max-width: 760px; margin: 0 auto 1rem; display: flex; flex-direction: column; gap: .5rem; }
+.hon-g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+.hon-c { display: flex; align-items: center; gap: .7rem; padding: .7rem; background: var(--s0); }
+.hon-c:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); } .hon-c:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.hon-c b { display: block; } .hon-c small { display: block; font-size: .74rem; }
+.hon-i { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--s3); }
+.hon-c.k-cool .hon-i { color: #7cc4ff; } .hon-c.k-shotcall .hon-i { color: #ffd98a; } .hon-c.k-gg .hon-i { color: #ff8fb1; }
+@media (max-width: 640px) { .hon-g { grid-template-columns: 1fr; } .hon-c { border-radius: 0 !important; } }

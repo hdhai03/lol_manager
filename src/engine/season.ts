@@ -14,6 +14,8 @@ import { patchDay } from './patch';
 import { injuryDay, missionDay, dealDay, dealSeasonEnd, transferDay } from './club';
 import { socialDay, coachCarousel } from './world';
 import { capDay, capSeasonEnd, valueSnap } from './squadx';
+import { bankMastery, rankRewards } from './lolx';
+import { ladder as soloLadder, SERVERS } from './academy';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -282,6 +284,8 @@ export function startNewSeason(): void {
   S.phaseStart = {};
   gprNewSeason();
   resetEventStats();
+  rankRewards(soloLadder, SERVERS);
+  bankMastery();
   soloqNewSeason();
   for (const p of Object.values(S.players)) p.ovrStart = p.ovr;
   addFinance('fin.sponsorDeal', 0, {});

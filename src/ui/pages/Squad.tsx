@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import { topMastery } from '../../engine/lolx';
+import { Mastery, HonorBadge } from '../components';
 import { ClubStrip } from './SquadX';
 import { InjTag } from './Club';
 import { Spark } from './Stats';
@@ -46,7 +48,7 @@ export function PlayerDetail({ p }: { p: Player }) {
         <div className="grow min-w-0">
           <div className="flex items-end gap-3"><span className={`ovrbig v-${vClass(p.ovr)}`}>{p.ovr}</span><span className="rl pb-1">{t('role.' + p.role)}</span></div>
           <div className="big mt-2 truncate">{p.ign} {listed && <em className="tagx">{t('p.listed')}</em>}</div>
-          <div className="muted mt-1 flex items-center gap-2"><Cc country={p.country} />{p.name}{p.native ? ` · ${p.native}` : ''}{!p.teamId && <span className="tagx">{t('p.freeAgent')}</span>}</div>
+          <div className="muted mt-1 flex items-center gap-2"><Cc country={p.country} />{p.name}{p.native ? ` · ${p.native}` : ''}{!p.teamId && <span className="tagx">{t('p.freeAgent')}</span>}<HonorBadge p={p} />{p.rankHist?.[0] && <span className="muted text-xs">{t('rkr.best', { n: p.rankHist[0].rank, sv: p.rankHist[0].server, y: p.rankHist[0].season })}</span>}</div>
         </div>
       </div>
       <div className="pd-stats">
@@ -81,7 +83,7 @@ export function PlayerDetail({ p }: { p: Player }) {
         </div>
         <div>
           <div className="sub-h">{t('p.pool')}</div>
-          <div className="pool">{p.pool.slice(0, 8).map((x) => <div key={x.c} className="pc"><Champ id={x.c} size={38} /><span>{x.g} · {x.g ? pct(x.w / x.g) : '–'}</span></div>)}{!p.pool.length && <span className="muted">—</span>}</div>
+          <div className="pool">{topMastery(p, 8).map((x) => { const pe = p.pool.find((y) => y.c === x.c); return <div key={x.c} className="pc"><span className="pc-i"><Champ id={x.c} size={38} /><Mastery lv={x.lv} /></span><span>{pe ? `${Math.round(pe.g)} · ${pe.g ? pct(pe.w / pe.g) : '–'}` : t('mst.soloq')}</span></div>; })}{!p.pool.length && <span className="muted">—</span>}</div>
           <div className="sub-h mt-3">{t('p.simStats')}</div>
           {rows.some(([, r]) => r) ? (
             <table className="gt"><thead><tr><th /><th>{t('p.games')}</th><th>{t('st.wr')}</th><th>KDA</th><th>CS/{t('min')}</th><th>{t('p.dpmS')}</th><th>MVP</th></tr></thead>

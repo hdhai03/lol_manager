@@ -58,6 +58,7 @@ describe('đời sống đội tuyển', () => {
 
 import { simSeason, startNewSeason } from '../src/engine';
 import { sponsorOffers, signDeal } from '../src/engine/club';
+import { masteryLv } from '../src/engine/lolx';
 import { ensureT2, t2Table } from '../src/engine/tier2';
 describe('sự nghiệp, thương hiệu, hạng 2', () => {
   it('một mùa: có sổ tuần, người hâm mộ, hạng 2 và lịch sử HLV', () => {
@@ -74,6 +75,9 @@ describe('sự nghiệp, thương hiệu, hạng 2', () => {
       expect(S.patch!.n).toBeGreaterThan(5);
       expect((S.missions || []).length).toBeGreaterThan(0);
       expect((S.social || []).length).toBeGreaterThan(5);
+      const kiin = Object.values(S.players).find((p) => p.teamId === S.userTeam)!;
+      expect(masteryLv(kiin, kiin.pool[0].c)).toBeGreaterThanOrEqual(3);
+      expect(S.lastHonor?.list.length).toBe(3);
       expect(Object.values(S.players).some((p) => (p.hype ?? 50) > 55)).toBe(true);
       expect(S.ledger!.some((r) => (r.sponsor as number) > 0)).toBe(true);
       expect(Object.keys(S.patch!.mods).length).toBeGreaterThan(0);
