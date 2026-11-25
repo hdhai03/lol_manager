@@ -7,7 +7,7 @@ import { progressComps } from '../../engine/season';
 import { logistic } from '../../engine/util';
 import { t } from '../../i18n';
 import { ui, refresh, openModal } from '../store';
-import { Badge, Champ, Face, LeagueBadge, Ovr, RoleTag, faceSrc, MatchCut } from '../components';
+import { Badge, Champ, Face, LeagueBadge, Ovr, RoleTag, faceSrc } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { DraftScreen } from './Draft';
 import { Boosts } from '../pages/Practice';
@@ -128,7 +128,6 @@ export function MatchDay({ match }: { match: Match }) {
   };
   return (
     <div className="matchday">
-      <MatchCut key={'cut-' + ph.k} />
       {ph.k === 'pre' && <div className="md-inner md-wide"><PreMatch m={match} go={choose} /></div>}
       {ph.k === 'draft' && <DraftScreen m={match} onLeave={() => setPh({ k: 'pre' })} onStart={(d) => setPh({ k: 'live', d })} />}
       {ph.k === 'live' && <LiveGame m={match} d={ph.d} onEnd={(g) => setPh({ k: 'post', g })} onSkipAll={finishSeries} />}

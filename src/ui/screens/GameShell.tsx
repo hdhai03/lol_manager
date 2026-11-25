@@ -3,7 +3,7 @@ import { S, userTeam } from '../../engine/state';
 import { PHASES } from '../../engine/season';
 import { t } from '../../i18n';
 import { ui } from '../store';
-import { Badge, LangSwitch, MatchCut } from '../components';
+import { Badge, LangSwitch } from '../components';
 import { GROUPS, TABS, groupOf, unreadCount, markTasks } from '../helpers';
 import { openGroup, openTab, topAction } from '../actions';
 import { IcMenu, IcSave } from '../icons';
@@ -45,7 +45,6 @@ export function GameShell() {
   useEffect(() => { for (const id of checkAch()) toast(`${t('ach.new')}: ${t('ach.' + id)}`, 'ok'); });
   return (
     <div className="shell game">
-      <MatchCut key={'cut-' + ui.tab} />
       <header className="hud">
         <div className="logo">RM</div>
         <div className="sect"><span className="k-label">{t('season', { y: S.season })} · {t('phase.' + S.phase)}</span><b>{t('nav.' + grp)}</b></div>
