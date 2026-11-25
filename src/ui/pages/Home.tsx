@@ -100,15 +100,30 @@ function WeekStrip() {
   const mine = Object.values(S.comps).filter((c) => c.id.startsWith(`${S.season}-`)).flatMap((c) => c.matches).filter((m) => m.a === S.userTeam || m.b === S.userTeam);
   const byDay = new Map(mine.map((m) => [m.day, m]));
   const days = Array.from({ length: 7 }, (_, i) => S.day - 2 + i);
+  // lịch tuần: trận, bản cập nhật / máy chủ thử nghiệm, Clash, hạn nhiệm vụ, ngày giải chính (học viện đá hạng 2)
+  const leagueDays = new Set(Object.values(S.comps).filter((c) => c.id.startsWith(`${S.season}-`) && c.league === userTeam().league).flatMap((c) => c.matches).map((m) => m.day));
+  const ev = (d: number): string[] => {
+    const out: string[] = [];
+    const P = S.patch;
+    if (P && d === P.day + 14) out.push('patch');
+    if (P && d === P.day + 7 && !P.next) out.push('pbe');
+    if (S.clashDay != null && d === S.clashDay + 14) out.push('clash');
+    for (const ms of S.missions || []) if (!ms.done && !ms.failed && ms.deadline === d) out.push('mission');
+    if (leagueDays.has(d) && Object.values(S.players).some((p) => p.academyOf === S.userTeam)) out.push('t2');
+    if (S.bankLoan && d === S.day) out.push('loan');
+    return out;
+  };
   return (
     <div className="week">{days.map((d) => {
       const m = byDay.get(d);
       const opp = m ? (m.a === S.userTeam ? m.b : m.a) : null;
+      const es = ev(d);
       return (
-        <div key={d} className={`d ${d === S.day ? 'today' : ''}`} title={fmtD(relDay(d), { day: '2-digit', month: '2-digit' })}>
+        <div key={d} className={`d ${d === S.day ? 'today' : ''}`} title={[fmtD(relDay(d), { day: '2-digit', month: '2-digit' }), ...(opp ? [S.teams[opp].name] : []), ...es.map((k) => t('wk.' + k))].join(' · ')}>
           <span>{fmtD(relDay(d), { weekday: 'short' })}</span>
           {opp ? <Badge id={opp} size="xs" /> : <b>{relDay(d).getUTCDate()}</b>}
           {m && <i className={m.done ? (m.winner === S.userTeam ? 'W' : 'L') : ''} />}
+          {es.length > 0 && <em className="wk-ev">{es.slice(0, 3).map((k) => <u key={k} className={`wk-${k}`}>{t('wk.' + k + 'S')}</u>)}</em>}
         </div>
       );
     })}</div>

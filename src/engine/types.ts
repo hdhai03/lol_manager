@@ -61,6 +61,7 @@ export interface Player {
   unrest?: number; wantsOut?: boolean;
   /** quyền cư trú theo giải; số mùa thi đấu ở giải; mức hòa nhập ngôn ngữ (0-100) */
   resid?: string[]; yrs?: Record<string, number>; adapt?: number;
+  miles?: string[]; pentas?: number; option?: boolean; loyal?: boolean;
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -153,6 +154,8 @@ export interface GameState {
   habits?: { picks: Record<string, number>; lvl1: Record<string, number>; tempo: Record<string, number> };
   talks?: Record<string, number>;
   t2Plan?: { line: string[]; style: 'aggressive' | 'balanced' | 'safe'; focus: string | null; log: { day: number; opp: string; my: number; th: number }[] };
+  board?: Record<string, string>; hubs?: string[]; bankLoan?: { left: number; per: number; amount: number }; debtDays?: number; forceSale?: string;
+  sellOn?: Record<string, { pct: number; from: string }>; mileFeed?: { pid: string; id: string; day: number }[];
   importsInit?: boolean; mentor?: Record<string, string>; swap?: Record<string, { to: Role; prog: number }>;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
   inboxSeen?: number; goal?: string;

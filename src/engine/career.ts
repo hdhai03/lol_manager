@@ -1,5 +1,6 @@
 // Sự nghiệp HLV (uy tín, niềm tin ban lãnh đạo, mục tiêu mùa, bị sa thải / lời mời), thương hiệu – người hâm mộ, sổ thu chi theo tuần.
 import { S, addNews, userTeam, teamOvr, teamPlayers } from './state';
+import { boardConfMul, sackLine } from './club2';
 import { clamp, logistic, rand } from './util';
 import type { Comp, Match } from './types';
 
@@ -106,7 +107,7 @@ export function careerOnSeries(m: Match): void {
   const exp = logistic((teamOvr(S.teams[ut]) - teamOvr(S.teams[opp])) / 4);
   const intl = S.comps[m.comp]?.league === 'INTL';
   const k = intl ? 2 : 1;
-  c.conf = clamp(c.conf + ((win ? 1 : 0) - exp) * 7 * k, 0, 100);
+  c.conf = clamp(c.conf + ((win ? 1 : 0) - exp) * 7 * k * boardConfMul(ut), 0, 100);
   c.rep = clamp(c.rep + ((win ? 1 : 0) - exp) * 1.4 * k, 0, 100);
   if (win) { c.w++; c.sw++; } else { c.l++; c.sl++; }
   hypeOn(win, intl);
@@ -165,7 +166,7 @@ export function careerNewSeason(): void {
   const b = ensureBrand();
   ut.sponsor = Math.round(ut.sponsor * clamp(1 + (b.fans / b.fansStart - 1) * 0.35, 0.9, 1.25));
   b.fansStart = b.fans;
-  if (c.conf < 20) {
+  if (c.conf < sackLine(ut.id)) {
     c.sacked = true;
     c.rep = clamp(c.rep - 8, 0, 100);
     c.offers = [];

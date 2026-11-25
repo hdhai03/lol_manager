@@ -76,6 +76,12 @@ export function autoLineup(t: Team): void {
     const best = teamPlayers(t).filter((p) => !used.has(p.id) && !blocked(p)).sort((a, b) => b.ovr - a.ovr)[0];
     if (best) take(role, best);
   }
+  // không còn ai hợp lệ: thà vi phạm còn hơn bỏ trống (đội sẽ phải ký người nội trong kỳ tới)
+  for (const role of ROLES) {
+    if (t.lineup[role]) continue;
+    const best = teamPlayers(t).filter((p) => !used.has(p.id)).sort((a, b) => b.ovr - a.ovr)[0];
+    if (best) take(role, best);
+  }
 }
 
 // chỉ lấp các vị trí còn trống, giữ nguyên lựa chọn của người chơi

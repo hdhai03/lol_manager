@@ -126,7 +126,7 @@ export function Youth() {
                   <td><b>{a.name}</b>{a.real && <span className="lad-acc">#{a.tag}</span>}{a.real && <span className="lad-real">OP.GG</span>}<div className="flex gap-1 mt-1">{Object.keys(a.ch).slice(0, 3).map((ch) => <Champ key={ch} id={ch} size={20} />)}</div></td>
                   <td><RoleTag r={a.pr!.role} /></td><td className="n">{a.pr!.age}</td>
                   <td><RankTxt tier={accTier(sv, a)} lp={a.lp} /></td>
-                  <td className="n">{lo}-{hi}</td><td className="n">{money(inviteCost(a))}</td>
+                  <td className="n">{lo}-{hi}</td><td className="n">{money(inviteCost(a, sv))}</td>
                   <td><button className="gb xs" data-invite={a.id} onClick={() => {
                     const r = inviteToAcademy(sv, a.id);
                     toast(r.ok ? t('ac.joined', { player: r.p.ign }) : t('ac.err.' + r.why), r.ok ? 'ok' : 'err');
@@ -172,7 +172,7 @@ export function Ladder() {
                 <td><RankTxt tier={accTier(f.lsv!, a)} /></td>
                 <td className="n">{a.lp}</td><td className="n">{a.w}-{a.l}</td><td className="n">{g ? pct(a.w / g) : '–'}</td>
                 <td><div className="flex gap-1">{Object.keys(a.ch).slice(0, 4).map((ch) => <Champ key={ch} id={ch} size={22} />)}</div></td>
-                <td>{recruitable(a) && <button className="gb xs" data-linvite={a.id} title={`${t('age')} ${a.pr!.age} · ${t('ac.estPot')} ${potRange(f.lsv!, a).join('-')} · ${money(inviteCost(a))}`} onClick={(e) => {
+                <td>{recruitable(a) && <button className="gb xs" data-linvite={a.id} title={`${t('age')} ${a.pr!.age} · ${t('ac.estPot')} ${potRange(f.lsv!, a).join('-')} · ${money(inviteCost(a, f.lsv))}`} onClick={(e) => {
                   e.stopPropagation();
                   const r = inviteToAcademy(f.lsv!, a.id);
                   toast(r.ok ? t('ac.joined', { player: r.p.ign }) : t('ac.err.' + r.why), r.ok ? 'ok' : 'err');

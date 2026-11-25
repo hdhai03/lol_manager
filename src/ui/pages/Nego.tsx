@@ -55,7 +55,11 @@ function NegoBody({ p, mode, close }: { p: Player; mode: 'buy' | 'renew'; close:
       <div className="ng-row"><label className="k-label">{t('ng.years')}</label><div className="seg">{[1, 2, 3].map((y) => <button key={y} className={`chip ${tm.years === y ? 'on' : ''}`} data-yr={y} onClick={() => set({ years: y })}>{t('p.years', { n: y })}</button>)}</div></div>
       <div className="ng-row"><label className="k-label">{t('ng.rolePromise')}</label><div className="seg">{(['starter', 'rotation', 'none'] as RolePromise[]).map((r) => <button key={r} className={`chip ${tm.role === r ? 'on' : ''}`} data-rp={r} onClick={() => set({ role: r })}>{t('ng.role.' + r)}</button>)}</div></div>
       <div className="ng-row"><label className="k-label">{t('ng.clause')}</label><div className="seg">{clauseOpts.map((c, i) => <button key={i} className={`chip ${tm.clause === c ? 'on' : ''}`} data-cl={i} onClick={() => set({ clause: c })}>{c == null ? t('ng.noClause') : money(c)}</button>)}</div></div>
-      <label className="tg"><input type="checkbox" checked={tm.bonus} data-bonus onChange={(e) => set({ bonus: e.target.checked })} /> {t('ng.bonus')}</label>
+      <div className="ng-tg">
+        <label className="tg"><input type="checkbox" checked={tm.bonus} data-bonus onChange={(e) => set({ bonus: e.target.checked })} /> {t('ng.bonus')}</label>
+        <label className="tg" title={t('ng.optionD')}><input type="checkbox" checked={!!tm.option} data-option onChange={(e) => set({ option: e.target.checked })} /> {t('ng.option')}</label>
+        <label className="tg" title={t('ng.loyalD', { v: money(Math.round(tm.salary * 0.2)) })}><input type="checkbox" checked={!!tm.loyal} data-loyal onChange={(e) => set({ loyal: e.target.checked })} /> {t('ng.loyal')}</label>
+      </div>
       {msg && <div className="ng-msg">{msg}</div>}
       <div className="ng-foot">
         <span className="muted text-sm">{t('ng.total', { v: money(termCost(tm) * tm.years) })}{buying ? ` + ${money(fee)}` : ''} · {t('top.budget')}: {money(ut.budget)} · {t('cap.after', { pay: money(teamSalary(ut) - (mode === 'renew' ? p.salary : 0) + termCost(tm)), cap: money(salaryCap(ut.league).cap) })}</span>

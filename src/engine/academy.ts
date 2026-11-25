@@ -3,6 +3,7 @@
 //   cùng với các tài năng nghiệp dư (chưa thuộc đội nào) để HLV tuyển trạch.
 // - Học viện: tuyển tài năng trẻ từ bảng Thách đấu, cho tập luyện, đôn lên đội chính.
 import { DB } from './data';
+import { hasHub } from './club2';
 import { ladderData } from './ladder';
 import { sqGames, sqAfter, sqOrder, poolChamp } from './life';
 import { S, makeRookie, refreshValue, teamPlayers, addNews, addFinance } from './state';
@@ -216,12 +217,12 @@ export function ensureAcademy(): Academy {
 }
 export const academyPlayers = (): Player[] => Object.values(S.players).filter((p) => p.academyOf === S.userTeam && !p.retired);
 export const ACADEMY_MAX = 6;
-export const inviteCost = (a: SoloAccount): number => Math.round(25 + Math.max(0, a.pr!.pot - 65) * 6 + Math.max(0, a.pr!.ovr - 55) * 2);
+export const inviteCost = (a: SoloAccount, sv?: string): number => Math.round((25 + Math.max(0, a.pr!.pot - 65) * 6 + Math.max(0, a.pr!.ovr - 55) * 2) * (sv && hasHub(sv) ? 0.8 : 1));
 
 // độ chính xác tuyển trạch: tập trung một máy chủ càng lâu càng biết rõ tiềm năng
 export function potRange(sv: string, a: SoloAccount): [number, number] {
   const days = ensureAcademy().days[sv] || 0;
-  const err = clamp(Math.round(10 - days / 4), 1, 10);
+  const err = clamp(Math.round((hasHub(sv) ? 6 : 10) - days / 4), 1, 10);
   const h = [...a.id].reduce((s, ch) => s + ch.charCodeAt(0), 0);
   const off = ((h % (2 * err + 1)) - err);
   const mid = a.pr!.pot + Math.round(off / 2);
@@ -250,7 +251,7 @@ export function inviteToAcademy(sv: string, accId: string): { ok: true; p: Playe
   const a = srv.acc.find((x) => x.id === accId);
   if (!a || a.pid) return { ok: false, why: 'gone' };
   if (academyPlayers().length >= ACADEMY_MAX) return { ok: false, why: 'full' };
-  const cost = inviteCost(a);
+  const cost = inviteCost(a, sv);
   const ut = S.teams[S.userTeam];
   if (ut.budget < cost) return { ok: false, why: 'money' };
   const p = makeRookie(LEAGUE_OF[sv], a.pr!.role);

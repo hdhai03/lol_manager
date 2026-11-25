@@ -1,5 +1,6 @@
 // Quản lý CLB: chấn thương & kiệt sức, nhiệm vụ ban lãnh đạo, cơ sở vật chất, nhà tài trợ có điều kiện, kỳ chuyển nhượng & tranh mua.
 import { S, addNews, userTeam, teamPlayers, teamOvr, autoLineup } from './state';
+import { paySellOn } from './club2';
 import { clamp, pick, rand, randInt } from './util';
 import { signPlayer } from './season';
 import { teamChem, sqOrder } from './life';
@@ -206,6 +207,7 @@ export function transferDay(): void {
     const seller = p.teamId ? S.teams[p.teamId] : null;
     if (seller) { seller.budget += b.amount; }
     S.teams[b.team].budget -= b.amount;
+    paySellOn(p, b.amount);
     signPlayer(S.teams[b.team], p, S.season + 2);
     if (seller) autoLineup(seller);
     autoLineup(S.teams[b.team]);

@@ -1,5 +1,6 @@
 // Mô phỏng cấm/chọn và trận đấu
 import { DB } from './data';
+import { milestones } from './club2';
 import { isFlex, aiEarly, defaultEarly, earlyEdge, flexBonus, counterTempo, habitBan, trackHabits, type EarlyPlan } from './matchx';
 import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
@@ -252,6 +253,7 @@ export function resimGame(g: GameResult, orders: Order[]): GameResult {
 // cập nhật phong độ/thống kê sau ván
 export function applyGameResult(g: GameResult): void {
   trackHabits(g);
+  milestones(g);
   // đánh giải cùng nhau: tăng độ ăn ý
   chemPairs(g.blue, 0.35);
   chemPairs(g.red, 0.35);

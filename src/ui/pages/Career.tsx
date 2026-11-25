@@ -1,5 +1,6 @@
 // Sự nghiệp HLV + Tài chính (thương hiệu, sổ thu chi theo tuần)
 import { S, userTeam, teamPlayers, teamSalary, saveGame } from '../../engine/state';
+import { BoardCard, Investments, MilestoneFeed } from './ClubY';
 import { Missions, Sponsors } from './Club';
 import { Achievements } from './Stats';
 import { money } from '../../engine/util';
@@ -55,7 +56,10 @@ export function Career() {
           </div>
         </div>
       )}
+      <BoardCard />
       <Missions />
+      <MilestoneFeed />
+      <Investments />
       <Achievements />
       <div className="gp">
         <div className="gp-h"><h3 className="k-title">{t('car.history')}</h3></div>

@@ -9,7 +9,7 @@ import { ambitionFit, ambitionOf, rivalSuitor } from './market';
 import type { Player, Role } from './types';
 
 export type RolePromise = 'starter' | 'rotation' | 'none';
-export interface Terms { salary: number; years: number; role: RolePromise; clause: number | null; bonus: boolean }
+export interface Terms { salary: number; years: number; role: RolePromise; clause: number | null; bonus: boolean; option?: boolean; loyal?: boolean }
 export interface Demand { salary: number; years: number; role: RolePromise; minClause: number; agent: string }
 export interface NegoState { pid: string; round: number; mood: number; last?: string; blockedUntil?: number }
 
@@ -44,6 +44,9 @@ export function satisfaction(p: Player, teamId: string, tm: Terms): number {
   if (tm.clause == null) s -= p.ovr >= 82 ? 0.05 : 0;
   else s += tm.clause <= d.minClause ? 0.06 : tm.clause <= d.minClause * 1.6 ? 0.02 : -0.02;
   if (tm.bonus) s += 0.05;
+  // quyền gia hạn 1 năm thuộc về đội: tuyển thủ kém thích; thưởng trung thành: thích
+  if (tm.option) s -= 0.05;
+  if (tm.loyal) s += 0.05;
   // động lực cá nhân: danh hiệu / quê nhà / thời gian thi đấu
   s += ambitionFit(p, S.teams[teamId], tm.role === 'starter');
   // tinh thần / danh tiếng đội của bạn
@@ -86,10 +89,14 @@ export function applyTerms(p: Player, tm: Terms): void {
   p.clause = tm.clause ?? undefined;
   p.promise = tm.role === 'none' ? undefined : tm.role;
   p.bonus = tm.bonus || undefined;
+  p.option = tm.option || undefined;
+  p.loyal = tm.loyal || undefined;
   // phí người đại diện: 5% lương năm đầu
   addFinance('fin.agentFee', -Math.round(p.salary * 0.05), { player: p.ign });
 }
 export function renewWith(p: Player, tm: Terms): void {
+  // hết hợp đồng cũ: trả thưởng trung thành nếu có
+  if (p.loyal) { const b = Math.round(p.salary * 0.2); addFinance('fin.loyalty', -b, { player: p.ign }); }
   applyTerms(p, tm);
   S.renewed = [...(S.renewed || []), p.id];
   p.morale = clamp((p.morale ?? 70) + 8, 0, 100);

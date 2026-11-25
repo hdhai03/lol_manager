@@ -1,5 +1,6 @@
 // Lịch thi đấu, bảng xếp hạng, playoffs, giải quốc tế, kỳ chuyển nhượng
 import { DB } from './data';
+import { boardDay, boardSeason, clubDay, contractExpiry, setSellOn, paySellOn } from './club2';
 import { S, teamOvr, autoLineup, fillLineup, addNews, addFinance, teamPlayers, teamSalary, makeRookie, refreshValue, blankStats, userTeam } from './state';
 import { simSeries } from './sim';
 import { ROLES, ATTRS, ATTR_GROUPS, shuffle, rand, randInt, clamp, computeOvr, pick } from './util';
@@ -19,7 +20,7 @@ import { championSkins, skinDay, runAllStar, clashDay } from './events';
 import { ladder as soloLadder, SERVERS } from './academy';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
-import { onJoin, adaptDay, mentorDay, swapDay, residencySeason } from './squad2';
+import { importsIn, isImport, IMPORT_MAX, onJoin, adaptDay, mentorDay, swapDay, residencySeason } from './squad2';
 import { retireProb, aiFinanceSeason, aiRenew, aiOffseason, unrestDay } from './market';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
 import { PHASES, makeMatch, roundRobin, standings, compOrder, runnerUp, startStages, progressStages, PHASE_WINDOW } from './formats';
@@ -136,6 +137,8 @@ function dailyTick(): void {
   adaptDay();
   mentorDay();
   swapDay();
+  boardDay();
+  clubDay();
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;
   // tập luyện & phát triển
   for (const p of Object.values(S.players)) {
@@ -206,6 +209,7 @@ export function startNewSeason(): void {
   const y = S.season;
   const ut = S.userTeam;
   dealSeasonEnd();
+  boardSeason();
   coachCarousel();
   capSeasonEnd();
   seasonWrapped();
@@ -235,7 +239,7 @@ export function startNewSeason(): void {
     // hợp đồng hết hạn
     if (p.contractUntil <= y && p.teamId) {
       if (p.teamId === ut) {
-        if (!(S.renewed || []).includes(p.id)) {
+        if (!(S.renewed || []).includes(p.id) && !contractExpiry(p)) {
           addNews('news.contractExpired', { player: p.ign }, true);
           removeFromTeam(p);
           S.freeAgents.push(p.id);
@@ -256,20 +260,23 @@ export function startNewSeason(): void {
   // tân binh mới
   for (const L of DB.leagues) for (const r of ROLES) if (rand() < 0.75) S.freeAgents.push(makeRookie(L.id, r).id);
   S.freeAgents = [...new Set(S.freeAgents)].filter((id) => S.players[id] && !S.players[id].retired && !S.players[id].teamId);
+  // AI nâng cấp đội hình (trước khi lấp chỗ trống)
+  aiOffseason();
   // AI lấp đội hình
   for (const t of Object.values(S.teams)) {
     if (t.id === ut) continue;
     for (const r of ROLES) {
       const have = teamPlayers(t).filter((p) => p.role === r);
       if (have.length) continue;
-      const cands = S.freeAgents.map((id) => S.players[id]).filter((p) => p.role === r)
-        .sort((a, b) => (b.ovr + (b.homeLeague === t.league ? 3 : 0)) - (a.ovr + (a.homeLeague === t.league ? 3 : 0)));
+      // luật ngoại binh: đã đủ ngoại binh thì ưu tiên người nội
+      const full = importsIn(t).length >= IMPORT_MAX;
+      const sc = (p: Player) => p.ovr + (p.homeLeague === t.league ? 3 : 0) - (full && isImport(p, t.league) ? 30 : 0);
+      const cands = S.freeAgents.map((id) => S.players[id]).filter((p) => p.role === r).sort((a, b) => sc(b) - sc(a));
       const pl = cands[randInt(0, Math.min(2, cands.length - 1))] || makeRookie(t.league, r);
       signPlayer(t, pl, y + randInt(1, 2));
     }
     autoLineup(t);
   }
-  aiOffseason();
   // đội người chơi: bổ sung tân binh nếu thiếu vị trí
   const ut2 = S.teams[ut];
   for (const r of ROLES) {
@@ -372,6 +379,9 @@ export function acceptOffer(oid: string): void {
   if (!p || p.teamId !== S.userTeam) { S.offers = (S.offers || []).filter((x) => x.id !== oid); return; }
   buyer.budget -= o.amount;
   addFinance('fin.transferOut', o.amount, { player: p.ign });
+  // thông lệ: bán kèm 10% giá trị lần chuyển nhượng kế tiếp
+  setSellOn(p.id, 0.1);
+  if (S.forceSale === oid) S.forceSale = undefined;
   const old = S.teams[p.teamId];
   signPlayer(buyer, p, S.season + randInt(1, 2));
   for (const r of ROLES) if (old.lineup[r] === p.id) delete old.lineup[r];

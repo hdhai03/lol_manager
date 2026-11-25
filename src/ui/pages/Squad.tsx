@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { compareModal } from './ClubY';
 import { topMastery } from '../../engine/lolx';
 import { Mastery, HonorBadge } from '../components';
 import { ClubStrip } from './SquadX';
@@ -119,6 +120,7 @@ export function PlayerDetail({ p }: { p: Player }) {
           <>
             <div className="chips">{ROLES.map((r) => <button key={r} className={`chp sm ${lineRole === r ? 'on' : ''}`} data-setrole={r} onClick={() => setRole(r)}><span className={`role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span></button>)}</div>
             <span className="grow" />
+            <button className="gb ghost sm" data-cmp onClick={() => compareModal(p)}>{t('cmp.btn')}</button>
             <button className="gb sm" data-list onClick={() => { S.listed = listed ? (S.listed || []).filter((x) => x !== p.id) : [...(S.listed || []), p.id]; refresh(); }}>{listed ? t('p.unlist') : t('p.sell')}</button>
             {!lineRole && <button className="gb ghost sm" data-down onClick={() => { if (sendDown(p.id)) { toast(t('p.sentDown'), 'ok'); closeModal(); } refresh(); }}>{t('p.sendDown')}</button>}
             {!lineRole && <button className="gb ghost sm" data-loanp onClick={() => loanModal(p.id)}>{t('p.loan')}</button>}
@@ -127,6 +129,7 @@ export function PlayerDetail({ p }: { p: Player }) {
           </>
         ) : (
           <>
+            <button className="gb ghost sm" data-cmp onClick={() => compareModal(p)}>{t('cmp.btn')}</button>
             <button className="gb primary" data-buy onClick={() => offerModal(p.id)}>{p.teamId ? t('p.buy') : t('p.sign')}</button>
             {p.teamId && <span className="muted text-sm">{t('p.asking')}: <b className="text-sky">{money(askingPrice(p))}</b></span>}
           </>

@@ -4,6 +4,8 @@
 // - tuyển thủ bất mãn lâu ngày đòi ra đi
 // - động lực cá nhân (tiền / danh hiệu / quê nhà / thời gian thi đấu) và đội AI cạnh tranh khi đàm phán
 import { S, addNews, userTeam, teamOvr, teamPlayers, teamSalary, autoLineup, refreshValue } from './state';
+import { isImport, importsIn, IMPORT_MAX } from './squad2';
+import { paySellOn } from './club2';
 import { signPlayer, removeFromTeam, askingPrice, renewCost } from './season';
 import { clamp, rand, randInt, pick, ROLES } from './util';
 import type { Player, Team } from './types';
@@ -52,7 +54,8 @@ export function aiOffseason(): void {
     if (!w) continue;
     const role = w.role;
     // 1) tự do
-    const fa = S.freeAgents.map((id) => S.players[id]).filter((p) => p && !p.retired && p.role === role && p.ovr >= w.ovr + 3 && p.salary * 1.4 < t.budget)
+    const impOk = (p: Player) => !isImport(p, t.league) || isImport(w, t.league) || importsIn(t).length < IMPORT_MAX;
+    const fa = S.freeAgents.map((id) => S.players[id]).filter((p) => p && !p.retired && p.role === role && p.ovr >= w.ovr + 3 && p.salary * 1.4 < t.budget && impOk(p))
       .sort((a, b) => b.ovr + (b.homeLeague === t.league ? 2 : 0) - (a.ovr + (a.homeLeague === t.league ? 2 : 0)))[0];
     let got: Player | null = null;
     if (fa) {
@@ -61,12 +64,13 @@ export function aiOffseason(): void {
       got = fa;
     } else {
       // 2) mua từ đội yếu hơn (không đụng đội người chơi)
-      const tgt = Object.values(S.players).filter((p) => p.teamId && p.teamId !== t.id && p.teamId !== S.userTeam && !p.retired && p.role === role && p.ovr >= w.ovr + 4
+      const tgt = Object.values(S.players).filter((p) => p.teamId && p.teamId !== t.id && p.teamId !== S.userTeam && !p.retired && p.role === role && p.ovr >= w.ovr + 4 && impOk(p)
         && teamOvr(S.teams[p.teamId]) < teamOvr(t) + 2 && askingPrice(p) <= t.budget * 0.55).sort((a, b) => b.ovr - a.ovr)[0];
       if (tgt) {
         const seller = S.teams[tgt.teamId!];
         const fee = askingPrice(tgt);
         t.budget -= fee; seller.budget += fee;
+        paySellOn(tgt, fee);
         signPlayer(t, tgt, S.season + 1 + randInt(1, 2));
         // bên bán lấp chỗ trống bằng tự do
         if (!teamPlayers(seller).some((x) => x.role === role)) {
