@@ -8,6 +8,7 @@ import { gprSnapshot, gprNewSeason, ensureGpr } from './gpr';
 import { closeEvent, resetEventStats } from './awards';
 import { soloqDay, soloqNewSeason, academyDay, ensureSoloq, ensureAcademy } from './academy';
 import { lifeDay, chemNewcomer } from './life';
+import { contractsDay } from './contracts';
 import { brandDay, careerOnComp, careerNewSeason, ledgerAdd } from './career';
 import { t2Day, t2NewSeason } from './tier2';
 import type { Attr, Comp, Match, Phase, Player, Team, Trophy } from './types';
@@ -102,6 +103,7 @@ function dailyTick(): void {
   soloqDay(playing);
   academyDay();
   lifeDay(playing);
+  contractsDay(playing);
   brandDay();
   t2Day(playing);
   const intensity = { light: 0.6, normal: 1, hard: 1.4 }[ensureAcademy().intensity] || 1;

@@ -50,6 +50,7 @@ export interface Player {
   record?: RealRecord | null; realGames?: number;
   season: SeasonStats; career: SeasonStats; rookie: boolean; homeLeague?: LeagueId;
   retired?: boolean; titles?: string[]; awards?: string[]; academyOf?: string | null; ovrStart?: number;
+  clause?: number; promise?: 'starter' | 'rotation'; bonus?: boolean;
 }
 export interface Team {
   id: string; name: string; short: string; league: LeagueId; coach: string; roster: string[];
@@ -142,6 +143,9 @@ export interface GameState {
   boostActive?: { id: string; kind: 'focus' | 'synergy' | 'meta' | 'fresh' | 'prep' } | null;
   sqOrder?: Record<string, 'rest' | 'normal' | 'grind' | 'pool' | 'duo'>; scrimPlan?: { on: boolean; opp: string | null };
   scrims?: { day: number; opp: string; win: boolean; k: [number, number]; mins: number }[];
+  scouted?: { team: string; day: number; bans: string[] }; pressDay?: number;
+  staff?: { assistant: number; analyst: number; psych: number; fitness: number };
+  nego?: Record<string, { pid: string; round: number; mood: number; last?: string; blockedUntil?: number }>;
   ledger?: { key: string; season: number; week: number; [cat: string]: number | string }[];
   brand?: { fans: number; hype: number; content: number; merch: number; fansStart: number }; festDay?: number;
   career?: { rep: number; conf: number; obj: 'title' | 'contend' | 'playoffs' | 'develop'; w: number; l: number; sw: number; sl: number; hist: { season: number; team: string; league: string; best: number | null; w: number; l: number; titles: string[]; conf: number }[]; offers: { team: string; day: number }[]; sacked?: boolean; best?: number | null };

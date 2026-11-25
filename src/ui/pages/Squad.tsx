@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { negoModal } from './Nego';
 import { S, userTeam, teamPlayers, teamOvr, lineupPlayers, autoLineup } from '../../engine/state';
 import { askingPrice, makeOffer, releasePlayer, renewContract, renewCost } from '../../engine/season';
 import { ATTR_GROUPS, ROLES, clamp, money } from '../../engine/util';
@@ -121,45 +122,8 @@ export function openPlayer(pid: string): void {
   openModal(() => (S.players[pid] ? <PlayerDetail p={S.players[pid]} /> : null), { wide: true });
 }
 
-function OfferBody({ p, close }: { p: Player; close: () => void }) {
-  const ask = p.teamId ? askingPrice(p) : 0;
-  const amt = useRef<HTMLInputElement>(null);
-  return (
-    <>
-      <h3>{p.teamId ? t('p.buy') : t('p.sign')}: {p.ign}</h3>
-      {p.teamId ? (
-        <>
-          <p>{t('p.asking')}: <b>{money(ask)}</b> · {t('top.budget')}: <b>{money(userTeam().budget)}</b></p>
-          <label className="flex flex-col gap-1 k-label">{t('p.offerAmount')}<input ref={amt} id="amt" className="gin" type="number" min={0} step={10} defaultValue={ask} /></label>
-        </>
-      ) : <p>{t('salary')}: <b>{money(Math.round(p.salary * 1.05))}</b></p>}
-      <div className="flex justify-end gap-2 mt-4">
-        <button className="gb ghost" onClick={close}>{t('common.cancel')}</button>
-        <button className="gb primary" data-send onClick={() => {
-          const v = p.teamId ? Math.max(0, parseInt(amt.current?.value || '0', 10) || 0) : 0;
-          const r = makeOffer(p.id, v);
-          if (r.ok) { close(); toast(t('tr.done'), 'ok'); } else toast(t(String(r.reason)), 'err');
-        }}>{p.teamId ? t('p.send') : t('p.sign')}</button>
-      </div>
-    </>
-  );
-}
-export function offerModal(pid: string): void {
-  const p = S.players[pid];
-  openModal((close) => <OfferBody p={p} close={close} />);
-}
-
-export function renewModal(pid: string): void {
-  const p = S.players[pid];
-  const sal = renewCost(p);
-  openModal((close) => (
-    <>
-      <h3>{t('p.renew')}: {p.ign}</h3>
-      <p>{t('p.renewAsk', { player: p.ign, salary: money(sal) })}</p>
-      <div className="flex gap-2">{[1, 2, 3].map((y) => <button key={y} className="gb" data-y={y} onClick={() => { renewContract(p.id, sal, y); close(); toast(t('p.renewed'), 'ok'); }}>{t('p.years', { n: y })}</button>)}</div>
-    </>
-  ));
-}
+export function offerModal(pid: string): void { negoModal(pid, 'buy'); }
+export function renewModal(pid: string): void { negoModal(pid, 'renew'); }
 
 // ---------- Đội hình ----------
 export function Roster() {

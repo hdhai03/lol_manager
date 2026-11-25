@@ -7,6 +7,7 @@ import { ROLES } from '../../engine/util';
 import { t, cname } from '../../i18n';
 import { Badge, LeagueBadge, RoleIcon, RuneMini } from '../components';
 import { opggPos } from '../../engine/runes';
+import { scoutedBans } from '../../engine/scout';
 import { compLogoId, compTitle } from '../helpers';
 import { sidesOf } from './MatchDay';
 import type { Draft, Match, Player, Role, Side } from '../../engine/types';
@@ -91,16 +92,16 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           <div className="dr-ph"><h3>{t('dr.champions')}</h3>
             <div className="dr-roles">{(['all', ...ROLES] as const).map((r) => <button key={r} className={filter === r ? 'on' : ''} data-f={r} onClick={() => setFilter(r)}>{r === 'all' ? t('tr.all') : <span className={`role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span>}</button>)}</div>
             <label className="dr-search"><input type="search" placeholder={t('meta.search')} value={q} data-q onChange={(e) => setQ(e.target.value)} /></label></div>
-          <div className="dr-grid">{champs.map((c) => {
+          <div className="dr-grid">{(() => { const sug = new Set(scoutedBans(m.a === S.userTeam ? m.b : m.a)); return champs.map((c) => {
             const dis = taken.has(c.id);
             const fl = draft.locked.includes(c.id);
             return (
-              <button key={c.id} className={`dr-c ${dis ? 'dis' : ''} ${fl ? 'fl' : ''} ${dsel === c.id ? 'on' : ''}`} title={fl ? t('dr.fearlessUsed') : ''} disabled={dis || !myTurn} data-c={c.id} onClick={() => setDsel(c.id)}>
+              <button key={c.id} className={`dr-c ${dis ? 'dis' : ''} ${fl ? 'fl' : ''} ${dsel === c.id ? 'on' : ''} ${sug.has(c.id) && type === 'ban' && !dis ? 'sug' : ''}`} title={fl ? t('dr.fearlessUsed') : ''} disabled={dis || !myTurn} data-c={c.id} onClick={() => setDsel(c.id)}>
                 <img loading="lazy" src={champTile(c.id)} alt="" />{['S', 'A'].includes(c.tier) && <span className="hx">{c.tier}</span>}
                 {myTurn && type === 'pick' && !dis && <span className="fit">{bestFit(c.id)}</span>}<em>{cname(c.id)}</em>
               </button>
             );
-          })}</div>
+          }); })()}</div>
           <div className="dr-foot">
             <span className="msg">{done ? t('dr.swapHint') : myTurn ? (dsel ? cname(dsel) : t(type === 'ban' ? 'dr.selectBan' : 'dr.selectPick')) : t('dr.waiting')}
               <br /><span className="dr-comp">{t('m.tanks')}: {tr.tanks} · {t('m.apShare')}: {Math.round(tr.apShare * 100)}% · {t('dr.swapHint')}</span></span>

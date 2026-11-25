@@ -5,11 +5,12 @@ import { autoDraft, simSeries } from '../../engine/sim';
 import { progressComps } from '../../engine/season';
 import { logistic } from '../../engine/util';
 import { t } from '../../i18n';
-import { ui, refresh } from '../store';
+import { ui, refresh, openModal } from '../store';
 import { Badge, Champ, Face, LeagueBadge, Ovr, RoleTag, faceSrc } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { DraftScreen } from './Draft';
 import { Boosts } from '../pages/Practice';
+import { openScout, Press } from '../pages/Scout';
 import { teamChem } from '../../engine/life';
 import { LiveGame } from './Live';
 import { PostGame } from './PostGame';
@@ -72,6 +73,8 @@ function PreMatch({ m, go }: { m: Match; go: (a: 'manual' | 'auto' | 'quick') =>
       </div>
       <div className="vsx-bst">
         <span className="k-label">{t('pr.chem')} <b className="text-white">{Math.round(teamChem(S.userTeam))}</b></span>
+        <button className="gb sm" data-scout onClick={() => openScout(m.a === S.userTeam ? m.b : m.a)}>{t('sc.open')}</button>
+        {m.games.length === 0 && S.pressDay !== S.day && <button className="gb sm" data-press-open onClick={() => openModal(() => <Press ctx="pre" opp={m.a === S.userTeam ? m.b : m.a} seed={S.day} />)}>{t('pc.open')}</button>}
         {(!!S.boosts?.length || !!S.boostActive) && <><span className="k-label">{t('bst.title')}</span><Boosts compact /></>}
       </div>
       <div className="md-actions">
@@ -90,6 +93,7 @@ function SeriesEnd({ m, onClose }: { m: Match; onClose: () => void }) {
       <SeriesHead m={m} />
       <div className={`result ${won ? 'win' : 'loss'}`}>{t('m.seriesWin', { team: S.teams[m.winner!].name, a: Math.max(m.winsA, m.winsB), b: Math.min(m.winsA, m.winsB) })}</div>
       <div className="flex justify-center gap-3 flex-wrap my-6">{lineupPlayers(S.teams[S.userTeam]).map(({ role, p }) => <div key={role} className="flex flex-col items-center gap-1"><Face p={p} size="lg" /><b className="text-sm">{p?.ign}</b></div>)}</div>
+      <Press ctx={won ? 'win' : 'loss'} opp={m.a === S.userTeam ? m.b : m.a} seed={S.day + m.winsA * 7} />
       <div className="md-actions"><button className="gb primary" data-close style={{ minHeight: '3rem', padding: '0 2.4rem' }} onClick={onClose}>{t('m.finish')}</button></div>
     </div>
   );
