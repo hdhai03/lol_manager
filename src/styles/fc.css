@@ -349,3 +349,9 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .cl-r { display: flex; align-items: center; gap: .6rem; padding: .35rem .2rem; border-bottom: 1px solid var(--sep); font-size: .84rem; }
 .cl-r b { font-family: var(--cond); width: 2rem; } .cl-r.w b { color: var(--fc); }
 @media (max-width: 760px) { .as-row { grid-template-columns: 1fr 1fr; } .sk-g { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* vai trò: icon trắng, không glow; rank: chữ màu, không glow */
+.role-Top, .role-Jungle, .role-Mid, .role-Bot, .role-Support { color: var(--ink) !important; }
+.role .ricon, .ricon { filter: none !important; }
+.rkt b { text-shadow: none !important; }
+.chp.on [class*='role-'], .chip.on [class*='role-'], .dr-roles button.on [class*='role-'] { color: var(--sel-ink) !important; }
