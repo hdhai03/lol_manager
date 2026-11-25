@@ -4,6 +4,7 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'pg.vision': 'Tầm nhìn', 'pg.visionT': 'Điểm tầm nhìn', 'pg.wards': 'Cắm {w} mắt · phá {k} mắt', 'ld.click': 'Bấm để vào trận', 'an.double': 'HAI MẠNG', 'an.triple': 'BA MẠNG', 'an.quadra': 'BỐN MẠNG', 'an.penta': 'NĂM MẠNG!', 'an.shutdown': 'CHẶN ĐỨNG', 'an.spree': 'Liên tục hạ gục', 'an.rampage': 'Không thể cản phá', 'an.unstoppable': 'Không thể ngăn chặn', 'an.dominating': 'Áp đảo', 'an.godlike': 'Như thần', 'an.legendary': 'HUYỀN THOẠI',
   'mst.title': 'Thông thạo cấp {n}', 'mst.soloq': 'xếp hạng', 'news.rankReward': '{player} kết thúc mùa xếp hạng ở hạng {rank} máy chủ {server}.', 'rkr.best': '· Hạng {n} {sv} mùa {y}',
   'hon.title': 'Vinh danh', 'hon.cool': 'Bình tĩnh', 'hon.shotcall': 'Chỉ huy xuất sắc', 'hon.gg': 'Tinh thần đồng đội', 'hon.from': 'từ {player}', 'hon.lv': 'Cấp vinh danh {n}', 'news.honorUp': '{player} đạt cấp vinh danh {lv}!',
   'cap.after': 'Lương đội sau ký {pay}/{cap}', 'cv.value': 'Giá trị CLB', 'cv.world': 'thế giới', 'cap.total': 'Tổng lương / trần', 'cap.tax': 'Vượt trần: thuế xa xỉ ≈ {money}/mùa', 'cap.floor': 'Dưới mức sàn {money}: bị phạt', 'cap.ok': 'Trong giới hạn',
@@ -28,7 +29,7 @@ const vi: Dict = {
   'news.deal': 'Ký hợp đồng tài trợ chính với {brand}.', 'news.dealBonus': '{brand} trả thưởng $ {money}K!', 'news.dealMiss': 'Không đạt điều kiện thưởng của {brand}.',
   'win.open': 'Đang mở kỳ chuyển nhượng', 'win.closed': 'Kỳ chuyển nhượng đã đóng', 'win.hint': 'Mua tuyển thủ từ đội khác chỉ được trong kỳ nghỉ và 14 ngày đầu mùa Xuân / Hè. Tuyển thủ tự do ký lúc nào cũng được.',
   'tr.windowClosed': 'Kỳ chuyển nhượng đang đóng.', 'tr.rival': '{team} cũng hỏi mua với giá {money}! Trả cao hơn để giành tuyển thủ.', 'news.rivalBid': '{team} nhảy vào tranh mua {player}!', 'news.rumor': 'Tin đồn: {team} quan tâm đến {player}.',
-  'dr.suggest': 'Gợi ý', 'dr.why.syn': 'hợp đội hình', 'dr.why.counter': 'khắc chế', 'dr.why.buff': 'vừa được tăng sức mạnh', 'dr.why.comfort': 'tướng tủ',
+  'dr.hovering': 'Đang chọn…', 'dr.suggest': 'Gợi ý', 'dr.why.syn': 'hợp đội hình', 'dr.why.counter': 'khắc chế', 'dr.why.buff': 'vừa được tăng sức mạnh', 'dr.why.comfort': 'tướng tủ',
   'syn.pair': 'Combo', 'syn.engage': 'Giao tranh tổng', 'syn.poke': 'Cấu rỉa', 'syn.dive': 'Lao vào', 'syn.protect': 'Bảo kê', 'syn.early': 'Đánh nhanh',
   'cm.intro': 'Hai đội đã vào trận! {a} đi lối {sa}, còn {b} chọn {sb}.', 'cm.noSyn': 'đội hình linh hoạt',
   'cm.status': 'Phút {m}: {team} đang dẫn {gold} vàng, tỉ số mạng {k}-{ko}.', 'cm.status2': 'Phút {m}, {team} nắm thế chủ động với cách biệt {gold} vàng.', 'cm.status3': '{m} phút trôi qua, {team} kiểm soát bản đồ tốt hơn (+{gold}).',
@@ -40,7 +41,7 @@ const vi: Dict = {
   'cm.ace2': 'Đội hình {team} quét sạch đối thủ, ACE!', 'cm.split2': '{team} kéo giãn bản đồ bằng đẩy lẻ.', 'cm.caught2': '{who} ({team}) đứng sai vị trí và trả giá.',
   'pt.title': 'Bản cập nhật trong game {v}', 'pt.next': 'Bản kế tiếp sau {n} ngày', 'pt.none': 'Chưa có thay đổi cân bằng nào.', 'pt.mod': 'Vừa được chỉnh trong bản cập nhật', 'news.patch': 'Bản cập nhật {v}: tăng sức mạnh {buffs}; giảm sức mạnh {nerfs}.',
   'nav.stats': 'Thống kê', 'stx.title': 'Thống kê tuyển thủ {y}', 'stx.pick2': 'Tích 2 tuyển thủ để so sánh', 'stx.compare': 'So sánh', 'stx.clear': 'Bỏ chọn', 'stx.form': 'Phong độ', 'stx.formLast': 'Phong độ {n} ván gần nhất', 'stx.none': 'Chưa có tuyển thủ nào đủ {n} ván.',
-  'stx.g': 'Ván', 'stx.wr': 'Thắng', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'ST/phút', 'stx.cspm': 'CS/phút', 'stx.gpm': 'Vàng/phút', 'stx.mvp': 'MVP', 'stx.rt': 'Điểm',
+  'stx.g': 'Ván', 'stx.wr': 'Thắng', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'ST/phút', 'stx.cspm': 'CS/phút', 'stx.gpm': 'Vàng/phút', 'stx.mvp': 'MVP', 'stx.vspm': 'Tầm nhìn/phút', 'stx.rt': 'Điểm',
   'rec.tab.replays': 'Xem lại', 'rp.none': 'Chưa có ván nào được lưu. Các ván của đội bạn và các trận chung kết sẽ được lưu để xem lại.', 'rp.watch': 'Xem lại', 'rp.title': 'Phát lại', 'rp.close': 'Đóng',
   'cer.champions': 'Nhà vô địch', 'cer.continue': 'Tiếp tục',
   'wr.title': 'Mùa giải {y} của bạn', 'wr.record': 'Thành tích loạt trận', 'wr.wr': 'Tỉ lệ thắng {n}%', 'wr.titles': 'Danh hiệu', 'wr.noTitle': 'Chưa có danh hiệu mùa này', 'wr.best': 'Tuyển thủ xuất sắc nhất', 'wr.rating': 'Điểm trung bình {r} · {g} ván', 'wr.topK': 'Sát thủ số 1', 'wr.kills': '{n} mạng hạ gục', 'wr.fans': 'Người hâm mộ', 'wr.allpro': 'Đội hình tiêu biểu giải', 'wr.next': 'Tiếp', 'wr.done': 'Sang mùa mới',
@@ -375,6 +376,7 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'pg.vision': 'Vision', 'pg.visionT': 'Vision score', 'pg.wards': '{w} wards placed · {k} destroyed', 'ld.click': 'Click to start', 'an.double': 'DOUBLE KILL', 'an.triple': 'TRIPLE KILL', 'an.quadra': 'QUADRA KILL', 'an.penta': 'PENTAKILL!', 'an.shutdown': 'SHUTDOWN', 'an.spree': 'Killing spree', 'an.rampage': 'Rampage', 'an.unstoppable': 'Unstoppable', 'an.dominating': 'Dominating', 'an.godlike': 'Godlike', 'an.legendary': 'LEGENDARY',
   'mst.title': 'Mastery level {n}', 'mst.soloq': 'ranked', 'news.rankReward': '{player} finished the ranked season #{rank} on {server}.', 'rkr.best': '· #{n} {sv} season {y}',
   'hon.title': 'Honors', 'hon.cool': 'Stayed cool', 'hon.shotcall': 'Great shotcalling', 'hon.gg': 'GG <3', 'hon.from': 'from {player}', 'hon.lv': 'Honor level {n}', 'news.honorUp': '{player} reached honor level {lv}!',
   'cap.after': 'Payroll after signing {pay}/{cap}', 'cv.value': 'Club value', 'cv.world': 'worldwide', 'cap.total': 'Payroll / cap', 'cap.tax': 'Over the cap: luxury tax ≈ {money}/season', 'cap.floor': 'Below the {money} floor: fined', 'cap.ok': 'Within limits',
@@ -399,7 +401,7 @@ const en: Dict = {
   'news.deal': 'Signed a main sponsorship with {brand}.', 'news.dealBonus': '{brand} paid a $ {money}K bonus!', 'news.dealMiss': 'Missed the {brand} bonus condition.',
   'win.open': 'Transfer window open', 'win.closed': 'Transfer window closed', 'win.hint': 'Buying from other teams is only allowed in the off-season and the first 14 days of Spring / Summer. Free agents can be signed any time.',
   'tr.windowClosed': 'The transfer window is closed.', 'tr.rival': '{team} also bid {money}! Outbid them to get the player.', 'news.rivalBid': '{team} joins the race for {player}!', 'news.rumor': 'Rumour: {team} is interested in {player}.',
-  'dr.suggest': 'Suggested', 'dr.why.syn': 'synergy', 'dr.why.counter': 'counter', 'dr.why.buff': 'just buffed', 'dr.why.comfort': 'comfort pick',
+  'dr.hovering': 'Hovering…', 'dr.suggest': 'Suggested', 'dr.why.syn': 'synergy', 'dr.why.counter': 'counter', 'dr.why.buff': 'just buffed', 'dr.why.comfort': 'comfort pick',
   'syn.pair': 'Combo', 'syn.engage': 'Teamfight', 'syn.poke': 'Poke', 'syn.dive': 'Dive', 'syn.protect': 'Protect', 'syn.early': 'Early game',
   'cm.intro': 'We are live! {a} goes for {sa}, while {b} picks {sb}.', 'cm.noSyn': 'a flexible comp',
   'cm.status': 'Minute {m}: {team} leads by {gold} gold, kills {k}-{ko}.', 'cm.status2': 'Minute {m}, {team} in control with a {gold} gold lead.', 'cm.status3': '{m} minutes in, {team} controls the map (+{gold}).',
@@ -411,7 +413,7 @@ const en: Dict = {
   'cm.ace2': '{team} wipes the enemy, ACE!', 'cm.split2': '{team} stretches the map with a split push.', 'cm.caught2': '{who} ({team}) is out of position and pays for it.',
   'pt.title': 'In-game patch {v}', 'pt.next': 'Next patch in {n} days', 'pt.none': 'No balance changes yet.', 'pt.mod': 'Changed in the latest patch', 'news.patch': 'Patch {v}: buffs {buffs}; nerfs {nerfs}.',
   'nav.stats': 'Stats', 'stx.title': 'Player stats {y}', 'stx.pick2': 'Tick 2 players to compare', 'stx.compare': 'Compare', 'stx.clear': 'Clear', 'stx.form': 'Form', 'stx.formLast': 'Form over the last {n} games', 'stx.none': 'No players with {n}+ games yet.',
-  'stx.g': 'Games', 'stx.wr': 'Win', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'DPM', 'stx.cspm': 'CSPM', 'stx.gpm': 'GPM', 'stx.mvp': 'MVP', 'stx.rt': 'Rating',
+  'stx.g': 'Games', 'stx.wr': 'Win', 'stx.kda': 'KDA', 'stx.kp': 'KP%', 'stx.dpm': 'DPM', 'stx.cspm': 'CSPM', 'stx.gpm': 'GPM', 'stx.mvp': 'MVP', 'stx.vspm': 'VSPM', 'stx.rt': 'Rating',
   'rec.tab.replays': 'Replays', 'rp.none': 'No saved games yet. Your team\'s games and finals are saved for replay.', 'rp.watch': 'Watch', 'rp.title': 'Replay', 'rp.close': 'Close',
   'cer.champions': 'Champions', 'cer.continue': 'Continue',
   'wr.title': 'Your {y} season', 'wr.record': 'Series record', 'wr.wr': '{n}% win rate', 'wr.titles': 'Titles', 'wr.noTitle': 'No titles this season', 'wr.best': 'Player of the season', 'wr.rating': 'Average rating {r} · {g} games', 'wr.topK': 'Top killer', 'wr.kills': '{n} kills', 'wr.fans': 'Fans', 'wr.allpro': 'League All-Pro team', 'wr.next': 'Next', 'wr.done': 'On to next season',

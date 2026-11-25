@@ -41,7 +41,7 @@ export interface Db {
 }
 
 // ---------- trạng thái game ----------
-export interface SeasonStats { g: number; w: number; k: number; d: number; a: number; cs: number; mvp: number; dmg: number; gold: number; min: number; tk?: number; rt?: number }
+export interface SeasonStats { g: number; w: number; k: number; d: number; a: number; cs: number; mvp: number; dmg: number; gold: number; min: number; tk?: number; rt?: number; vs?: number }
 export interface Player {
   id: string; ign: string; name: string; native: string; country: string; age: number; role: Role;
   teamId: string | null; stats: Stats; ovr: number; potential: number; pool: PoolEntry[];
@@ -183,7 +183,7 @@ export interface Draft {
 }
 export interface PlayerLine {
   side: Side; role: Role; pid: string | null; champ: string; k: number; d: number; a: number; cs: number; gold: number; dmg: number; dmgEarly?: number;
-  build?: string[]; adapt?: 'mr' | 'armor' | 'none' | 'miss';
+  build?: string[]; adapt?: 'mr' | 'armor' | 'none' | 'miss'; spells?: [string, string]; vs?: number; wards?: number; wk?: number;
 }
 export interface GameEvent { t: number; m: number; s: number; type: string; side: Side; [k: string]: unknown }
 /** khung hình: [x, y, máu, chết(nhịp), cấp, vàng, cs, hạ, chết, hỗ trợ] */

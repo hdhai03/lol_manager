@@ -85,6 +85,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
     let lastFrame = -1;
     const live = { kills: { B: 0, R: 0 }, towers: { B: 0, R: 0 }, grubs: { B: 0, R: 0 }, dk: { B: [] as string[], R: [] as string[] }, nextDr: 300, nextBa: 1200, baronBuff: { B: 0, R: 0 }, elderBuff: { B: 0, R: 0 } };
     const kfeed: { sd: Side; kc: string; vc: string; at: number }[] = [];
+    const multi: Record<string, number[]> = {}, spree: Record<string, number> = {};
     const pick = (sd: Side, rl: string) => pk(sd, rl);
 
     let bh: ReturnType<typeof setTimeout> | undefined;
@@ -123,11 +124,24 @@ export function LiveGame({ m, d, onEnd, onSkipAll, game, replay }: { m: Match; d
     const applyEv = (e: DispEv) => {
       const os: Side = e.side === 'B' ? 'R' : 'B';
       switch (e.type) {
-        case 'kill': case 'firstblood':
+        case 'kill': case 'firstblood': {
           live.kills[e.side]++;
+          // thông báo kiểu LMHT: hạ gục liên tiếp / chuỗi hạ gục / chặn chuỗi
+          const kk = e.side + (e.killer as string), vk = os + (e.victim as string);
+          const ts = (multi[kk] = (multi[kk] || []).filter((x) => e.d - x <= 10).concat(e.d));
+          const vs = spree[vk] || 0; spree[vk] = 0;
+          spree[kk] = (spree[kk] || 0) + 1;
+          const who = ign(e.side, e.killer as string);
+          const MK = ['', '', 'double', 'triple', 'quadra', 'penta'];
+          const SP: Record<number, string> = { 3: 'spree', 4: 'rampage', 5: 'unstoppable', 6: 'dominating', 7: 'godlike' };
+          if (ts.length >= 2) banner(t('an.' + MK[Math.min(5, ts.length)]), who, e.side);
+          else if (vs >= 3) banner(t('an.shutdown'), `${who} → ${ign(os, e.victim as string)}`, e.side);
+          else if (spree[kk] >= 8) banner(t('an.legendary'), who, e.side);
+          else if (SP[spree[kk]] && !quiet()) banner(t('an.' + SP[spree[kk]]), who, e.side);
           kfeed.push({ sd: e.side, kc: pick(e.side, e.killer as string), vc: pick(os, e.victim as string), at: performance.now() });
           if (e.type === 'firstblood') banner(t('bn.fbT'), tName(e.side), e.side);
           break;
+        }
         case 'teamfight':
           if (!quiet()) banner(t('bn.tfT'), `${tName(e.side)} · ${e.side === 'B' ? e.kb : e.kr}-${e.side === 'B' ? e.kr : e.kb}`, e.side);
           break;

@@ -9,11 +9,11 @@ import { Badge, Face, LeagueBadge, RoleTag } from '../components';
 import { openPlayer } from './Squad';
 import type { Player, SeasonStats } from '../../engine/types';
 
-type Col = 'g' | 'wr' | 'kda' | 'kp' | 'dpm' | 'cspm' | 'gpm' | 'mvp' | 'rt';
-const COLS: Col[] = ['g', 'wr', 'kda', 'kp', 'dpm', 'cspm', 'gpm', 'mvp', 'rt'];
+type Col = 'g' | 'wr' | 'kda' | 'kp' | 'dpm' | 'cspm' | 'gpm' | 'vspm' | 'mvp' | 'rt';
+const COLS: Col[] = ['g', 'wr', 'kda', 'kp', 'dpm', 'cspm', 'gpm', 'vspm', 'mvp', 'rt'];
 export function statsOf(s: SeasonStats): Record<Col, number> {
   const g = Math.max(1, s.g), min = Math.max(1, s.min);
-  return { g: s.g, wr: s.w / g, kda: (s.k + s.a) / Math.max(1, s.d), kp: s.tk ? (s.k + s.a) / s.tk : 0, dpm: s.dmg / min, cspm: s.cs / min, gpm: s.gold / min, mvp: s.mvp, rt: (s.rt || 0) / g };
+  return { g: s.g, wr: s.w / g, kda: (s.k + s.a) / Math.max(1, s.d), kp: s.tk ? (s.k + s.a) / s.tk : 0, dpm: s.dmg / min, cspm: s.cs / min, gpm: s.gold / min, vspm: (s.vs || 0) / min, mvp: s.mvp, rt: (s.rt || 0) / g };
 }
 const fmt = (c: Col, v: number) => (c === 'wr' || c === 'kp' ? `${Math.round(v * 100)}%` : c === 'g' || c === 'mvp' || c === 'dpm' || c === 'gpm' ? String(Math.round(v)) : v.toFixed(c === 'rt' ? 2 : 1));
 

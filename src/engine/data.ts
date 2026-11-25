@@ -31,7 +31,7 @@ export function initDb(raw: RawData): Db {
 }
 
 // Gói ảnh nhị phân (bản deploy giới hạn số file): nhóm cần ngay thì chờ, nhóm lớn tải nền.
-const BOOT_GROUPS = ['league', 'team', 'champion', 'item', 'rune', 'tile', 'player', 'map'];
+const BOOT_GROUPS = ['league', 'team', 'champion', 'item', 'rune', 'spell', 'tile', 'player', 'map'];
 const LATER_GROUPS = ['loading', 'splash'];
 let onAssets: (() => void) | null = null;
 export function setOnAssets(fn: () => void): void { onAssets = fn; }
@@ -95,6 +95,7 @@ export const champArt = (id: string): string => src(`assets/loading/${id}.webp`)
 export const champSplash = (id: string): string => src(`assets/splash/${id}.webp`);
 export const itemImg = (id: string): string => src(`assets/item/${id}.png`);
 export const runeImg = (id: number): string => src(`assets/rune/${id}.png`);
+export const spellImg = (id: string): string => src(`assets/spell/${id}.png`);
 export const mapImg = (): string => src('assets/map/map11.png');
 export const teamLogo = (id: string): string | null => DB.images.teams[id] || null;
 export const leagueLogo = (id: string): string | null => DB.images.leagues[id] || null;

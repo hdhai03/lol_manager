@@ -22,7 +22,7 @@ interface Unit {
   atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
   lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
   hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
-  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick; build?: string[]; mom: number; tiltNoted?: boolean; adapt?: 'mr' | 'armor' | 'none' | 'miss';
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick; build?: string[]; mom: number; spells: [string, string]; tp?: boolean; tiltNoted?: boolean; adapt?: 'mr' | 'armor' | 'none' | 'miss';
 }
 interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
 interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
@@ -113,8 +113,13 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
   // bảng ngọc + độ mạnh trong meta xếp hạng hiện tại
   const rune = pickRunes(p, champ, role);
   const ks = KS[rune.pr[0]] || { a: 0, s: 0 };
+  // phép bổ trợ: Tốc Biến + phép thứ hai theo vị trí & lối chơi
+  const s2 = role === 'Jungle' ? 'SummonerSmite' : role === 'Top' ? (at.aggression >= 74 ? 'SummonerDot' : 'SummonerTeleport') : role === 'Mid' ? (at.aggression >= 78 ? 'SummonerDot' : 'SummonerTeleport')
+    : role === 'Bot' ? (at.patience >= 80 ? 'SummonerBarrier' : 'SummonerHeal') : (at.aggression >= 70 ? 'SummonerDot' : 'SummonerExhaust');
+  if (s2 === 'SummonerDot') atk *= 1.02;
+  if (s2 === 'SummonerHeal' || s2 === 'SummonerBarrier' || s2 === 'SummonerExhaust') hp *= 1.025;
   return {
-    rune,
+    rune, spells: ['SummonerFlash', s2], tp: s2 === 'SummonerTeleport',
     k: side + role, side, role, lane: LANE_OF[role], pid: p ? p.id : null, champ, at, tr, pt,
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
     scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
@@ -528,7 +533,7 @@ function runGameInner(input: RunInput): GameResult {
     if (k === 'baron' && rand() > 0.13) return; // Baron chỉ được cân nhắc khi có tầm nhìn & thời cơ, không phải mỗi nhịp
     const pos = k === 'dragon' || k === 'elder' ? PIT.dragon : PIT.baron;
     const nearRoles = k === 'dragon' || k === 'elder' ? ['Jungle', 'Bot', 'Support', 'Mid'] : k === 'baron' ? ROLES : ['Jungle', 'Top', 'Mid'];
-    const grp = (sd: Side): Unit[] => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : nearRoles.map((r) => U[sd + r]).filter((u) => !u.dead))
+    const grp = (sd: Side): Unit[] => (k === 'baron' || k === 'elder' || sec >= 840 ? alive(sd) : [...nearRoles.map((r) => U[sd + r]), ...team(sd).filter((u) => u.tp && !nearRoles.includes(u.role) && rand() < 0.4)].filter((u) => !u.dead))
       .filter((u) => !u.recall && (u.task !== 'split' || rand() < 0.65)); // người đẩy lẻ dịch chuyển về giao tranh
     const want = {} as Record<Side, boolean>;
     for (const sd of SIDES) {
@@ -811,7 +816,10 @@ function runGameInner(input: RunInput): GameResult {
   const players = [];
   for (const u of [...team('B'), ...team('R')]) {
     const dmg = Math.round(u.dealt * 600 + dur * 60), early = Math.round(u.dealtEarly * 600 + Math.min(dur, 14) * 60);
-    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg), build: u.build?.slice(0, 6), adapt: u.adapt });
+    // điểm tầm nhìn: hỗ trợ & đi rừng cắm nhiều; nhận thức bản đồ tốt thì cắm đúng chỗ
+    const vw = u.role === 'Support' ? 2.5 : u.role === 'Jungle' ? 1.35 : u.role === 'Mid' ? 0.85 : 0.7;
+    const vs = Math.round((sec / 60) * vw * (u.at.awareness / 72) * (0.85 + rand() * 0.3));
+    players.push({ side: u.side, role: u.role, pid: u.pid, champ: u.champ, k: u.kills, d: u.deaths, a: u.assists, cs: Math.round(u.cs), gold: Math.round(u.gold), dmg, dmgEarly: Math.min(early, dmg), build: u.build?.slice(0, 6), adapt: u.adapt, spells: u.spells, vs, wards: Math.round(vs * 0.42), wk: Math.round(vs * 0.16) });
   }
   const score = (x: PlayerLine): number => x.k * 3 + x.a * 1.5 - x.d * 1.5 + x.dmg / 2500 + x.gold / 3000;
   const mvp = players.filter((x) => x.side === winner && x.pid).sort((a, b) => score(b) - score(a))[0];

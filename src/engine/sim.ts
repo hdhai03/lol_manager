@@ -252,7 +252,7 @@ export function applyGameResult(g: GameResult): void {
     for (const k of ['season', 'career'] as const) {
       const st = p[k];
       st.g++; if (win) st.w++;
-      st.tk = (st.tk || 0) + tk; st.rt = (st.rt || 0) + rt;
+      st.tk = (st.tk || 0) + tk; st.rt = (st.rt || 0) + rt; st.vs = (st.vs || 0) + (x.vs || 0);
       st.k += x.k; st.d += x.d; st.a += x.a; st.cs += x.cs;
       st.dmg = (st.dmg || 0) + (x.dmg || 0); st.gold = (st.gold || 0) + (x.gold || 0); st.min = (st.min || 0) + (g.durS ? g.durS / 60 : g.dur);
       if (g.mvp === p.id) st.mvp++;

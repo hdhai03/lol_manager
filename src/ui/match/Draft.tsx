@@ -29,16 +29,25 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
   const [side, type] = done ? [null, null] : DRAFT_ORDER[draft.step];
   const myTurn = !done && side === ms;
 
-  // lượt của máy
+  // lượt của máy: "ngắm" tướng một nhịp rồi mới khoá (như client)
+  const [hover, setHover] = useState<{ side: Side; champ: string; role?: Role; ban: boolean } | null>(null);
   useEffect(() => {
     if (done || myTurn) return;
-    const h = setTimeout(() => {
-      const ch = aiChoose(draft);
-      applyDraftAction(draft, ch.champ, ch.role);
-      bump();
-    }, 550);
+    const ch = aiChoose(draft);
+    const h1 = setTimeout(() => setHover({ side: side as Side, champ: ch.champ, role: ch.role, ban: type === 'ban' }), 250);
+    const h2 = setTimeout(() => { setHover(null); applyDraftAction(draft, ch.champ, ch.role); bump(); }, 1150);
+    return () => { clearTimeout(h1); clearTimeout(h2); };
+  }, [draft.step, done, myTurn, draft]); // eslint-disable-line react-hooks/exhaustive-deps
+  // đồng hồ mỗi lượt: hết giờ thì tự chọn theo gợi ý
+  const TURN = 30;
+  const [left, setLeft] = useState(TURN);
+  useEffect(() => { setLeft(TURN); }, [draft.step]);
+  useEffect(() => {
+    if (done || !myTurn) return;
+    if (left <= 0) { const ch = aiChoose(draft); applyDraftAction(draft, dsel && !draftTaken(draft).has(dsel) ? dsel : ch.champ, dsel ? null : ch.role); setDsel(null); bump(); return; }
+    const h = setTimeout(() => setLeft((x) => x - 1), 1000);
     return () => clearTimeout(h);
-  }, [draft.step, done, myTurn, draft]);
+  }, [left, done, myTurn, draft.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const taken = draftTaken(draft);
   const myLine = lineOf(me);
@@ -51,9 +60,10 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
 
   const Bans = ({ s }: { s: Side }) => {
     const next = !done && side === s && type === 'ban' ? draft.bans[s].length : -1;
-    const arr = [0, 1, 2, 3, 4].map((i) => (
-      <div key={i} className={`dr-ban ${i === next ? 'next' : ''}`}>{draft.bans[s][i] && <img src={champImg(draft.bans[s][i])} alt={cname(draft.bans[s][i])} title={cname(draft.bans[s][i])} />}</div>
-    ));
+    const arr = [0, 1, 2, 3, 4].map((i) => {
+      const hv = i === next && hover && hover.ban && hover.side === s ? hover.champ : i === next && myTurn && type === 'ban' && dsel ? dsel : null;
+      return <div key={i} className={`dr-ban ${i === next ? 'next' : ''}`}>{draft.bans[s][i] ? <img key={draft.bans[s][i]} className="lock" src={champImg(draft.bans[s][i])} alt={cname(draft.bans[s][i])} title={cname(draft.bans[s][i])} /> : hv ? <img className="hov" src={champImg(hv)} alt="" /> : null}</div>;
+    });
     return <>{s === 'B' ? arr : arr.reverse()}</>;
   };
   const Slots = ({ s }: { s: Side }) => {
@@ -71,7 +81,10 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           else if (swapSel === r) setSwapSel(null);
           else { swapPicks(draft, ms, swapSel, r); setSwapSel(null); }
         } : undefined}>
-          {c ? <div className="art" style={{ backgroundImage: `url('${champArt(c)}')` }} /> : <div className="glyph"><RoleIcon r={r} /></div>}
+          {c ? <div key={c} className="art lock" style={{ backgroundImage: `url('${champArt(c)}')` }} /> : (() => {
+            const hv = hover && !hover.ban && hover.side === s && (hover.role === r || (!hover.role && r === firstEmpty)) ? hover.champ : mine && myTurn && type === 'pick' && dsel && r === firstEmpty ? dsel : null;
+            return hv ? <div className="art hov" style={{ backgroundImage: `url('${champArt(hv)}')` }}><em>{t('dr.hovering')}</em></div> : <div className="glyph"><RoleIcon r={r} /></div>;
+          })()}
           <span className={`rl role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span>
           {c && mine && <span className="ft">{Math.round(champFit(p, c, r))}</span>}
           {c && <span className="drn"><RuneMini r={opggPos(c, r)?.runes?.[0]} size={22} /></span>}
@@ -130,6 +143,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           <div className="t2">{draft.blue === me ? t('dr.firstPick') : ' '}</div>
           <div className="tms"><Badge id={draft.blue} size="lg" /><LeagueBadge id={compLogoId(comp)} size="sm" /><Badge id={draft.red} size="lg" /></div>
           <div className="tms"><Wins tid={draft.blue} /><span className="t3">PATCH {patchVersion()}</span><Wins tid={draft.red} /></div>
+          {!done && <div className={`dr-timer ${myTurn ? 'me' : ''} ${left <= 10 && myTurn ? 'low' : ''}`}><b className="k-num">{myTurn ? left : '·'}</b><i style={{ width: `${myTurn ? (left / TURN) * 100 : 100}%` }} /></div>}
           <div className="t3">{done ? t('dr.done') : myTurn ? <>{t(type === 'ban' ? 'dr.bans' : 'dr.picks')} · <b>{t('dr.yourTurn')}</b></> : t('dr.waiting')}</div>
         </div>
         <Slots s="R" />

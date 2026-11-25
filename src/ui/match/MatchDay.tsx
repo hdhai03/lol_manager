@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { isRival, h2h } from '../../engine/world';
 import { S, teamOvr, lineupPlayers, addNews, fillLineup, saveGame } from '../../engine/state';
-import { autoDraft, simSeries } from '../../engine/sim';
+import { autoDraft, simSeries, simulateGame } from '../../engine/sim';
 import { progressComps } from '../../engine/season';
 import { logistic } from '../../engine/util';
 import { t } from '../../i18n';
@@ -10,6 +10,7 @@ import { ui, refresh, openModal } from '../store';
 import { Badge, Champ, Face, LeagueBadge, Ovr, RoleTag, faceSrc } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { DraftScreen } from './Draft';
+import { LoadingScreen } from './Loading';
 import { Boosts } from '../pages/Practice';
 import { openScout, Press } from '../pages/Scout';
 import { teamChem } from '../../engine/life';
@@ -17,7 +18,7 @@ import { LiveGame } from './Live';
 import { PostGame } from './PostGame';
 import type { Draft, GameResult, Match } from '../../engine/types';
 
-type Phase = { k: 'pre' } | { k: 'draft' } | { k: 'live'; d: Draft } | { k: 'post'; g: GameResult } | { k: 'end' };
+type Phase = { k: 'pre' } | { k: 'draft' } | { k: 'load'; d: Draft; g: GameResult } | { k: 'live'; d: Draft; g?: GameResult } | { k: 'post'; g: GameResult } | { k: 'end' };
 
 export function sidesOf(m: Match): { blue: string; red: string } {
   const gi = m.games.length;
@@ -132,9 +133,10 @@ export function MatchDay({ match }: { match: Match }) {
   };
   const choose = (a: 'manual' | 'auto' | 'quick') => {
     if (a === 'manual') setPh({ k: 'draft' });
-    else if (a === 'auto') { const { blue, red } = sidesOf(match); setPh({ k: 'live', d: autoDraft(blue, red, match.fearless || []) }); }
+    else if (a === 'auto') { const { blue, red } = sidesOf(match); startLoad(autoDraft(blue, red, match.fearless || [])); }
     else { if (!match.done) simSeries(match); finishSeries(); }
   };
+  const startLoad = (d: Draft) => setPh({ k: 'load', d, g: simulateGame(d, { record: true, series: match.games.length }) });
   const close = () => {
     ui.matchDay = null;
     progressComps();
@@ -144,8 +146,9 @@ export function MatchDay({ match }: { match: Match }) {
   return (
     <div className="matchday">
       {ph.k === 'pre' && <div className="md-inner md-wide"><PreMatch m={match} go={choose} /></div>}
-      {ph.k === 'draft' && <DraftScreen m={match} onLeave={() => setPh({ k: 'pre' })} onStart={(d) => setPh({ k: 'live', d })} />}
-      {ph.k === 'live' && <LiveGame m={match} d={ph.d} onEnd={(g) => setPh({ k: 'post', g })} onSkipAll={finishSeries} />}
+      {ph.k === 'draft' && <DraftScreen m={match} onLeave={() => setPh({ k: 'pre' })} onStart={(d) => startLoad(d)} />}
+      {ph.k === 'load' && <LoadingScreen g={ph.g} onGo={() => setPh({ k: 'live', d: ph.d, g: ph.g })} />}
+      {ph.k === 'live' && <LiveGame m={match} d={ph.d} game={ph.g} onEnd={(g) => setPh({ k: 'post', g })} onSkipAll={finishSeries} />}
       {ph.k === 'post' && <PostGame m={match} g={ph.g} onNext={choose} onFinish={finishSeries} />}
       {ph.k === 'end' && <SeriesEnd m={match} onClose={close} />}
     </div>

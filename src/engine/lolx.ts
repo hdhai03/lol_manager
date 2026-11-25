@@ -89,3 +89,11 @@ export function honorSeries(m: Match): HonorGiven[] {
   S.lastHonor = { match: m.id, list: out };
   return out;
 }
+
+/** bậc xếp hạng hiện tại của tuyển thủ (theo LP tài khoản) */
+export function playerTier(pid: string): { tier: string; lp: number } | null {
+  const a = accOf(pid);
+  if (!a) return null;
+  const tier = a.lp >= 1100 ? 'challenger' : a.lp >= 800 ? 'grandmaster' : a.lp >= 500 ? 'master' : 'diamond';
+  return { tier, lp: a.lp };
+}

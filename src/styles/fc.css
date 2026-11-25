@@ -287,3 +287,44 @@ select.gin { appearance: none; -webkit-appearance: none; padding-right: 2.2rem; 
 .hon-i { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--s3); }
 .hon-c.k-cool .hon-i { color: #7cc4ff; } .hon-c.k-shotcall .hon-i { color: #ffd98a; } .hon-c.k-gg .hon-i { color: #ff8fb1; }
 @media (max-width: 640px) { .hon-g { grid-template-columns: 1fr; } .hon-c { border-radius: 0 !important; } }
+/* cấm/chọn kiểu client: ngắm tướng, khoá tướng, đồng hồ */
+.dr-slot .art.hov { opacity: .45; filter: grayscale(.4); }
+.dr-slot .art.hov em { position: absolute; left: 0; right: 0; bottom: 38%; text-align: center; font-style: normal; font-size: .72rem; color: #fff; }
+.dr-slot .art.lock { animation: lockIn .5s ease-out both !important; }
+@keyframes lockIn { 0% { filter: brightness(2.4) saturate(0); } 100% { filter: none; } }
+.dr-ban img.hov { opacity: .4; filter: grayscale(.5); }
+.dr-ban img.lock { animation: lockIn .45s ease-out both; filter: grayscale(.7); }
+.dr-timer { position: relative; height: 26px; margin: .2rem auto; width: 70%; background: var(--s1); border-radius: 3px; overflow: hidden; display: grid; place-items: center; }
+.dr-timer i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 255, 255, .12); transition: width 1s linear; }
+.dr-timer.me i { background: rgba(38, 232, 122, .3); }
+.dr-timer.low i { background: rgba(255, 92, 108, .45); }
+.dr-timer b { position: relative; font-size: 1rem; }
+/* phép bổ trợ (bảng điểm) */
+.pg-sp { display: inline-flex; flex-direction: column; gap: 1px; }
+.pg-sp img { width: 13px; height: 13px; border-radius: 2px; }
+/* màn tải trận */
+.ld { position: fixed; inset: 0; z-index: 40; display: grid; grid-template-rows: 1fr auto 1fr; gap: .8rem; padding: 2.2vh 2.4vw; background: #0d0e10; cursor: pointer; }
+.ld-row { display: flex; flex-direction: column; gap: .5rem; min-height: 0; }
+.ld-team { display: flex; align-items: center; gap: .6rem; }
+.ld-team b { font-size: 1.05rem; }
+.ld-cards { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.ld-c { position: relative; overflow: hidden; border-radius: var(--r-sm); background: var(--s0); min-height: 0; }
+.ld-art { position: absolute; inset: 0; background-size: cover; background-position: center 18%; }
+.ld-c::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(10, 11, 13, .95) 85%); }
+.ld-info { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: .6rem .7rem; display: flex; flex-direction: column; gap: .15rem; }
+.ld-top { display: flex; align-items: center; gap: .4rem; }
+.ld-sp { display: inline-flex; gap: 2px; } .ld-sp img { width: 22px; height: 22px; border-radius: 3px; }
+.ld-pn { font-size: 1.05rem; }
+.ld-info small { color: var(--ink-2); }
+.ld-bot { display: flex; align-items: center; gap: .4rem; min-height: 22px; }
+.ld-row.R .ld-c { background: #1d1416; }
+.ld-mid { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+.ld-mid .k-disp { font-size: 2rem; }
+@media (max-width: 700px) { .ld-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; } .ld-info { padding: .3rem; } .ld-pn { font-size: .8rem; } .ld-info small { display: none; } .ld-sp img { width: 14px; height: 14px; } }
+.pg-sbwrap { background: var(--s0) !important; backdrop-filter: none !important; box-shadow: none !important; border-radius: var(--r) !important; }
+.pgsb { width: 100%; }
+.pg-sbov { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .7); display: grid; place-items: center; padding: 4vh 3vw; }
+.pg-sbwrap { position: relative; width: min(1500px, 100%); max-height: 100%; overflow: auto; padding: 1.2rem 1.2rem 1rem; }
+.pg-sbx { position: absolute !important; top: .6rem; right: .6rem; z-index: 2; width: 2rem; height: 2rem; border: 0; color: var(--ink); cursor: pointer; }
+.pg-sbwrap > h3, .pg-sbwrap h3:first-of-type { padding-right: 2.6rem; }
+.pg-sbwrap .pg-panel > h3 { margin-right: 2.4rem !important; margin-left: 2.4rem !important; }

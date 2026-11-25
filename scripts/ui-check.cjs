@@ -23,6 +23,8 @@ const detect = () => {
     // phần nhìn thấy = giao với mọi khung cuộn/cắt bao ngoài (chữ bị khung cuộn che một phần không tính là đè)
     let v = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
     for (let p = el.parentElement; p; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflow + cs.overflowX + cs.overflowY)) { const pr = p.getBoundingClientRect(); v = { left: Math.max(v.left, pr.left), top: Math.max(v.top, pr.top), right: Math.min(v.right, pr.right), bottom: Math.min(v.bottom, pr.bottom) }; } }
+    // bị lớp khác (khung mờ đặc / modal) che hoàn toàn thì bỏ qua
+    if (v.right - v.left > 2 && v.bottom - v.top > 2) { const top = document.elementFromPoint((v.left + v.right) / 2, (v.top + v.bottom) / 2); if (top && top !== el && !el.contains(top) && !top.contains(el)) continue; }
     if (v.right - v.left > 2 && v.bottom - v.top > 2) leaves.push({ el, r: { ...v, width: v.right - v.left, height: v.bottom - v.top } });
   }
   const name = (el) => (el.className && typeof el.className === 'string' ? el.tagName.toLowerCase() + '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : el.tagName.toLowerCase()) + ` "${el.textContent.trim().slice(0, 18)}"`;
@@ -59,7 +61,7 @@ const detect = () => {
     for (let i = 0; i < 80; i++) { if (await p.$('[data-start]')) break; const btn = await p.$('.dr-c:not([disabled])'); if (btn) { await btn.click(); await p.click('[data-confirm]').catch(() => {}); } else await p.waitForTimeout(300); }
     await check('draftdone');
     await p.click('[data-start]'); await p.waitForSelector('.bc'); await p.waitForTimeout(2500); await check('live');
-    await p.click('[data-skip]'); await p.waitForSelector('.pg'); await check('post');
+    await p.click('[data-skip]'); await p.waitForSelector('.pg'); await check('post'); await p.click('[data-sb]').catch(() => {}); await check('scoreboard'); await p.click('[data-sbx]').catch(() => {});
     await p.close();
   }
   console.log(JSON.stringify(all, null, 1));
