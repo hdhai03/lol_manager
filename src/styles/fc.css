@@ -408,3 +408,12 @@ select.gin.sm { padding: .3rem .5rem; font-size: .8rem; max-width: 100%; }
 .dc-o .gb { display: flex; flex-direction: column; align-items: center; gap: .15rem; min-height: 4.2rem; padding: .5rem; white-space: normal; }
 .dc-o .gb small { font-size: .68rem; color: var(--t3, #8a8d93); font-weight: 500; line-height: 1.25; }
 @media (max-width: 560px) { .dc-o { grid-template-columns: 1fr; } }
+.pt-pbe { margin-top: .6rem; padding: .6rem; background: var(--s2); border-radius: 4px; }
+.t2p { display: flex; flex-direction: column; gap: .45rem; }
+.t2p-line { display: flex; flex-wrap: wrap; gap: .3rem; }
+.t2p-line .chp { display: inline-flex; align-items: center; gap: .3rem; }
+.t2p-line .chp svg { width: 12px; height: 12px; }
+.t2p-log { display: flex; flex-wrap: wrap; gap: .3rem; }
+.t2p-log span { padding: 2px 7px; border-radius: 3px; background: var(--s2); font-size: .72rem; font-weight: 700; }
+.t2p-log span.w { color: var(--fc); } .t2p-log span.l { color: #ff8f8f; }
+.t2p-log small { color: var(--t3, #8a8d93); font-weight: 500; margin-left: .2rem; }

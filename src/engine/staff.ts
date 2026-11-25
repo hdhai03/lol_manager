@@ -1,5 +1,6 @@
 // Ban huấn luyện, lộ trình phát triển cá nhân, học viện ↔ hạng 2, cho mượn tuyển thủ.
 import { S, addNews, addFinance, userTeam, teamPlayers, autoLineup } from './state';
+import { t2Lineup } from './tier2';
 import { clamp, gauss, pick, rand, computeOvr } from './util';
 import { traitsOf } from './attrs';
 import { tierList } from './runes';
@@ -88,13 +89,15 @@ export function devDay(): void {
 // ---------- học viện ↔ hạng 2 ----------
 /** sau mỗi loạt Bo3 hạng 2 của đội học viện: ghi số liệu cho tuyển thủ học viện */
 export function academyT2Game(win: boolean, games: number): void {
-  const acad = Object.values(S.players).filter((p) => p.academyOf === S.userTeam && !p.retired).sort((a, b) => b.ovr - a.ovr).slice(0, 5);
+  const line = t2Lineup();
+  const acad = line.map((id) => S.players[id]).filter(Boolean);
+  const focus = S.t2Plan?.focus;
   for (const p of acad) {
     p.t2 ??= { g: 0, w: 0, r: 0 };
     p.t2.g += games; if (win) p.t2.w += 1;
     p.t2.r += (p.ovr + gauss() * 4 + (win ? 3 : -2)) * games;
     // thi đấu thật giúp tiến bộ
-    if (p.potential > p.ovr && rand() < 0.12) { const a = pick(['farm', 'accuracy', 'awareness', 'judgment', 'composure'] as Attr[]); p.stats[a] = clamp(p.stats[a] + 1, 30, 99); p.ovr = computeOvr(p); }
+    if (p.potential > p.ovr && rand() < (p.id === focus ? 0.24 : 0.12)) { const a = pick(['farm', 'accuracy', 'awareness', 'judgment', 'composure'] as Attr[]); p.stats[a] = clamp(p.stats[a] + 1, 30, 99); p.ovr = computeOvr(p); }
   }
 }
 /** đưa tuyển thủ đội chính xuống học viện */

@@ -6,11 +6,20 @@ import { academyT2Game } from './staff';
 
 export const T2_NAME: Record<string, string> = { LCK: 'LCK Challengers', LPL: 'LDL', LEC: 'EMEA Regional Leagues', LCS: 'NACL', LCP: 'LCP Academy', CBLOL: 'CBLOL Academy', VCS: 'VCS Challengers' };
 
+/** đội hình học viện do HLV chọn (tối đa 5), mặc định 5 người OVR cao nhất */
+export function t2Lineup(): string[] {
+  const acad = Object.values(S.players).filter((p) => !p.retired && p.academyOf === S.userTeam);
+  const pick5 = (S.t2Plan?.line || []).filter((id) => acad.some((p) => p.id === id));
+  for (const p of acad.sort((a, b) => b.ovr - a.ovr)) { if (pick5.length >= 5) break; if (!pick5.includes(p.id)) pick5.push(p.id); }
+  return pick5.slice(0, 5);
+}
+export type T2Style = 'aggressive' | 'balanced' | 'safe';
+export const t2Plan = (): NonNullable<typeof S.t2Plan> => (S.t2Plan ??= { line: [], style: 'balanced', focus: null, log: [] });
 function academyOvr(parent: string): number {
   if (parent === S.userTeam) {
-    // đội học viện của người chơi: dùng các tuyển thủ học viện thật (+ dự bị)
-    const ps = Object.values(S.players).filter((p) => !p.retired && p.academyOf === parent);
-    if (ps.length >= 3) return ps.reduce((s, p) => s + p.ovr, 0) / ps.length + 2;
+    // đội học viện của người chơi: dùng đúng 5 tuyển thủ HLV chọn
+    const ps = t2Lineup().map((id) => S.players[id]);
+    if (ps.length >= 3) return ps.reduce((s, p) => s + p.ovr, 0) / ps.length + 2 - (5 - ps.length) * 3;
   }
   return clamp(teamOvr(S.teams[parent]) - 13 + (rand() - 0.5) * 8, 50, 85);
 }
@@ -36,7 +45,13 @@ export function t2Day(playing: Set<string>): void {
       if (a.parent === S.userTeam) a.ovr = +academyOvr(a.parent).toFixed(1);
       if (b.parent === S.userTeam) b.ovr = +academyOvr(b.parent).toFixed(1);
       let wa = 0, wb = 0;
-      while (wa < 2 && wb < 2) { if (rand() < logistic((a.ovr - b.ovr) / 5 + (rand() - 0.5) * 0.3)) wa++; else wb++; }
+      // lối chơi HLV chọn cho đội học viện: tấn công = biên độ lớn, chắc chắn = biên độ nhỏ
+      const st = a.parent === S.userTeam || b.parent === S.userTeam ? t2Plan().style : 'balanced';
+      const spread = st === 'aggressive' ? 0.9 : st === 'safe' ? 0.12 : 0.3;
+      const tilt = st === 'aggressive' ? 0.6 : st === 'safe' ? 0.2 : 0;
+      const me = a.parent === S.userTeam ? 1 : b.parent === S.userTeam ? -1 : 0;
+      while (wa < 2 && wb < 2) { if (rand() < logistic((a.ovr - b.ovr) / 5 + me * tilt * 0.3 + (rand() - 0.5) * spread)) wa++; else wb++; }
+      if (me) { const opp = me > 0 ? b : a; const L2 = t2Plan(); L2.log = [{ day: S.day, opp: opp.name, my: me > 0 ? wa : wb, th: me > 0 ? wb : wa }, ...L2.log].slice(0, 6); }
       a.gw += wa; a.gl += wb; b.gw += wb; b.gl += wa;
       if (wa > wb) { a.w++; b.l++; } else { b.w++; a.l++; }
       if (a.parent === S.userTeam) academyT2Game(wa > wb, wa + wb);

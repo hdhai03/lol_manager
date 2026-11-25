@@ -152,6 +152,7 @@ export interface GameState {
   suitors?: Record<string, { team: string; pull: number; day: number }>;
   habits?: { picks: Record<string, number>; lvl1: Record<string, number>; tempo: Record<string, number> };
   talks?: Record<string, number>;
+  t2Plan?: { line: string[]; style: 'aggressive' | 'balanced' | 'safe'; focus: string | null; log: { day: number; opp: string; my: number; th: number }[] };
   importsInit?: boolean; mentor?: Record<string, string>; swap?: Record<string, { to: Role; prog: number }>;
   tasks?: { day: number; items: DailyTask[]; done: string[] }; tacticsFor?: string; trainingSetDay?: number;
   inboxSeen?: number; goal?: string;
@@ -172,7 +173,7 @@ export interface GameState {
   deal?: { id: string; brand: string; base: number; bonus: number; cond: 'worlds' | 'title' | 'fans' | 'stream'; target: number; season: number } | null;
   dealOffers?: { id: string; brand: string; base: number; bonus: number; cond: 'worlds' | 'title' | 'fans' | 'stream'; target: number; season: number }[];
   rivalBids?: Record<string, { team: string; amount: number; day: number }>;
-  patch?: { v: string; day: number; mods: Record<string, number>; notes: { c: string; d: number }[]; n: number; hist?: { v: string; day: number; notes: { c: string; d: number }[] }[] };
+  patch?: { v: string; day: number; mods: Record<string, number>; notes: { c: string; d: number }[]; n: number; next?: { v: string; day: number; notes: { c: string; d: number }[] }; hist?: { v: string; day: number; notes: { c: string; d: number }[] }[] };
   replays?: { id: string; season: number; day: number; comp: string; a: string; b: string; winner: string; durS: number; k: [number, number]; game: number; rin: import('./engine').RunInput; star?: boolean }[];
   ceremony?: { title: string; tier: string; season: number; team: string } | null;
   wrapped?: { season: number; team: string; w: number; l: number; titles: string[]; best?: { pid: string; rt: number; g: number }; topK?: { pid: string; k: number }; fans: [number, number]; allpro: Partial<Record<string, string>>; seen?: boolean } | null;

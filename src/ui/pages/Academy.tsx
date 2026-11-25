@@ -1,4 +1,5 @@
 import { S, userTeam, teamPlayers } from '../../engine/state';
+import { t2Plan, t2Lineup, t2Table, T2_NAME } from '../../engine/tier2';
 import { loanModal } from './Staff';
 import { ATTR_GROUPS, money } from '../../engine/util';
 import {
@@ -9,7 +10,7 @@ import { t, getLang } from '../../i18n';
 import { ladderData, refreshLadder } from '../../engine/ladder';
 import { useState } from 'react';
 import { ui, refresh, toast } from '../store';
-import { Champ, CondMini, Face, RoleTag, RankTxt } from '../components';
+import { Champ, CondMini, Face, RoleTag, RankTxt, RoleIcon } from '../components';
 import { isMine, pct, vClass } from '../helpers';
 import { openPlayer } from './Squad';
 import type { AttrGroup } from '../../engine/types';
@@ -53,6 +54,37 @@ export function Training() {
   );
 }
 
+/** HLV chỉ đạo đội học viện ở giải hạng 2: chọn 5 người, lối chơi, người được ưu tiên cho thi đấu */
+function T2Panel() {
+  const acad = academyPlayers();
+  if (acad.length < 3) return null;
+  const plan = t2Plan();
+  const line = t2Lineup();
+  const lg = userTeam().league;
+  const row = t2Table(lg).findIndex((x) => x.parent === S.userTeam);
+  const me = t2Table(lg)[row];
+  return (
+    <div className="t2p">
+      <div className="sub-h mt-3">{t('t2p.title', { league: T2_NAME[lg] || lg })}{me && <span className="muted text-xs"> · #{row + 1} · {me.w}-{me.l}</span>}</div>
+      <div className="t2p-line">{acad.map((p) => {
+        const on = line.includes(p.id);
+        return <button key={p.id} className={`chp sm ${on ? 'on' : ''}`} data-t2p={p.id} onClick={() => {
+          const cur = t2Lineup();
+          plan.line = on ? cur.filter((x) => x !== p.id) : [...cur.filter((x) => x !== p.id).slice(0, 4), p.id];
+          refresh();
+        }}><RoleIcon r={p.role} />{p.ign}</button>;
+      })}</div>
+      <div className="ph-row"><span className="k-label">{t('t2p.style')}</span>
+        <div className="chips">{(['aggressive', 'balanced', 'safe'] as const).map((k) => <button key={k} className={`chp sm ${plan.style === k ? 'on' : ''}`} data-t2s={k} title={t('t2p.' + k + 'D')} onClick={() => { plan.style = k; refresh(); }}>{t('t2p.' + k)}</button>)}</div></div>
+      <div className="ph-row"><span className="k-label">{t('t2p.focus')}</span>
+        <select className="gin sm" data-t2f value={plan.focus || ''} onChange={(e) => { plan.focus = e.target.value || null; refresh(); }}>
+          <option value="">{t('mt.none')}</option>{line.map((id) => <option key={id} value={id}>{S.players[id]?.ign}</option>)}
+        </select></div>
+      {plan.log.length > 0 && <div className="t2p-log">{plan.log.map((x, i) => <span key={i} className={x.my > x.th ? 'w' : 'l'}>{x.my}-{x.th} <small>{x.opp}</small></span>)}</div>}
+    </div>
+  );
+}
+
 export function Youth() {
   const ac = ensureAcademy();
   const sv = ac.focus;
@@ -73,6 +105,7 @@ export function Youth() {
             </div>
           )) : <p className="muted text-sm">{t('ac.emptyAcad')}</p>}
           <p className="muted text-sm">{t('ac.promoteHint')}</p>
+          <T2Panel />
           <div className="sub-h mt-3">{t('cl.title')}</div>
           {(S.clash || []).length ? (S.clash || []).slice(0, 5).map((c, i) => (
             <div key={i} className={`cl-r ${c.mineRank === 1 ? 'w' : ''}`}><b>#{c.mineRank}</b><span className="grow">{t('cl.res', { winner: c.winner, mvp: c.mvp })}</span><small className="muted">{S.day - c.day <= 0 ? t('feed.today') : t('feed.daysAgo', { n: S.day - c.day })}</small></div>

@@ -23,6 +23,14 @@ function PatchNotes() {
       {mods.length ? <div className="pt-list">{mods.map(([c, d]) => (
         <span key={c} className={`pt-c ${d > 0 ? 'up' : 'down'}`} title={cname(c)}><Champ id={c} size={30} /><small>{d > 0 ? '▲' : '▼'} {Math.abs(d * 100).toFixed(1)}%</small></span>
       ))}</div> : <p className="muted text-xs m-0">{t('pt.none')}</p>}
+      {P.next && (
+        <div className="pt-pbe">
+          <div className="pt-h"><b>{t('pt.pbe', { v: P.next.v })}</b><span className="muted text-xs">{t('pt.pbeHint')}</span></div>
+          <div className="pt-list">{[...P.next.notes].sort((a, b) => b.d - a.d).map((x) => (
+            <span key={x.c} className={`pt-c ${x.d > 0 ? 'up' : 'down'}`} title={cname(x.c)}><Champ id={x.c} size={30} /><small>{x.d > 0 ? '▲' : '▼'} {Math.abs(x.d * 100).toFixed(1)}%</small></span>
+          ))}</div>
+        </div>
+      )}
     </div>
   );
 }

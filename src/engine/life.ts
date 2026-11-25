@@ -1,5 +1,6 @@
 // Đời sống đội tuyển: độ ăn ý theo cặp, scrim, lệnh leo rank, sự kiện có lựa chọn, thẻ tăng cường.
 import { S, addNews, userTeam, teamPlayers } from './state';
+import { DB } from './data';
 import { langPenalty } from './squad2';
 import { ROLES, clamp, rand, pick } from './util';
 import { autoDraft, simulateGame } from './sim';
@@ -93,6 +94,9 @@ export function sqGames(p: Player, n: number): number {
 }
 /** tướng luyện theo lệnh 'pool': tướng meta của vị trí (OP.GG) */
 export function poolChamp(p: Player): string | null {
+  // bản thử nghiệm đã công bố: ưu tiên luyện trước tướng sắp được tăng sức mạnh
+  const up = (S.patch?.next?.notes || []).filter((x) => x.d > 0 && DB.champions[x.c]?.roles.includes(p.role)).map((x) => x.c);
+  if (up.length && rand() < 0.6) return pick(up);
   const list = tierList(p.role).slice(0, 14);
   return list.length ? pick(list).id : null;
 }

@@ -98,3 +98,23 @@ add({
   'dc.behind': 'You are well behind', 'dc.behindD': 'The enemy is sieging. Pick a way to turn it around.',
   'dc.ahead': 'You have a big lead', 'dc.aheadD': 'Large gold lead. How do you close it out?',
 });
+
+// ---------- bản thử nghiệm ----------
+add({
+  'pt.pbe': 'Máy chủ thử nghiệm · {v}', 'pt.pbeHint': 'Ra mắt sau vài ngày. Cho tuyển thủ leo rank chế độ "Luyện tướng" để tập trước tướng sắp được tăng.',
+  'news.pbe': 'Bản {v} lên máy chủ thử nghiệm ({n} ngày nữa ra mắt). Tăng: {buffs}. Giảm: {nerfs}.',
+}, {
+  'pt.pbe': 'Test server · {v}', 'pt.pbeHint': 'Goes live in a few days. Put players on the "Pool" solo-queue order to practise champions about to be buffed.',
+  'news.pbe': 'Patch {v} hits the test server ({n} days to release). Buffs: {buffs}. Nerfs: {nerfs}.',
+});
+
+// ---------- đội học viện ở hạng 2 ----------
+add({
+  't2p.title': 'Chỉ đạo đội học viện · {league}', 't2p.style': 'Lối chơi', 't2p.focus': 'Ưu tiên phát triển',
+  't2p.aggressive': 'Tấn công', 't2p.balanced': 'Cân bằng', 't2p.safe': 'Chắc chắn',
+  't2p.aggressiveD': 'Nhỉnh hơn một chút nhưng kết quả thất thường.', 't2p.balancedD': 'Theo đúng sức mạnh hai đội.', 't2p.safeD': 'Ổn định, ít bất ngờ (lợi khi mạnh hơn đối thủ).',
+}, {
+  't2p.title': 'Academy team · {league}', 't2p.style': 'Style', 't2p.focus': 'Development focus',
+  't2p.aggressive': 'Aggressive', 't2p.balanced': 'Balanced', 't2p.safe': 'Safe',
+  't2p.aggressiveD': 'Slight edge but swingy results.', 't2p.balancedD': "Plays to both teams' strength.", 't2p.safeD': 'Steady, few upsets (good when favoured).',
+});

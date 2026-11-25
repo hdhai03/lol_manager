@@ -25,18 +25,32 @@ function strength(id: string): number {
   const bestTier = pos ? Math.min(...Object.values(pos).map((x) => x?.tier ?? 5)) : 5;
   return (c?.power ?? 50) / 100 + (3 - bestTier) * 0.12 + (c?.presence ?? 0) * 0.6 + patchMod(id) * 6;
 }
+/** bộ chỉnh sửa cho bản kế tiếp (tăng cho tướng yếu, giảm cho tướng quá mạnh) */
+function genNotes(): PatchNote[] {
+  const ranked = DB.champList.map((c) => c.id).sort((a, b) => strength(b) - strength(a));
+  const nerfs = shuffle(ranked.slice(0, 14)).slice(0, 3 + (rand() < 0.5 ? 1 : 0));
+  const buffs = shuffle(ranked.slice(Math.floor(ranked.length * 0.45))).slice(0, 3 + (rand() < 0.5 ? 1 : 0));
+  return [...nerfs.map((c) => ({ c, d: -+(0.02 + rand() * 0.025).toFixed(3) })), ...buffs.map((c) => ({ c, d: +(0.02 + rand() * 0.025).toFixed(3) }))];
+}
+const nextV = (v: string) => { const [maj, min] = v.split('.').map((x) => parseInt(x, 10) || 0); return `${maj}.${min + 1}`; };
+/** máy chủ thử nghiệm (PBE): một tuần trước khi ra bản mới, mọi người đã biết tướng nào được tăng / bị giảm */
+export const PREVIEW_DAYS = 7;
+export function patchPreview(): void {
+  const P = ensurePatch();
+  if (P.next || S.day - P.day < PATCH_DAYS - PREVIEW_DAYS) return;
+  const notes = genNotes();
+  P.next = { v: nextV(P.v), day: P.day + PATCH_DAYS, notes };
+  addNews('news.pbe', { v: P.next.v, buffs: notes.filter((x) => x.d > 0).map((x) => DB.champions[x.c]?.name).join(', '), nerfs: notes.filter((x) => x.d < 0).map((x) => DB.champions[x.c]?.name).join(', '), n: PREVIEW_DAYS }, true);
+}
+export const upcomingBuffs = (): string[] => (S.patch?.next?.notes || []).filter((x) => x.d > 0).map((x) => x.c);
 export function newPatch(): PatchNote[] {
   const P = ensurePatch();
   // chỉnh sửa cũ phai dần
   for (const k of Object.keys(P.mods)) { P.mods[k] = +(P.mods[k] * 0.5).toFixed(4); if (Math.abs(P.mods[k]) < 0.004) delete P.mods[k]; }
-  const ranked = DB.champList.map((c) => c.id).sort((a, b) => strength(b) - strength(a));
-  const nerfs = shuffle(ranked.slice(0, 14)).slice(0, 3 + (rand() < 0.5 ? 1 : 0));
-  const buffs = shuffle(ranked.slice(Math.floor(ranked.length * 0.45))).slice(0, 3 + (rand() < 0.5 ? 1 : 0));
-  const notes: PatchNote[] = [];
-  for (const c of nerfs) { const d = -+(0.02 + rand() * 0.025).toFixed(3); P.mods[c] = +clamp((P.mods[c] || 0) + d, -0.06, 0.06).toFixed(4); notes.push({ c, d }); }
-  for (const c of buffs) { const d = +(0.02 + rand() * 0.025).toFixed(3); P.mods[c] = +clamp((P.mods[c] || 0) + d, -0.06, 0.06).toFixed(4); notes.push({ c, d }); }
-  const [maj, min] = P.v.split('.').map((x) => parseInt(x, 10) || 0);
-  P.v = `${maj}.${min + 1}`;
+  const notes: PatchNote[] = P.next?.notes || genNotes();
+  for (const { c, d } of notes) P.mods[c] = +clamp((P.mods[c] || 0) + d, -0.06, 0.06).toFixed(4);
+  P.next = undefined;
+  P.v = nextV(P.v);
   P.day = S.day; P.n++;
   P.notes = notes;
   P.hist = [{ v: P.v, day: S.day, notes }, ...(P.hist || [])].slice(0, 8);
@@ -46,6 +60,7 @@ export function newPatch(): PatchNote[] {
 export function patchDay(): void {
   const P = ensurePatch();
   if (S.day - P.day >= PATCH_DAYS) newPatch();
+  else patchPreview();
 }
 /** ngay sau patch, tuyển thủ thích nghi kém chơi tướng vừa bị chỉnh chưa quen (−), thích nghi tốt bắt nhịp nhanh (+) */
 export function patchFitBonus(p: Player | null | undefined, c: string): number {
