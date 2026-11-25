@@ -9,7 +9,7 @@ export interface Filters {
   stLeague?: string; gprSnap?: number | null; gprLeague?: string | null;
   recTab?: string; recLg?: string; recEv?: string; recSort?: string;
   trRole?: 'all' | Role; trLeague?: string; trSort?: 'ovr' | 'pot' | 'val' | 'age'; trQ?: string; trPage?: number;
-  mRole?: 'all' | Role; mQ?: string; inCat?: string; lsv?: string;
+  mRole?: 'all' | Role; mQ?: string; mView?: 'solo' | 'pro'; mSel?: string | null; inCat?: string; lsv?: string;
 }
 export interface ModalSpec { render: (close: () => void) => ReactNode; wide?: boolean; onClose?: () => void }
 export interface Toast { id: number; msg: string; kind: 'info' | 'ok' | 'err' }

@@ -8,6 +8,7 @@ import { DB } from './data';
 import { ROLES, ATTRS, clamp, rand, gauss, pick, weighted } from './util';
 import { traitsOf } from './attrs';
 import { simulateCombat, type CUnit, type Cls } from './combat';
+import { pickRunes, opggAdj, KS, type RunePick } from './runes';
 import type { FightRec, Attr, Bans, FrameUnit, GameEvent, GameResult, ObjTally, Picks, Player, PlayerLine, Role, Side, Tactics, PersonalTactic } from './types';
 
 export type Pt = [number, number];
@@ -20,7 +21,7 @@ interface Unit {
   atkB: number; hpB: number; line: 'front' | 'dive' | 'back'; healer: boolean; scale: number; early: number; meta: number;
   lvl: number; xp: number; gold: number; cs: number; kills: number; deaths: number; assists: number; dealt: number; dealtEarly: number; streak: number;
   hp: number; dead: number; recall: number; task: string; pos: Pt; busy: number; mv: number; target?: Lane;
-  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean;
+  fhp: number; out: boolean; hitBy: Set<Unit>; caught: boolean; outplay?: boolean; diedAt?: Pt; cls: Cls; ranged: boolean; rune: RunePick;
 }
 interface Tower { id: string; side: Side; lane: string; i: number; hp: number; alive: boolean; pos: Pt; back?: number }
 interface Inhib { id: string; side: Side; lane: Lane; hp: number; alive: boolean; back: number; pos: Pt }
@@ -90,12 +91,16 @@ function mkUnit(side: Side, role: Role, p: Player | null | undefined, champ: str
   if (main === 'Assassin') atk *= 1.15;
   if (main === 'Support') atk *= 0.7;
   const line = c.tags.includes('Tank') || main === 'Fighter' ? 'front' : main === 'Assassin' ? 'dive' : 'back';
+  // bảng ngọc + độ mạnh trong meta xếp hạng hiện tại
+  const rune = pickRunes(p, champ, role);
+  const ks = KS[rune.pr[0]] || { a: 0, s: 0 };
   return {
+    rune,
     k: side + role, side, role, lane: LANE_OF[role], pid: p ? p.id : null, champ, at, tr, pt,
     atkB: atk, hpB: hp, line, healer: c.tags.includes('Support') && c.info.magic >= 5,
-    scale: ({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1,
-    early: ({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0,
-    meta: 0.92 + (c.power || 50) / 600,
+    scale: (({ Marksman: 1.25, Mage: 1.1, Fighter: 1, Assassin: 0.95, Tank: 0.85, Support: 0.8 } as Record<string, number>)[main] || 1) + ks.s * 0.05,
+    early: (({ Assassin: 0.12, Fighter: 0.07, Tank: 0, Mage: -0.02, Marksman: -0.1, Support: 0 } as Record<string, number>)[main] || 0) + ks.a * 0.025,
+    meta: (0.92 + (c.power || 50) / 600) * (1 + opggAdj(champ, role) + rune.bonus),
     lvl: 1, xp: 0, gold: 500, cs: 0, kills: 0, deaths: 0, assists: 0, dealt: 0, dealtEarly: 0, streak: 0,
     hp: 1, dead: 0, recall: 0, task: role === 'Jungle' ? 'jungle' : 'lane', pos: [...BASE[side]] as Pt, busy: 0, mv: -1,
     fhp: 0, out: false, hitBy: new Set(), caught: false,
@@ -738,5 +743,6 @@ export function runGame(input: RunInput): GameResult {
     winner, winnerId: winner === 'B' ? blue : red, blue, red, dur, durS: sec, gold, events, kills, towers: taken,
     drakes: { B: buff.B.drakes, R: buff.R.drakes }, soul: buff.B.soul ? 'B' : buff.R.soul ? 'R' : null, obj: tally,
     players, mvp: mvp ? mvp.pid : null, picks, bans, frames, fights: fightLog || undefined,
+    runes: Object.fromEntries([...team('B'), ...team('R')].map((u) => [u.k, u.rune])),
   };
 }

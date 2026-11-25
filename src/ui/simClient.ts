@@ -1,5 +1,5 @@
 // Chạy giả lập (qua ngày / tới trận kế / mùa mới) trong Web Worker; không tạo được worker thì chạy ở luồng chính.
-import { rawData } from '../engine/data';
+import { rawData, dataRev } from '../engine/data';
 import { S, setState, saveGame } from '../engine/state';
 import { runSimTask, type SimKind } from '../engine/simtasks';
 import { ui, refresh } from './store';
@@ -8,11 +8,12 @@ import type { GameState } from '../engine/types';
 let worker: Worker | null = null;
 let broken = false;
 let seq = 0;
+let sentRev = -1;
 const pending = new Map<number, { res: (s: GameState) => void; rej: (e: unknown) => void }>();
 
 function getWorker(): Worker | null {
   if (broken) return null;
-  if (worker) return worker;
+  if (worker) { if (sentRev !== dataRev()) { sentRev = dataRev(); worker.postMessage({ type: 'init', raw: rawData() }); } return worker; }
   try {
     worker = new Worker(new URL('../worker/sim.worker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = (e: MessageEvent<{ id: number; ok: boolean; state?: GameState; error?: string }>) => {
@@ -22,6 +23,7 @@ function getWorker(): Worker | null {
       if (e.data.ok) p.res(e.data.state!); else p.rej(new Error(e.data.error));
     };
     worker.onerror = (e) => { e.preventDefault(); fail(new Error('worker')); };
+    sentRev = dataRev();
     worker.postMessage({ type: 'init', raw: rawData() });
     return worker;
   } catch { broken = true; return null; }

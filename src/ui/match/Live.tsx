@@ -7,7 +7,7 @@ import { simulateGame, recordGame, simSeries } from '../../engine/sim';
 import { ROLES } from '../../engine/util';
 import { MIR, BLUE_TOWERS, BASE, PIT } from '../../engine/engine';
 import { t } from '../../i18n';
-import { Badge, Champ, LeagueBadge, RoleIcon } from '../components';
+import { Badge, Champ, LeagueBadge, RoleIcon, RuneMini } from '../components';
 import { compLogoId, compTitle } from '../helpers';
 import { loadThree, webglOk, createArena, type Arena } from './arena';
 import { Timeline, unitKeys, type DispEv } from './timeline';
@@ -272,7 +272,7 @@ export function LiveGame({ m, d, onEnd, onSkipAll }: { m: Match; d: Draft; onEnd
     <div className={`bc-side ${sd === 'B' ? 'l' : 'r'}`}>
       {ROLES.map((rl) => (
         <div key={rl} className={`bc-p ${sd}`} id={`sp-${sd}${rl}`}>
-          <div className="ph"><Champ id={pk(sd, rl)} size={64} /><span className="lv" id={`lv-${sd}${rl}`}>1</span><span className="rs" id={`rs-${sd}${rl}`} /><i className="ul" id={`ul-${sd}${rl}`} /></div>
+          <div className="ph"><Champ id={pk(sd, rl)} size={64} /><span className="lv" id={`lv-${sd}${rl}`}>1</span><span className="rs" id={`rs-${sd}${rl}`} /><i className="ul" id={`ul-${sd}${rl}`} /><span className="rn"><RuneMini r={g.runes?.[sd + rl]} size={20} /></span></div>
           <div className="info"><b>{ign(sd, rl)}</b><div className="hp"><i id={`hp-${sd}${rl}`} /></div><div className="mp"><i /></div></div>
         </div>
       ))}

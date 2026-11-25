@@ -5,7 +5,8 @@ import { S, lineupPlayers } from '../../engine/state';
 import { DRAFT_ORDER, newDraft, aiChoose, applyDraftAction, draftTaken, openRoles, champFit, swapPicks, compTraits } from '../../engine/sim';
 import { ROLES } from '../../engine/util';
 import { t, cname } from '../../i18n';
-import { Badge, LeagueBadge, RoleIcon } from '../components';
+import { Badge, LeagueBadge, RoleIcon, RuneMini } from '../components';
+import { opggPos } from '../../engine/runes';
 import { compLogoId, compTitle } from '../helpers';
 import { sidesOf } from './MatchDay';
 import type { Draft, Match, Player, Role, Side } from '../../engine/types';
@@ -70,6 +71,7 @@ export function DraftScreen({ m, onLeave, onStart }: { m: Match; onLeave: () => 
           {c ? <div className="art" style={{ backgroundImage: `url('${champArt(c)}')` }} /> : <div className="glyph"><RoleIcon r={r} /></div>}
           <span className={`rl role-${r}`} title={t('role.' + r)}><RoleIcon r={r} /></span>
           {c && mine && <span className="ft">{Math.round(champFit(p, c, r))}</span>}
+          {c && <span className="drn"><RuneMini r={opggPos(c, r)?.runes?.[0]} size={22} /></span>}
           <span className="cn">{c ? cname(c) : ''}</span><span className="pn">{p ? p.ign : '—'}</span>
         </div>
       );

@@ -4,7 +4,7 @@ import { champSplash } from '../../engine/data';
 import { S } from '../../engine/state';
 import { recordGame } from '../../engine/sim';
 import { t } from '../../i18n';
-import { Badge, Champ, Face, RoleTag } from '../components';
+import { Badge, Champ, Face, RoleTag, RuneMini } from '../components';
 import type { ReactNode } from 'react';
 import type { GameResult, Match, Side } from '../../engine/types';
 
@@ -37,7 +37,7 @@ function Scoreboard({ g }: { g: GameResult }) {
         const p = x.pid ? S.players[x.pid] : undefined;
         return (
           <tr key={x.pid ?? x.role} className={g.mvp === x.pid ? 'mvp' : ''}>
-            <td><Champ id={x.champ} size={28} /></td><td><span className="flex items-center gap-2"><Face p={p} size="xs" /><RoleTag r={x.role} /><b>{p ? p.ign : '?'}</b></span></td>
+            <td><span className="flex items-center gap-1"><Champ id={x.champ} size={28} /><RuneMini r={g.runes?.[x.side + x.role]} size={18} /></span></td><td><span className="flex items-center gap-2"><Face p={p} size="xs" /><RoleTag r={x.role} /><b>{p ? p.ign : '?'}</b></span></td>
             <td className="n">{x.k}/{x.d}/{x.a}</td><td className="n">{x.cs}</td><td className="n">{(x.gold / 1000).toFixed(1)}k</td><td className="n">{(x.dmg / 1000).toFixed(1)}k</td>
           </tr>
         );

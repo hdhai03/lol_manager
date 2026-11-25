@@ -3,6 +3,7 @@ import { DB } from './data';
 import { S, lineupPlayers, fillLineup } from './state';
 import { ROLES, rand, clamp, logistic, gauss } from './util';
 import { runGame } from './engine';
+import { opggAdj } from './runes';
 import { aiTactics, drainCondition } from './attrs';
 import { gprOnSeries } from './gpr';
 import { archiveGame } from './awards';
@@ -22,7 +23,7 @@ export const DRAFT_ORDER: [Side, 'ban' | 'pick'][] = [
 export function champFit(p: Player | null | undefined, champId: string | undefined, role: Role): number {
   const c = champId ? DB.champions[champId] : undefined;
   if (!c || !p) return 30;
-  let fit = 22 + c.power * 0.5;
+  let fit = 22 + c.power * 0.5 + opggAdj(champId!, role) * 300;
   const pe = p.pool.find((x) => x.c === champId);
   if (pe) fit += Math.min(pe.g, 25) * 0.9 + (pe.g >= 3 ? (pe.w / pe.g - 0.5) * 20 : 0);
   if (!c.roles.includes(role)) fit -= 25;

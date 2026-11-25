@@ -7,7 +7,7 @@ import { t, getLang } from '../i18n';
 import type { Comp, DailyTask, NewsItem, Player, SeasonStats } from '../engine/types';
 
 export const vClass = (v: number): string => (v >= 88 ? 's' : v >= 80 ? 'a' : v >= 70 ? 'b' : v >= 60 ? 'c' : 'd');
-export const pct = (x: number): string => `${Math.round(x * 100)}%`;
+export const pct = (x: number, d = 0): string => `${(x * 100).toFixed(d)}%`;
 export const fullMoney = (k: number): string => `${k < 0 ? '-' : ''}$ ${Math.round(Math.abs(k) * 1000).toLocaleString('en-US')}`;
 export const kfmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'K' : String(n));
 export const hash = (s: string): number => [...s].reduce((a, c) => (a * 33 + c.charCodeAt(0)) >>> 0, 7);

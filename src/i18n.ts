@@ -4,6 +4,10 @@ export type Lang = 'vi' | 'en';
 type Dict = Record<string, string>;
 
 const vi: Dict = {
+  'mt.solo': 'Xếp hạng (OP.GG)', 'mt.pro': 'Thi đấu chuyên nghiệp', 'mt.src': 'OP.GG · {region} {tier} · Patch {patch} · {n} trận', 'mt.upd': 'Cập nhật {when}', 'mt.live': 'trực tiếp', 'mt.snap': 'bản chụp', 'mt.refresh': 'Làm mới',
+  'mt.pick': 'Chọn một tướng để xem chi tiết', 'mt.wr': 'Tỉ lệ thắng', 'mt.pr': 'Tỉ lệ chọn', 'mt.br': 'Tỉ lệ cấm', 'mt.rank': 'Hạng vị trí', 'mt.counters': 'Khắc chế bởi', 'mt.runes': 'Bảng ngọc phổ biến', 'mt.games': '{n} trận', 'mt.proStats': 'Thi đấu chuyên nghiệp', 'mt.noData': 'Chưa có dữ liệu xếp hạng cho vị trí này.',
+  'mt.hint': 'Tuyển thủ đọc meta tốt (Thích nghi + Phán đoán) sẽ chọn đúng bảng ngọc phổ biến (+ sức mạnh). Tuyển thủ sáng tạo có thể đổi ngọc chính theo lối chơi riêng.',
+  'rn.meta': 'Ngọc meta', 'rn.alt': 'Ngọc phương án 2', 'rn.custom': 'Ngọc sáng tạo', 'rn.off': 'Ngọc lệch meta', 'rn.title': 'Bảng ngọc', 'rn.bonus': 'Hiệu quả',
   'tr.noGames': 'Chưa thi đấu', 'bn.fbT': 'Chiến công đầu', 'bn.tfT': 'Giao tranh tổng', 'bn.dragonT': 'Hạ rồng', 'bn.soulT': 'Linh hồn rồng', 'bn.elderT': 'Rồng Ngàn Tuổi', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Phá nhà lính', 'bn.ftT': 'Trụ đầu tiên', 'bn.stealT': 'Cướp mục tiêu',
   'app.title': 'Rift Manager',
   'app.tagline': 'Giả lập HLV Liên Minh Huyền Thoại chuyên nghiệp',
@@ -142,7 +146,7 @@ const vi: Dict = {
   'st.group': 'Bảng {g}',
   'st.bracket': 'Nhánh đấu',
   'st.notStarted': 'Chưa bắt đầu',
-  'meta.title': 'Tướng & Meta chuyên nghiệp',
+  'meta.title': 'Tướng & Meta',
   'meta.desc': 'Tính từ {games} trận đấu chuyên nghiệp gần nhất (patch {patch}). Có mặt = tỉ lệ được cấm hoặc chọn.',
   'meta.tier': 'Hạng', 'meta.presence': 'Có mặt', 'meta.picks': 'Chọn', 'meta.bans': 'Cấm', 'meta.wr': 'Thắng', 'meta.build': 'Trang bị pro',
   'meta.allRoles': 'Mọi vị trí',
@@ -247,6 +251,10 @@ const vi: Dict = {
 };
 
 const en: Dict = {
+  'mt.solo': 'Ranked (OP.GG)', 'mt.pro': 'Pro play', 'mt.src': 'OP.GG · {region} {tier} · Patch {patch} · {n} games', 'mt.upd': 'Updated {when}', 'mt.live': 'live', 'mt.snap': 'snapshot', 'mt.refresh': 'Refresh',
+  'mt.pick': 'Pick a champion to see details', 'mt.wr': 'Win rate', 'mt.pr': 'Pick rate', 'mt.br': 'Ban rate', 'mt.rank': 'Role rank', 'mt.counters': 'Countered by', 'mt.runes': 'Popular rune pages', 'mt.games': '{n} games', 'mt.proStats': 'Pro play', 'mt.noData': 'No ranked data for this role yet.',
+  'mt.hint': 'Players who read the meta well (Adaptability + Judgment) take the popular rune page (+ power). Creative players may swap the keystone to fit their own style.',
+  'rn.meta': 'Meta runes', 'rn.alt': 'Alternative page', 'rn.custom': 'Creative runes', 'rn.off': 'Off-meta runes', 'rn.title': 'Runes', 'rn.bonus': 'Impact',
   'tr.noGames': 'No games yet', 'bn.fbT': 'First blood', 'bn.tfT': 'Teamfight', 'bn.dragonT': 'Dragon slain', 'bn.soulT': 'Dragon soul', 'bn.elderT': 'Elder dragon', 'bn.baronT': 'Baron Nashor', 'bn.inhibT': 'Inhibitor down', 'bn.ftT': 'First tower', 'bn.stealT': 'Steal',
   'app.title': 'Rift Manager',
   'app.tagline': 'Professional League of Legends coach simulator',
@@ -385,7 +393,7 @@ const en: Dict = {
   'st.group': 'Group {g}',
   'st.bracket': 'Bracket',
   'st.notStarted': 'Not started',
-  'meta.title': 'Champions & pro meta',
+  'meta.title': 'Champions & meta',
   'meta.desc': 'Computed from the latest {games} pro games (patch {patch}). Presence = share of games picked or banned.',
   'meta.tier': 'Tier', 'meta.presence': 'Presence', 'meta.picks': 'Picks', 'meta.bans': 'Bans', 'meta.wr': 'Win', 'meta.build': 'Pro build',
   'meta.allRoles': 'All roles',

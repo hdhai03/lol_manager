@@ -1,6 +1,7 @@
 // Thành phần dùng chung: logo đội/giải, ảnh tuyển thủ, tướng, vai trò, OVR, cửa sổ, thông báo...
 import type { ReactNode } from 'react';
-import { DB, champImg, champTile, champSplash, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset } from '../engine/data';
+import { DB, champImg, champTile, champSplash, teamLogo, leagueLogo, playerFace, isDarkLogo, src as asset, runeImg } from '../engine/data';
+import { runeName } from '../engine/runes';
 import { S } from '../engine/state';
 import { clamp } from '../engine/util';
 import { t, cname, getLang, setLang } from '../i18n';
@@ -117,4 +118,28 @@ export function confirmBox(msg: string): Promise<boolean> {
     };
     refresh();
   });
+}
+
+// ---------- Bảng ngọc ----------
+type RP = { p: number; pr: number[]; s: number; sr: number[]; sh: number[]; kind?: string; bonus?: number; wr?: number; pick?: number };
+export const RuneIco = ({ id, size = 22, cls = '' }: { id: number; size?: number; cls?: string }) => (
+  <img className={`rune-i ${cls}`} src={runeImg(id)} width={size} height={size} alt="" title={runeName(id, getLang() === 'vi')} loading="lazy" />
+);
+/** gọn: ngọc chính + nhánh phụ (dùng trong cấm chọn / trận / tổng kết) */
+export const RuneMini = ({ r, size = 22 }: { r?: RP | null; size?: number }) => (r ? (
+  <span className={`rune-mini k-${r.kind || 'meta'}`} title={`${runeName(r.pr[0], getLang() === 'vi')} · ${runeName(r.s, getLang() === 'vi')}${r.kind ? ' — ' + t('rn.' + r.kind) : ''}`}>
+    <RuneIco id={r.pr[0]} size={size} cls="ks" /><RuneIco id={r.s} size={Math.round(size * 0.55)} cls="sec" />
+  </span>
+) : null);
+/** đầy đủ: nhánh chính 4 ngọc, nhánh phụ 2 ngọc, mảnh chỉ số */
+export function RunePage({ r, foot }: { r: RP; foot?: ReactNode }) {
+  const vi = getLang() === 'vi';
+  return (
+    <div className="rune-pg">
+      <div className="rp-main"><RuneIco id={r.pr[0]} size={44} cls="ks" /><div><b>{runeName(r.pr[0], vi)}</b><small>{runeName(r.p, vi)} · {runeName(r.s, vi)}</small></div></div>
+      <div className="rp-row"><RuneIco id={r.p} size={16} cls="st" />{r.pr.slice(1).map((id) => <RuneIco key={id} id={id} size={26} />)}<i className="rp-sep" /><RuneIco id={r.s} size={16} cls="st" />{r.sr.map((id) => <RuneIco key={id} id={id} size={26} />)}</div>
+      <div className="rp-sh">{r.sh.map((id, i) => <span key={i} className={`shd s${id}`} title={runeName(id, vi)}>{runeName(id, vi)}</span>)}</div>
+      {foot && <div className="rp-foot">{foot}</div>}
+    </div>
+  );
 }

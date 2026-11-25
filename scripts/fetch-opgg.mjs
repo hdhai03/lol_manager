@@ -90,6 +90,7 @@ const SHARDS = { 5008: ['Adaptive Force', 'Sức mạnh thích ứng'], 5005: ['
 const out = {
   meta: { source: 'OP.GG', region: 'KR', tier: 'Emerald+', patch: ranked.meta?.version, matches: ranked.meta?.match_count, analyzedAt: ranked.meta?.analyzed_at, fetched: new Date().toISOString() },
   styles, shards: SHARDS, champs,
+  keys: Object.fromEntries(Object.entries(byKey).map(([k, id]) => [id, Number(k)])),
 };
 writeFileSync(OUT, JSON.stringify(out));
 console.log('wrote', OUT, Object.keys(champs).length, 'champions', (JSON.stringify(out).length / 1024).toFixed(0) + 'KB');
