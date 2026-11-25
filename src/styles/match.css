@@ -157,3 +157,10 @@ tr.q .rk { background: rgba(53, 230, 210, .2); color: #bff7ef; box-shadow: 0 0 1
 .bc .sb-team::after { display: none; }
 .bc .sb-team.l { background: linear-gradient(90deg, rgba(61, 139, 255, .4), rgba(61, 139, 255, .08)); }
 .bc .sb-team.r { background: linear-gradient(270deg, rgba(255, 71, 87, .4), rgba(255, 71, 87, .08)); }
+
+/* ---------- Màn thi đấu: không hiện thanh cuộn trình duyệt ---------- */
+.matchday > .md-inner { box-sizing: border-box; padding-bottom: 1.4rem !important; }
+.vsx { min-height: calc(100dvh - 2.8rem); }
+.sx-end { min-height: calc(100dvh - 2.8rem); }
+.matchday, .matchday > .md-inner, .draft, .dr-grid, .pg { scrollbar-width: none; }
+.matchday::-webkit-scrollbar, .matchday > .md-inner::-webkit-scrollbar, .draft::-webkit-scrollbar, .dr-grid::-webkit-scrollbar, .pg::-webkit-scrollbar { display: none; }
